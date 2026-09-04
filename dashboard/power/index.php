@@ -5,6 +5,7 @@
     <link href="/css/modern.css" type="text/css" rel="stylesheet" />
   </head>
 <body style="background: var(--mx-bg); margin: 0;">
+<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
 
 <?php
 
@@ -34,7 +35,7 @@ if (isset($_POST['btnRestart']))
 
 ?>
 
-<div class="mx-card" style="max-width: 500px; box-shadow: none; border: none; text-align: center;">
+<div class="mx-card" style="max-width: 500px; text-align: center;">
   <h1 style="text-align: center;">Power</h1>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">

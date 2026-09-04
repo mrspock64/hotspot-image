@@ -16,15 +16,17 @@ echo mxNavLink('/index.php', 'Dashboard', $mxCurrent);
 echo mxNavLink('/tg.php', 'Talk Groups', $mxCurrent);
 echo mxNavLink('/buttons/', 'Buttons', $mxCurrent);
 echo mxNavLink('/setup/', 'Setup', $mxCurrent);
-echo mxNavLink('/wifi.php', 'WiFi', $mxCurrent);
-echo mxNavLink('/network.php', 'Network', $mxCurrent);
+echo mxNavLink('/wifi/', 'WiFi', $mxCurrent);
+echo mxNavLink('/network/', 'Network', $mxCurrent);
+echo mxNavLink('/echolink/', 'EchoLink', $mxCurrent);
+echo mxNavLink('/dtmf/', 'DTMF', $mxCurrent);
 echo mxNavLink('/update/', 'Update', $mxCurrent);
 echo mxNavLink('/backup/', 'Backup', $mxCurrent);
 echo mxNavLink('/docs/', 'Docs', $mxCurrent);
-echo mxNavLink('/log.php', 'Log', $mxCurrent);
+echo mxNavLink('/log/', 'Log', $mxCurrent);
 ?>
 <a href="/" onclick="event.target.port=4200">Shell</a>
-<?php echo mxNavLink('/power.php', 'Power', $mxCurrent); ?>
+<?php echo mxNavLink('/power/', 'Power', $mxCurrent); ?>
 </nav>
 
 <?php

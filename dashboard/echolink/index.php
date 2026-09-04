@@ -5,8 +5,9 @@
     <link href="/css/modern.css" type="text/css" rel="stylesheet" />
   </head>
 <body style="background: var(--mx-bg); margin: 0;">
+<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
 
-<div class="mx-card" style="max-width: 600px; box-shadow: none; border: none;">
+<div class="mx-card" style="max-width: 600px;">
   <h1 style="text-align:center;">EchoLink Configurator</h1>
 
 <?php
