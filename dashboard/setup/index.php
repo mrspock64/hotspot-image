@@ -79,6 +79,13 @@ function readCurrent(): array
         'rx_freq'      => $qth['rx']['A']['freq'] ?? '',
         'tx_freq'      => $qth['tx']['A']['freq'] ?? '',
         'tx_power'     => $qth['tx']['A']['pwr'] ?? '',
+        'node_class'   => $nodeInfo['nodeClass'] ?? 'hotspot',
+        'rx_sql_type'  => $qth['rx']['A']['sqlType'] ?? '',
+        'ant_comment'  => $qth['tx']['A']['ant']['comment'] ?? $qth['rx']['A']['ant']['comment'] ?? '',
+        'ant_height'   => $qth['tx']['A']['ant']['height'] ?? $qth['rx']['A']['ant']['height'] ?? '',
+        'ant_dir'      => $qth['tx']['A']['ant']['dir'] ?? $qth['rx']['A']['ant']['dir'] ?? '',
+        'ant_gain'     => $qth['tx']['A']['ant']['gain'] ?? '',
+        'ant_type'     => $qth['tx']['A']['ant']['Antenna_type'] ?? '',
     ];
 }
 
@@ -102,6 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['rx_freq']     = trim($in['rx_freq'] ?? '');
     $current['tx_freq']     = trim($in['tx_freq'] ?? '');
     $current['tx_power']    = trim($in['tx_power'] ?? '');
+    $current['node_class']  = trim($in['node_class'] ?? 'hotspot');
+    $current['rx_sql_type'] = trim($in['rx_sql_type'] ?? '');
+    $current['ant_comment'] = trim($in['ant_comment'] ?? '');
+    $current['ant_height']  = trim($in['ant_height'] ?? '');
+    $current['ant_dir']     = trim($in['ant_dir'] ?? '');
+    $current['ant_gain']    = trim($in['ant_gain'] ?? '');
+    $current['ant_type']    = trim($in['ant_type'] ?? '');
 
     // Validation — this writes a live radio's config, so reject anything
     // that would leave svxlink.conf or node_info.json broken rather than
@@ -148,19 +162,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'SHORT_IDENT_INTERVAL'  => $current['short_ident'],
                 'LONG_IDENT_INTERVAL'   => $current['long_ident'],
             ]);
-            writeNodeInfoJson(
-                NODE_INFO,
-                $current['location'],
-                $current['sysop'] !== '' ? $current['sysop'] : $current['callsign'],
-                $current['hidden'],
-                $current['qth_name'],
-                $current['lat'],
-                $current['long'],
-                $current['gridsquare'],
-                (float)($current['rx_freq'] ?: 0),
-                (float)($current['tx_freq'] ?: 0),
-                $current['tx_power']
-            );
+            writeNodeInfoJson(NODE_INFO, [
+                'nodeLocation' => $current['location'],
+                'sysop'        => $current['sysop'] !== '' ? $current['sysop'] : $current['callsign'],
+                'hidden'       => $current['hidden'],
+                'qthName'      => $current['qth_name'],
+                'lat'          => $current['lat'],
+                'long'         => $current['long'],
+                'gridsquare'   => $current['gridsquare'],
+                'nodeClass'    => $current['node_class'],
+                'ctcssToTg'    => $current['ctcss_to_tg'],
+                'rxFreq'       => (float)($current['rx_freq'] ?: 0),
+                'txFreq'       => (float)($current['tx_freq'] ?: 0),
+                'txPower'      => $current['tx_power'],
+                'rxSqlType'    => $current['rx_sql_type'],
+                'antComment'   => $current['ant_comment'],
+                'antHeight'    => $current['ant_height'],
+                'antDir'       => $current['ant_dir'],
+                'antGain'      => $current['ant_gain'],
+                'antType'      => $current['ant_type'],
+            ]);
             $saved = true;
         } catch (Throwable $e) {
             $errors[] = 'Failed to write config: ' . $e->getMessage();
@@ -193,6 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="row"><label for="sysop">Sysop</label>
     <input type="text" id="sysop" name="sysop" value="<?php echo htmlspecialchars($current['sysop']); ?>"></div>
   <div class="hint">Shown on the SvxReflector portal; defaults to the callsign if left blank.</div>
+  <div class="row"><label for="node_class">Node class</label>
+    <input type="text" id="node_class" name="node_class" value="<?php echo htmlspecialchars($current['node_class']); ?>"></div>
+  <div class="hint">e.g. "hotspot" or "repeater" — preserved from the existing file, never silently overwritten.</div>
 
   <div class="section-title">Reflector</div>
   <div class="row"><label for="domain">SvxLink domain</label>
@@ -214,6 +238,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
   <div class="row"><label for="tx_power">TX power (W)</label>
     <input type="text" id="tx_power" name="tx_power" value="<?php echo htmlspecialchars((string)$current['tx_power']); ?>"></div>
+  <div class="row"><label for="rx_sql_type">RX squelch type</label>
+    <input type="text" id="rx_sql_type" name="rx_sql_type" value="<?php echo htmlspecialchars($current['rx_sql_type']); ?>"></div>
+  <div class="hint">Portal display only, e.g. "CTCSS" — matches SQL_DET in svxlink.conf's [Rx1] but isn't read from it automatically.</div>
+
+  <div class="section-title">Antenna (portal display only)</div>
+  <div class="row"><label for="ant_comment">Description</label>
+    <input type="text" id="ant_comment" name="ant_comment" value="<?php echo htmlspecialchars($current['ant_comment']); ?>"></div>
+  <div class="row"><label for="ant_height">Height (m)</label>
+    <input type="text" id="ant_height" name="ant_height" value="<?php echo htmlspecialchars($current['ant_height']); ?>"></div>
+  <div class="row"><label for="ant_dir">Direction</label>
+    <input type="text" id="ant_dir" name="ant_dir" value="<?php echo htmlspecialchars($current['ant_dir']); ?>"></div>
+  <div class="row"><label for="ant_gain">Gain (TX)</label>
+    <input type="text" id="ant_gain" name="ant_gain" value="<?php echo htmlspecialchars($current['ant_gain']); ?>"></div>
+  <div class="row"><label for="ant_type">Antenna type (TX)</label>
+    <input type="text" id="ant_type" name="ant_type" value="<?php echo htmlspecialchars($current['ant_type']); ?>"></div>
+  <div class="hint">None of this feeds SvxLink itself — it's only shown on the SvxReflector portal. Leave blank to omit.</div>
 
   <div class="section-title">Identification timing</div>
   <div class="row"><label for="short_ident">Short ident interval (min)</label>

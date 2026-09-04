@@ -90,10 +90,32 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
 }
 
 /**
+ * Parse a "88.5:0,82.5:240" CTCSS_TO_TG-style string (same format used in
+ * svxlink.conf) into the {tone: talkgroup} map node_info.json's
+ * toneToTalkgroup field expects. svxlink.conf stays the one place this
+ * mapping is actually entered -- node_info.json just mirrors it, since
+ * that's the only copy the SvxReflector portal ever sees over the wire.
+ */
+function parseToneToTalkgroup(string $ctcssToTg): array
+{
+    $map = [];
+    foreach (explode(',', $ctcssToTg) as $pair) {
+        $pair = trim($pair);
+        if ($pair === '' || strpos($pair, ':') === false) {
+            continue;
+        }
+        [$tone, $tg] = explode(':', $pair, 2);
+        $map[trim($tone)] = (int)trim($tg);
+    }
+    return $map;
+}
+
+/**
  * Write a valid node_info.json matching the schema SvxLink's ReflectorLogic
- * actually expects (verified against a live 1.10.1@26.05.1 node — this is
- * NOT the same field layout as include/functions.php's older createjson(),
- * which used a different, unverified shape).
+ * actually expects (verified against a live 1.10.1@26.05.1 node), extended
+ * with the fuller field set include/functions.php's older createjson() was
+ * built for (nodeClass, toneToTalkgroup, antenna info) -- that function's
+ * own field layout was otherwise unverified and is not used directly.
  *
  * A previous version of this file (and every RF.Guru hotspot we've seen)
  * shipped with a stray trailing comma after the "rx" object that makes the
@@ -101,38 +123,64 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
  * for anything else (e.g. the SvxReflector portal) that parses it strictly.
  * json_encode() can't produce that mistake, so writing through this function
  * fixes it structurally rather than needing a one-off patch after the fact.
+ *
+ * @param array $opts {
+ *   nodeLocation, sysop, hidden, qthName, lat, long, gridsquare: as before.
+ *   nodeClass: e.g. "hotspot" — preserved from the existing file by the
+ *     caller if the user didn't change it, never silently overwritten.
+ *   ctcssToTg: "88.5:0,82.5:240" string, mirrored into toneToTalkgroup.
+ *   rxFreq, txFreq, txPower: as before.
+ *   rxSqlType: e.g. "CTCSS".
+ *   antComment, antHeight, antDir: shared antenna description (rx and tx
+ *     use the same physical antenna on a simplex hotspot, matching how
+ *     createjson() treated them).
+ *   antGain, antType: TX-only fields (createjson() only collected these
+ *     for tx).
+ * }
  */
-function writeNodeInfoJson(
-    string $filePath,
-    string $nodeLocation,
-    string $sysop,
-    bool $hidden,
-    string $qthName,
-    string $lat,
-    string $long,
-    string $gridsquare,
-    float $rxFreq,
-    float $txFreq,
-    string $txPower
-): void {
+function writeNodeInfoJson(string $filePath, array $opts): void
+{
+    $ant = array_filter([
+        'comment' => $opts['antComment'] ?? '',
+        'height' => $opts['antHeight'] ?? '',
+        'dir' => $opts['antDir'] ?? '',
+    ], fn($v) => $v !== '');
+
+    $rx = ['name' => 'Rx1', 'freq' => $opts['rxFreq']];
+    if (!empty($opts['rxSqlType'])) {
+        $rx['sqlType'] = $opts['rxSqlType'];
+    }
+    if (!empty($ant)) {
+        $rx['ant'] = $ant;
+    }
+
+    $tx = ['name' => 'Tx1', 'freq' => $opts['txFreq'], 'pwr' => $opts['txPower']];
+    $txAnt = $ant;
+    if (!empty($opts['antGain'])) {
+        $txAnt['gain'] = $opts['antGain'];
+    }
+    if (!empty($opts['antType'])) {
+        $txAnt['Antenna_type'] = $opts['antType'];
+    }
+    if (!empty($txAnt)) {
+        $tx['ant'] = $txAnt;
+    }
+
     $data = [
-        'nodeLocation' => $nodeLocation,
-        'nodeClass' => 'hotspot',
-        'hidden' => $hidden,
-        'sysop' => $sysop,
+        'nodeLocation' => $opts['nodeLocation'],
+        'nodeClass' => $opts['nodeClass'] !== '' ? $opts['nodeClass'] : 'hotspot',
+        'hidden' => $opts['hidden'],
+        'sysop' => $opts['sysop'],
+        'toneToTalkgroup' => parseToneToTalkgroup($opts['ctcssToTg'] ?? ''),
         'qth' => [[
-            'name' => $qthName,
+            'name' => $opts['qthName'],
             'pos' => [
-                'lat' => $lat,
-                'long' => $long,
-                'loc' => $gridsquare,
+                'lat' => $opts['lat'],
+                'long' => $opts['long'],
+                'loc' => $opts['gridsquare'],
             ],
-            'rx' => [
-                'A' => ['name' => 'Rx1', 'freq' => $rxFreq],
-            ],
-            'tx' => [
-                'A' => ['name' => 'Tx1', 'freq' => $txFreq, 'pwr' => $txPower],
-            ],
+            'rx' => ['A' => $rx],
+            'tx' => ['A' => $tx],
         ]],
     ];
 
