@@ -1,20 +1,24 @@
 echo "###-START-###"
 
-# NOTE (hotspot-image fork): this used to download a zip from a completely
-# unrelated GitHub repo (FM-POLAND/hs_dashboard_pi) and blindly swap in
-# /var/www/html — if that repo's directory layout ever drifted, this would
-# have replaced the live dashboard with a broken/unrelated site. Rewritten
-# to do a plain `git pull` against our own fork, which install-dashboard.sh
-# clones into place at provisioning time.
+REPO_DIR="/opt/hotspot-image"
+
+if [ ! -d "$REPO_DIR/.git" ]; then
+  echo "$REPO_DIR is not a git checkout — cannot update"
+  echo "###-FINISH-####"
+  exit 1
+fi
 
 echo "--- Dashboard - backup ---"
 cp -R /var/www/html "/var/www/html.$(date +%Y%m%dT%H%M%S)"
 
-cd /var/www/html || { echo "/var/www/html is not a git checkout — cannot update"; echo "###-FINISH-####"; exit 1; }
-
-echo "--- Dashboard - git pull ---"
+echo "--- Pulling latest hotspot-image ---"
+cd "$REPO_DIR"
 git fetch origin
 git reset --hard origin/HEAD
+
+echo "--- Re-syncing dashboard/ into /var/www/html ---"
+rm -rf /var/www/html
+cp -r "$REPO_DIR/dashboard" /var/www/html
 chown -R www-data:www-data /var/www/html
 
 echo "--- SVXlink service restart ---"

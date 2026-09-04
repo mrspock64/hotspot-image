@@ -1,12 +1,14 @@
 echo "###-START-###"
 
-# NOTE (hotspot-image fork): this used to point at a completely unrelated
-# project's GitHub repo (FM-POLAND/hs_dashboard_pi — leftover from an older
-# fork lineage, never actually the dashboard RF.Guru ships). Rewritten to
-# use git against our own fork instead, cloned in place by install-dashboard.sh.
+REPO_DIR="/opt/hotspot-image"
 
-cd /var/www/html || { echo "/var/www/html is not a git checkout — cannot check for updates"; echo "###-FINISH-####"; exit 1; }
+if [ ! -d "$REPO_DIR/.git" ]; then
+  echo "$REPO_DIR is not a git checkout — cannot check for updates"
+  echo "###-FINISH-####"
+  exit 1
+fi
 
+cd "$REPO_DIR"
 git fetch origin >/dev/null 2>&1
 local_rev=$(git rev-parse HEAD)
 remote_rev=$(git rev-parse origin/HEAD 2>/dev/null || git rev-parse origin/main 2>/dev/null)
