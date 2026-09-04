@@ -100,8 +100,11 @@ if (isset($_POST['btnSave'])) {
 
   $ini = build_ini_string($elconfig);
 
-  //file_put_contents("/var/www/html/test.ini",$ini,FILE_USE_INCLUDE_PAT);
-  file_put_contents("/var/www/html/echolink/ModuleEchoLink.conf", $ini, FILE_USE_INCLUDE_PATH);
+  // Was a hardcoded /var/www/html/echolink/ path -- only correct when
+  // this dashboard is actually deployed there, not when testing it from
+  // anywhere else. Use a path relative to this script instead.
+  $draftFile = __DIR__ . '/ModuleEchoLink.conf';
+  file_put_contents($draftFile, $ini, FILE_USE_INCLUDE_PATH);
 
   ///file manipulation section
 
@@ -110,7 +113,7 @@ if (isset($_POST['btnSave'])) {
   //archive the current config
   exec('sudo cp /etc/svxlink/svxlink.d/ModuleEchoLink.conf /etc/svxlink/svxlink.d/ModuleEchoLink.conf.' . date("YmdThis"), $screen, $retval);
   //move generated file to current config
-  exec('sudo mv /var/www/html/echolink/ModuleEchoLink.conf /etc/svxlink/svxlink.d/ModuleEchoLink.conf', $screen, $retval);
+  exec('sudo mv ' . escapeshellarg($draftFile) . ' /etc/svxlink/svxlink.d/ModuleEchoLink.conf', $screen, $retval);
 
   //Service SVXlink restart
   exec('sudo service svxlink restart 2>&1', $screen, $retval);

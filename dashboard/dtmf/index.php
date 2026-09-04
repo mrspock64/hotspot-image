@@ -165,71 +165,19 @@ textarea {
 
 
 // Defined buttons:
-
-    if (isset($_POST['button1']))
-    {
-        shell_exec('echo "*91260#" > /tmp/dtmf_svx');
-    }
-
-   if (isset($_POST['button2']))
-    {
-        shell_exec('echo "*912600#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button3']))
-    {
-        shell_exec('echo "*9126078#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button4']))
-    {
-        shell_exec('echo "*91999#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button5']))
-    {
-        shell_exec('echo "9191#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button6']))
-    {
-        shell_exec('echo "9126021#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button7']))
-    {
-        shell_exec('echo "9126062#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button8']))
-    {
-        shell_exec('echo "910#" > /tmp/dtmf_svx');
-    }
-
-if (isset($_POST['button9']))
-    {
-        shell_exec('echo "*#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button10']))
-    {
-        shell_exec('echo "*1#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button11']))
-    {
-        shell_exec('echo "*2# 453582#" > /tmp/dtmf_svx');
-    }
-
- if (isset($_POST['button12']))
-    {
-        shell_exec('echo "2# 871657## " > /tmp/dtmf_svx');
-    }
- if (isset($_POST['button13']))
-    {
-        shell_exec('echo "2# 871657#" > /tmp/dtmf_svx');
-    }
-
+//
+// button1-13 and button99 (power off) removed entirely -- none of them
+// had a corresponding button in the rendered <form> below (only the
+// 0-9/A-D keypad does), so they were only reachable by crafting a raw
+// POST request, never through the UI. They also used a transport that
+// doesn't work on this hardware: writing to /tmp/dtmf_svx, which nothing
+// reads (confirmed: no DTMF_CTRL_PTY configured anywhere in
+// /etc/svxlink/). The keypad below correctly uses /usr/sbin/hotspot_dtmf,
+// which pipes into svxlink's own listener on 127.0.0.1:10000 (matches
+// svxlink.service's ExecStart) -- that's the real, working mechanism.
+// An unconfirmable "sudo poweroff" reachable only via raw POST was also
+// removed as pure risk with no UI purpose; the Power page already has a
+// proper, visible power-off control.
 
 // Keyboard
  if (isset($_POST['button20']))
@@ -304,42 +252,34 @@ if (isset($_POST['button31']))
      //   echo '<pre><h1><center><p style="color: #454545; ">Send DTMF: #</center></h1></p></pre>';
     }
 
-if (isset($_POST['buttonAA']))
+// Was "buttonAA" here but the rendered button below is named "buttonA"
+// (single A) -- the mismatch meant clicking "A" submitted a POST field
+// this code never checked for, so the A key silently did nothing.
+if (isset($_POST['buttonA']))
     {
         shell_exec('/usr/sbin/hotspot_dtmf A');
-     //   echo '<pre><h1><center><p style="color: #454545; ">Send DTMF: #</center></h1></p></pre$    }
-}
+    }
 if (isset($_POST['buttonBB']))
     {
         shell_exec('/usr/sbin/hotspot_dtmf B');
-     //   echo '<pre><h1><center><p style="color: #454545; ">Send DTMF: #</center></h1></p></pre$    }
-}
+    }
 
 if (isset($_POST['buttonCC']))
     {
         shell_exec('/usr/sbin/hotspot_dtmf C');
-     //   echo '<pre><h1><center><p style="color: #454545; ">Send DTMF: #</center></h1></p></pre$    }
-}
+    }
 
 if (isset($_POST['buttonDD']))
     {
         shell_exec('/usr/sbin/hotspot_dtmf D');
-     //   echo '<pre><h1><center><p style="color: #454545; ">Send DTMF: #</center></h1></p></pre$    }
-}
-
-// POWER OFF
-if (isset($_POST['button99']))
-    {
-        shell_exec('sudo poweroff');
-   //     echo '<pre><h1><center><p style="color: #454545; ">POWER OFF</center></h1></p></pre>';
     }
 ?>
 <form method="post">
     <p>
-         <center><button style="height: 60px; width: 100px;font-size:25px;" button name="button21">1</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button22">2</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button23">3</button><button style="height: 60px; width: 100px;font-size:25px;" button name="buttonA">A</button></center>
-         <center><button style="height: 60px; width: 100px;font-size:25px;" button name="button24">4</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button25">5</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button26">6</button><button style="height: 60px; width: 100px;font-size:25px;" button name="buttonBB">B</button></center>
-         <center><button style="height: 60px; width: 100px;font-size:25px;" button name="button27">7</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button28">8</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button29">9</button><button style="height: 60px; width: 100px;font-size:25px;" button name="buttonCC">C</button></center>
-         <center><button style="height: 60px; width: 100px;font-size:25px;" button name="button30">*</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button20">0</button><button style="height: 60px; width: 100px;font-size:25px;" button name="button31">#</button><button style="height: 60px; width: 100px;font-size:25px;" button name="buttonDD">D</button></center>
+         <center><button style="height: 60px; width: 100px;font-size:25px;" name="button21">1</button><button style="height: 60px; width: 100px;font-size:25px;" name="button22">2</button><button style="height: 60px; width: 100px;font-size:25px;" name="button23">3</button><button style="height: 60px; width: 100px;font-size:25px;" name="buttonA">A</button></center>
+         <center><button style="height: 60px; width: 100px;font-size:25px;" name="button24">4</button><button style="height: 60px; width: 100px;font-size:25px;" name="button25">5</button><button style="height: 60px; width: 100px;font-size:25px;" name="button26">6</button><button style="height: 60px; width: 100px;font-size:25px;" name="buttonBB">B</button></center>
+         <center><button style="height: 60px; width: 100px;font-size:25px;" name="button27">7</button><button style="height: 60px; width: 100px;font-size:25px;" name="button28">8</button><button style="height: 60px; width: 100px;font-size:25px;" name="button29">9</button><button style="height: 60px; width: 100px;font-size:25px;" name="buttonCC">C</button></center>
+         <center><button style="height: 60px; width: 100px;font-size:25px;" name="button30">*</button><button style="height: 60px; width: 100px;font-size:25px;" name="button20">0</button><button style="height: 60px; width: 100px;font-size:25px;" name="button31">#</button><button style="height: 60px; width: 100px;font-size:25px;" name="buttonDD">D</button></center>
     </p>
     </form>
   
