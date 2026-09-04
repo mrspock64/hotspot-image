@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['backup'])) {
         $errors[] = 'Upload failed (error code ' . $upload['error'] . ').';
     } else {
         try {
-            $log = restoreFromTarball($upload['tmp_name']);
+            $log = restoreFromZip($upload['tmp_name']);
         } catch (Throwable $e) {
             $errors[] = $e->getMessage();
         }
@@ -93,7 +93,7 @@ Restart SvxLink from the <a href="/power/">Power</a> page for changes to take ef
 <?php endif; ?>
 
 <form method="post" enctype="multipart/form-data">
-  <input type="file" name="backup" accept=".tgz,.tar.gz" required>
+  <input type="file" name="backup" accept=".zip" required>
   <br><br>
   <button type="submit" class="mx-btn">Restore from file</button>
 </form>

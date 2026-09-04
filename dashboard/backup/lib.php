@@ -12,52 +12,69 @@ define('SVX_CONF_FILE', '/etc/svxlink/svxlink.conf');
 define('NODE_INFO_FILE_PATH', '/etc/svxlink/node_info.json');
 
 /**
- * Build the backup tarball into a temp file and return its path. Caller is
+ * Build the backup zip into a temp file and return its path. Caller is
  * responsible for streaming it out and deleting it afterwards -- this never
  * writes into a web-accessible directory, unlike the tar-in-webroot approach
  * documented for the stock RF.Guru image (the private key would sit exposed
  * there until manually deleted).
+ *
+ * .zip, not .tgz: macOS warns/complains about downloaded .tgz files (Archive
+ * Utility + Gatekeeper), .zip has no such friction and opens natively.
  */
-function buildBackupTarball(): string
+function buildBackupZip(): string
 {
-    $tmpFile = tempnam(sys_get_temp_dir(), 'hs-backup-') . '.tgz';
+    $tmpFile = tempnam(sys_get_temp_dir(), 'hs-backup-') . '.zip';
 
-    // The private key is 0600, owned by svxlink -- the webserver user can't
-    // read it directly, matching this dashboard's existing (accepted)
+    // pki/ and the two config files live in different directories, and zip
+    // (unlike tar) has no equivalent of tar's multiple "-C dir file" pairs
+    // in one invocation -- stage everything into one tree first. The
+    // private key is 0600, owned by svxlink, so staging (like the read
+    // itself) needs sudo, matching this dashboard's existing (accepted)
     // passwordless-sudo trust model for privileged actions.
+    // Everything through the zip step itself runs as root (sudo), including
+    // zip -- not just the copy -- since cp -a preserves the private key's
+    // 0600 mode into the staging dir, which www-data can't read back to
+    // zip up itself. Only the final chmod hands the finished archive back
+    // to www-data.
+    $stagingDir = sys_get_temp_dir() . '/hs-backup-' . uniqid();
     $cmd = sprintf(
-        'sudo tar czf %s -C %s pki -C %s svxlink.conf node_info.json 2>&1 && sudo chmod 644 %s',
-        escapeshellarg($tmpFile),
-        escapeshellarg(dirname(PKI_DIR)),
-        escapeshellarg(dirname(SVX_CONF_FILE)),
-        escapeshellarg($tmpFile)
+        'sudo mkdir -p %s && sudo cp -a %s %s/pki && sudo cp %s %s %s/ '
+        . '&& (cd %s && sudo zip -rq %s pki svxlink.conf node_info.json) '
+        . '&& sudo chmod 644 %s && sudo rm -rf %s',
+        escapeshellarg($stagingDir),
+        escapeshellarg(PKI_DIR), escapeshellarg($stagingDir),
+        escapeshellarg(SVX_CONF_FILE), escapeshellarg(NODE_INFO_FILE_PATH), escapeshellarg($stagingDir),
+        escapeshellarg($stagingDir), escapeshellarg($tmpFile),
+        escapeshellarg($tmpFile), escapeshellarg($stagingDir)
     );
-    exec($cmd, $output, $exitCode);
+    exec($cmd . ' 2>&1', $output, $exitCode);
 
     if ($exitCode !== 0 || !is_readable($tmpFile)) {
-        exec('sudo rm -f ' . escapeshellarg($tmpFile));
-        throw new RuntimeException('tar failed: ' . implode("\n", $output));
+        exec('sudo rm -rf ' . escapeshellarg($stagingDir) . ' ' . escapeshellarg($tmpFile));
+        throw new RuntimeException('zip failed: ' . implode("\n", $output));
     }
 
     return $tmpFile;
 }
 
 /**
- * Validate an uploaded tarball actually contains what we expect before
+ * Validate an uploaded zip actually contains what we expect before
  * touching anything, then restore pki/ + the two config files from it.
  * Existing files are backed up with a timestamp first, same as the Setup
  * page's own writes.
  *
  * @return string[] Log lines describing what happened, for display.
  */
-function restoreFromTarball(string $tarballPath): array
+function restoreFromZip(string $zipPath): array
 {
     $log = [];
 
+    // -Z1: zipinfo mode, one bare filename per line -- no header/footer to
+    // parse, unlike `unzip -l`.
     $listing = [];
-    exec('tar tzf ' . escapeshellarg($tarballPath) . ' 2>&1', $listing, $exitCode);
+    exec('unzip -Z1 ' . escapeshellarg($zipPath) . ' 2>&1', $listing, $exitCode);
     if ($exitCode !== 0) {
-        throw new RuntimeException("Not a valid tar.gz file:\n" . implode("\n", $listing));
+        throw new RuntimeException("Not a valid zip file:\n" . implode("\n", $listing));
     }
 
     $hasPki = false;
@@ -74,7 +91,7 @@ function restoreFromTarball(string $tarballPath): array
 
     $stagingDir = sys_get_temp_dir() . '/hs-restore-' . uniqid();
     mkdir($stagingDir, 0700, true);
-    exec('tar xzf ' . escapeshellarg($tarballPath) . ' -C ' . escapeshellarg($stagingDir) . ' 2>&1', $extractOutput, $extractCode);
+    exec('unzip -q ' . escapeshellarg($zipPath) . ' -d ' . escapeshellarg($stagingDir) . ' 2>&1', $extractOutput, $extractCode);
     if ($extractCode !== 0) {
         throw new RuntimeException("Extraction failed:\n" . implode("\n", $extractOutput));
     }
