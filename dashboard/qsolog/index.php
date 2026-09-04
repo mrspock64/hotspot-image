@@ -13,6 +13,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
+    $active = isset($_POST['active']);
+    $maxDirsize = trim($_POST['max_dirsize'] ?? '');
+    if (!ctype_digit($maxDirsize) || (int)$maxDirsize < 100) {
+        $error = 'Disk limit must be a number of megabytes, at least 100.';
+    } else {
+        try {
+            saveQsoRecorderSettings($active, (int)$maxDirsize);
+            $message = 'Settings saved.';
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
+        }
+    }
+}
+
+$settings = getQsoRecorderSettings();
 $recordings = listQsoRecordings();
 
 /** Parses the timestamp SvxLink embeds in "qsorec_<Logic>_<YYYY-MM-DD>_<HHMMSS>.ogg". */
@@ -52,6 +68,21 @@ function formatBytes(int $bytes): string
 
 <?php if ($message): ?><div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+
+  <form method="post" style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; padding:14px; background:var(--mx-bg); border-radius:8px; margin-bottom:16px;">
+    <div>
+      <label style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Logging</label>
+      <label style="font-size:13px; font-weight:normal;">
+        <input type="checkbox" name="active" <?php echo $settings['active'] ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
+        Record every transmission
+      </label>
+    </div>
+    <div>
+      <label for="max_dirsize" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Disk limit (MB)</label>
+      <input type="text" id="max_dirsize" name="max_dirsize" value="<?php echo htmlspecialchars((string)$settings['max_dirsize']); ?>" style="width:100px; margin:0;">
+    </div>
+    <button type="submit" name="save_settings" class="mx-btn">Save</button>
+  </form>
 
 <?php if ($recordings['inProgress']): ?>
   <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">

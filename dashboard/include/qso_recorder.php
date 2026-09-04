@@ -15,12 +15,44 @@
  * finished recordings.
  */
 
+require_once __DIR__ . '/inisync.php';
+
 define('QSO_RECORDER_DEFAULT_DIR', '/var/spool/svxlink/qso_recorder');
+define('QSO_RECORDER_SVX_CONF', '/etc/svxlink/svxlink.conf');
+// Matches QSO_RECORDER=8:QsoRecorder in [SimplexLogic] -- "81#" activates,
+// "80#" deactivates, live, no svxlink restart needed (svxlink.conf(5)).
+define('QSO_RECORDER_DTMF_CMD', '8');
 
 function qsoRecorderDir(): string
 {
-    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW);
+    $conf = @parse_ini_file(QSO_RECORDER_SVX_CONF, true, INI_SCANNER_RAW);
     return $conf['QsoRecorder']['REC_DIR'] ?? QSO_RECORDER_DEFAULT_DIR;
+}
+
+/** @return array{active: bool, max_dirsize: int} */
+function getQsoRecorderSettings(): array
+{
+    $conf = @parse_ini_file(QSO_RECORDER_SVX_CONF, true, INI_SCANNER_RAW) ?: [];
+    return [
+        'active'      => ($conf['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1',
+        'max_dirsize' => (int)($conf['QsoRecorder']['MAX_DIRSIZE'] ?? 2000),
+    ];
+}
+
+/**
+ * Persists the setting (so it survives a reboot/restart) and, for the
+ * on/off switch, also applies it immediately via SvxLink's own DTMF
+ * control for the recorder -- QSO_RECORDER=8:QsoRecorder in
+ * [SimplexLogic] means "81#" turns it on and "80#" off right now, without
+ * needing a service restart the way a plain config edit would.
+ */
+function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb): void
+{
+    iniSyncUpdateSection(QSO_RECORDER_SVX_CONF, 'QsoRecorder', [
+        'DEFAULT_ACTIVE' => $active ? '1' : '0',
+        'MAX_DIRSIZE'    => (string)$maxDirsizeMb,
+    ]);
+    shell_exec('/usr/sbin/hotspot_dtmf ' . escapeshellarg(QSO_RECORDER_DTMF_CMD . ($active ? '1' : '0') . '#'));
 }
 
 /**

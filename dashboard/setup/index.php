@@ -56,7 +56,6 @@ function readCurrent(): array
         'ant_dir'      => $qth['tx']['A']['ant']['dir'] ?? $qth['rx']['A']['ant']['dir'] ?? '',
         'ant_gain'     => $qth['tx']['A']['ant']['gain'] ?? '',
         'ant_type'     => $qth['tx']['A']['ant']['Antenna_type'] ?? '',
-        'rec_max_dirsize' => $conf['QsoRecorder']['MAX_DIRSIZE'] ?? '2000',
     ];
 }
 
@@ -87,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['ant_dir']     = trim($in['ant_dir'] ?? '');
     $current['ant_gain']    = trim($in['ant_gain'] ?? '');
     $current['ant_type']    = trim($in['ant_type'] ?? '');
-    $current['rec_max_dirsize'] = trim($in['rec_max_dirsize'] ?? '2000');
 
     // Validation — this writes a live radio's config, so reject anything
     // that would leave svxlink.conf or node_info.json broken rather than
@@ -125,9 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($current['ctcss_to_tg'] !== '' && !preg_match('/^[0-9.:,\s]*$/', $current['ctcss_to_tg'])) {
         $errors[] = 'CTCSS-to-TG mapping: expected <tone>:<talkgroup>,... e.g. "88.5:0,82.5:240".';
     }
-    if (!ctype_digit($current['rec_max_dirsize']) || (int)$current['rec_max_dirsize'] < 100) {
-        $errors[] = 'QSO recording disk limit must be a number of megabytes, at least 100.';
-    }
 
     if (empty($errors)) {
         try {
@@ -142,9 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'CTCSS_TO_TG'           => $current['ctcss_to_tg'],
                 'SHORT_IDENT_INTERVAL'  => $current['short_ident'],
                 'LONG_IDENT_INTERVAL'   => $current['long_ident'],
-            ]);
-            iniSyncUpdateSection(SVX_CONF, 'QsoRecorder', [
-                'MAX_DIRSIZE' => $current['rec_max_dirsize'],
             ]);
             writeNodeInfoJson(NODE_INFO, [
                 'nodeLocation' => $current['location'],
@@ -264,11 +256,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="long_ident">Long ident interval (min)</label>
     <input type="text" id="long_ident" name="long_ident" value="<?php echo htmlspecialchars((string)$current['long_ident']); ?>"></div>
   <div class="mx-hint">0 disables. Minimum spacing between idents is hard-coded to 2 minutes in Logic.tcl regardless of this setting.</div>
-
-  <div class="mx-section">Recording</div>
-  <div class="mx-row"><label for="rec_max_dirsize">QSO log disk limit (MB)</label>
-    <input type="text" id="rec_max_dirsize" name="rec_max_dirsize" value="<?php echo htmlspecialchars((string)$current['rec_max_dirsize']); ?>"></div>
-  <div class="mx-hint">Every transmission is recorded automatically (see <a href="/qsolog/">QSO Log</a>). Oldest recordings are deleted first once this limit is reached.</div>
 
   <div class="mx-section">Location</div>
   <div class="mx-row"><label for="location">Location name</label>
