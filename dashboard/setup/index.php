@@ -4,40 +4,10 @@
     <meta charset="UTF-8">
     <title>Node Setup</title>
     <link href="/css/css.php" type="text/css" rel="stylesheet" />
-<style type="text/css">
-body {
-  background-color: #eee;
-  font-size: 15px;
-  font-family: Arial;
-  color: #444;
-}
-fieldset.form {
-  border:#3083b8 2px groove;
-  box-shadow:5px 5px 20px #999;
-  background-color:#f1f1f1;
-  max-width:560px;
-  width:95%;
-  box-sizing:border-box;
-  margin:15px auto;
-  padding: 12px 20px 20px 20px;
-  border-radius: 10px;
-}
-h1 {
-  color:#00aee8;
-  font: 18pt arial, sans-serif;
-  font-weight:bold;
-  text-shadow: 0.25px 0.25px gray;
-}
-label { display:block; font-weight:bold; margin-bottom:2px; }
-input[type=text], input[type=email], input[type=number] { width: 100%; max-width:320px; padding:5px; box-sizing:border-box; }
-.row { margin-bottom: 10px; }
-.hint { color:#777; font-size: 11px; margin: -6px 0 10px 0; }
-.msg-ok { background:#d7f5da; border:1px solid #4aa361; padding:8px; border-radius:6px; margin-bottom:10px; }
-.msg-err { background:#f7d7d7; border:1px solid #c33; padding:8px; border-radius:6px; margin-bottom:10px; }
-.section-title { font-weight:bold; color:#00aee8; margin: 16px 0 6px 0; border-bottom: 1px solid #ccc; }
-</style>
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
   </head>
-  <body>
+  <body style="background: var(--mx-bg);">
+<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
 <?php
 
 require_once __DIR__ . '/../include/inisync.php';
@@ -214,11 +184,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 ?>
-<fieldset class="form">
-<center><h1>Node Setup</h1></center>
+<div class="mx-card">
+  <h1>Node Setup</h1>
+  <p class="mx-sub">Full node configuration — callsign, reflector, radio, and portal display fields.</p>
 
 <?php if ($saved): ?>
-  <div class="msg-ok">
+  <div class="mx-msg mx-msg-ok">
     Saved. Restart SvxLink from the <a href="/power/">Power</a> page for other changes (callsign,
     reflector, idents, etc.) to take effect.
     <?php if ($radioMsg !== null): ?><br><?php echo htmlspecialchars($radioMsg); ?><?php endif; ?>
@@ -226,85 +197,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <?php foreach ($errors as $err): ?>
-  <div class="msg-err"><?php echo htmlspecialchars($err); ?></div>
+  <div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($err); ?></div>
 <?php endforeach; ?>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
 
-  <div class="section-title">Identity</div>
-  <div class="row"><label for="callsign">Callsign</label>
+  <div class="mx-section">Identity</div>
+  <div class="mx-row"><label for="callsign">Callsign</label>
     <input type="text" id="callsign" name="callsign" value="<?php echo htmlspecialchars($current['callsign']); ?>"></div>
-  <div class="row"><label for="sysop">Sysop</label>
+  <div class="mx-row"><label for="sysop">Sysop</label>
     <input type="text" id="sysop" name="sysop" value="<?php echo htmlspecialchars($current['sysop']); ?>"></div>
-  <div class="hint">Shown on the SvxReflector portal; defaults to the callsign if left blank.</div>
-  <div class="row"><label for="node_class">Node class</label>
+  <div class="mx-hint">Shown on the SvxReflector portal; defaults to the callsign if left blank.</div>
+  <div class="mx-row"><label for="node_class">Node class</label>
     <input type="text" id="node_class" name="node_class" value="<?php echo htmlspecialchars($current['node_class']); ?>"></div>
-  <div class="hint">e.g. "hotspot" or "repeater" — preserved from the existing file, never silently overwritten.</div>
+  <div class="mx-hint">e.g. "hotspot" or "repeater" — preserved from the existing file, never silently overwritten.</div>
 
-  <div class="section-title">Reflector</div>
-  <div class="row"><label for="domain">SvxLink domain</label>
+  <div class="mx-section">Reflector</div>
+  <div class="mx-row"><label for="domain">SvxLink domain</label>
     <input type="text" id="domain" name="domain" value="<?php echo htmlspecialchars($current['domain']); ?>"></div>
-  <div class="row"><label for="cert_email">Certificate email</label>
+  <div class="mx-row"><label for="cert_email">Certificate email</label>
     <input type="email" id="cert_email" name="cert_email" value="<?php echo htmlspecialchars($current['cert_email']); ?>"></div>
-  <div class="hint">Must match your SM callbook email — the reflector checks this.</div>
-  <div class="row"><label for="monitor_tgs">Monitored talkgroups</label>
+  <div class="mx-hint">Must match your SM callbook email — the reflector checks this.</div>
+  <div class="mx-row"><label for="monitor_tgs">Monitored talkgroups</label>
     <input type="text" id="monitor_tgs" name="monitor_tgs" value="<?php echo htmlspecialchars($current['monitor_tgs']); ?>"></div>
-  <div class="hint">Comma-separated, e.g. "240,2400". Prefix with + for priority.</div>
+  <div class="mx-hint">Comma-separated, e.g. "240,2400". Prefix with + for priority.</div>
 
-  <div class="section-title">Radio</div>
-  <div class="row"><label for="ctcss_to_tg">CTCSS-to-TG mapping</label>
+  <div class="mx-section">Radio</div>
+  <div class="mx-row"><label for="ctcss_to_tg">CTCSS-to-TG mapping</label>
     <input type="text" id="ctcss_to_tg" name="ctcss_to_tg" value="<?php echo htmlspecialchars($current['ctcss_to_tg']); ?>"></div>
-  <div class="hint">e.g. "88.5:0,82.5:240" — tone:talkgroup pairs.</div>
-  <div class="row"><label for="rx_freq">RX frequency (MHz)</label>
+  <div class="mx-hint">e.g. "88.5:0,82.5:240" — tone:talkgroup pairs.</div>
+  <div class="mx-row"><label for="rx_freq">RX frequency (MHz)</label>
     <input type="text" id="rx_freq" name="rx_freq" value="<?php echo htmlspecialchars((string)$current['rx_freq']); ?>"></div>
-  <div class="row"><label for="tx_freq">TX frequency (MHz)</label>
+  <div class="mx-row"><label for="tx_freq">TX frequency (MHz)</label>
     <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
-  <div class="hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
-  <div class="row"><label for="tx_power">TX power (W)</label>
+  <div class="mx-hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
+  <div class="mx-row"><label for="tx_power">TX power (W)</label>
     <input type="text" id="tx_power" name="tx_power" value="<?php echo htmlspecialchars((string)$current['tx_power']); ?>"></div>
-  <div class="row"><label for="rx_sql_type">RX squelch type</label>
+  <div class="mx-row"><label for="rx_sql_type">RX squelch type</label>
     <input type="text" id="rx_sql_type" name="rx_sql_type" value="<?php echo htmlspecialchars($current['rx_sql_type']); ?>"></div>
-  <div class="hint">Portal display only, e.g. "CTCSS" — matches SQL_DET in svxlink.conf's [Rx1] but isn't read from it automatically.</div>
+  <div class="mx-hint">Portal display only, e.g. "CTCSS" — matches SQL_DET in svxlink.conf's [Rx1] but isn't read from it automatically.</div>
 
-  <div class="section-title">Antenna (portal display only)</div>
-  <div class="row"><label for="ant_comment">Description</label>
+  <div class="mx-section">Antenna (portal display only)</div>
+  <div class="mx-row"><label for="ant_comment">Description</label>
     <input type="text" id="ant_comment" name="ant_comment" value="<?php echo htmlspecialchars($current['ant_comment']); ?>"></div>
-  <div class="row"><label for="ant_height">Height (m)</label>
+  <div class="mx-row"><label for="ant_height">Height (m)</label>
     <input type="text" id="ant_height" name="ant_height" value="<?php echo htmlspecialchars($current['ant_height']); ?>"></div>
-  <div class="row"><label for="ant_dir">Direction</label>
+  <div class="mx-row"><label for="ant_dir">Direction</label>
     <input type="text" id="ant_dir" name="ant_dir" value="<?php echo htmlspecialchars($current['ant_dir']); ?>"></div>
-  <div class="row"><label for="ant_gain">Gain (TX)</label>
+  <div class="mx-row"><label for="ant_gain">Gain (TX)</label>
     <input type="text" id="ant_gain" name="ant_gain" value="<?php echo htmlspecialchars($current['ant_gain']); ?>"></div>
-  <div class="row"><label for="ant_type">Antenna type (TX)</label>
+  <div class="mx-row"><label for="ant_type">Antenna type (TX)</label>
     <input type="text" id="ant_type" name="ant_type" value="<?php echo htmlspecialchars($current['ant_type']); ?>"></div>
-  <div class="hint">None of this feeds SvxLink itself — it's only shown on the SvxReflector portal. Leave blank to omit.</div>
+  <div class="mx-hint">None of this feeds SvxLink itself — it's only shown on the SvxReflector portal. Leave blank to omit.</div>
 
-  <div class="section-title">Identification timing</div>
-  <div class="row"><label for="short_ident">Short ident interval (min)</label>
+  <div class="mx-section">Identification timing</div>
+  <div class="mx-row"><label for="short_ident">Short ident interval (min)</label>
     <input type="text" id="short_ident" name="short_ident" value="<?php echo htmlspecialchars((string)$current['short_ident']); ?>"></div>
-  <div class="row"><label for="long_ident">Long ident interval (min)</label>
+  <div class="mx-row"><label for="long_ident">Long ident interval (min)</label>
     <input type="text" id="long_ident" name="long_ident" value="<?php echo htmlspecialchars((string)$current['long_ident']); ?>"></div>
-  <div class="hint">0 disables. Minimum spacing between idents is hard-coded to 2 minutes in Logic.tcl regardless of this setting.</div>
+  <div class="mx-hint">0 disables. Minimum spacing between idents is hard-coded to 2 minutes in Logic.tcl regardless of this setting.</div>
 
-  <div class="section-title">Location</div>
-  <div class="row"><label for="location">Location name</label>
+  <div class="mx-section">Location</div>
+  <div class="mx-row"><label for="location">Location name</label>
     <input type="text" id="location" name="location" value="<?php echo htmlspecialchars($current['location']); ?>"></div>
-  <div class="row"><label for="qth_name">QTH name</label>
+  <div class="mx-row"><label for="qth_name">QTH name</label>
     <input type="text" id="qth_name" name="qth_name" value="<?php echo htmlspecialchars($current['qth_name']); ?>"></div>
-  <div class="row"><label for="lat">Latitude</label>
+  <div class="mx-row"><label for="lat">Latitude</label>
     <input type="text" id="lat" name="lat" value="<?php echo htmlspecialchars((string)$current['lat']); ?>"></div>
-  <div class="row"><label for="long">Longitude</label>
+  <div class="mx-row"><label for="long">Longitude</label>
     <input type="text" id="long" name="long" value="<?php echo htmlspecialchars((string)$current['long']); ?>"></div>
-  <div class="row"><label for="gridsquare">Gridsquare</label>
+  <div class="mx-row"><label for="gridsquare">Gridsquare</label>
     <input type="text" id="gridsquare" name="gridsquare" value="<?php echo htmlspecialchars($current['gridsquare']); ?>"></div>
-  <div class="hint">Decimal degrees with a "." separator, e.g. 59.3628802.</div>
-  <div class="row"><label for="hidden">Hide from portal</label>
+  <div class="mx-hint">Decimal degrees with a "." separator, e.g. 59.3628802.</div>
+  <div class="mx-row"><label for="hidden">Hide from portal</label>
     <input type="checkbox" id="hidden" name="hidden" <?php echo $current['hidden'] ? 'checked' : ''; ?>></div>
 
   <br>
-  <center><button type="submit" class="red" style="height:34px;width:160px;">Save</button></center>
+  <center><button type="submit" class="mx-btn">Save</button></center>
 </form>
 
-</fieldset>
+</div>
   </body>
 </html>

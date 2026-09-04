@@ -180,3 +180,39 @@
 }
 .mx-msg-ok { background: #ecfdf3; color: #027a48; border: 1px solid #abefc6; }
 .mx-msg-err { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+
+/* Form building blocks, shared by any modernized page (Setup, Buttons, ...) */
+.mx-card form { text-align: left; }
+.mx-section {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--mx-accent-dark);
+    margin: 20px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--mx-border);
+}
+.mx-section:first-of-type { margin-top: 0; }
+.mx-row { margin-bottom: 10px; }
+.mx-row label {
+    display: block;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--mx-text);
+    margin-bottom: 3px;
+}
+.mx-card input[type="text"],
+.mx-card input[type="email"],
+.mx-card input[type="number"] {
+    width: 100%;
+    max-width: 320px;
+    box-sizing: border-box;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--mx-text);
+    border: 1px solid var(--mx-border);
+    border-radius: 6px;
+    margin: 0;
+}
+.mx-card input[type="checkbox"] { width: auto; margin: 0; }
+.mx-hint { color: var(--mx-text-dim); font-size: 11.5px; margin: -5px 0 10px 0; }
