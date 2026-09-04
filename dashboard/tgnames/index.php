@@ -45,8 +45,30 @@ if (isset($_POST['btnSave'])) {
     }
 }
 
-$tgdb = loadTgDb();
-if (isset($_POST['btnSave']) && !$error) {
+if (isset($_POST['btnImport'])) {
+    // Merge into whatever's currently in the form (including unsaved
+    // edits), not a fresh disk read -- Import is just another submit
+    // button in the same form, so the browser sends every existing
+    // tg[]/name[] row along with it.
+    $tgdb = [];
+    foreach (($_POST['tg'] ?? []) as $i => $tg) {
+        $tg = trim($tg);
+        $name = trim(($_POST['name'] ?? [])[$i] ?? '');
+        if ($tg === '' && $name === '') continue;
+        $tgdb[$tg] = $name;
+    }
+    $added = 0;
+    foreach (loadMonitoredTgNumbers() as $tg) {
+        if (!array_key_exists($tg, $tgdb)) {
+            $tgdb[$tg] = '';
+            $added++;
+        }
+    }
+    uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
+    $message = $added > 0
+        ? "Added $added talkgroup(s) from Setup's Monitored talkgroups list — fill in names below and Save."
+        : "Nothing to add — every monitored talkgroup is already listed below.";
+} elseif (isset($_POST['btnSave']) && !$error) {
     // reflect what was actually saved, not a stale disk read
     $tgdb = [];
     foreach (($_POST['tg'] ?? []) as $i => $tg) {
@@ -56,6 +78,8 @@ if (isset($_POST['btnSave']) && !$error) {
         $tgdb[$tg] = $name;
     }
     uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
+} else {
+    $tgdb = loadTgDb();
 }
 ?>
 <!DOCTYPE html>
@@ -95,7 +119,9 @@ if (isset($_POST['btnSave']) && !$error) {
 
     <p>
       <button type="button" class="mx-btn mx-btn-ghost" onclick="addRow()">+ Add talkgroup</button>
+      <button type="submit" name="btnImport" class="mx-btn mx-btn-ghost">⇩ Import from monitored talkgroups</button>
     </p>
+    <p class="mx-hint" style="margin-top:-6px;">Pulls the TG numbers from Setup's "Monitored talkgroups" field — only adds ones not already listed below; doesn't touch existing names.</p>
 
     <p style="margin-top:18px;">
       <button type="submit" name="btnSave" class="mx-btn">Save</button>

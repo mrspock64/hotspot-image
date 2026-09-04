@@ -33,6 +33,29 @@ function loadTgDb(): array
     return [];
 }
 
+/**
+ * The Setup page's "Monitored talkgroups" field (MONITOR_TGS in
+ * [ReflectorLogic]) is the reflector-side list of TGs this node listens to
+ * even when not actively switched to one -- exactly the TG numbers worth
+ * having a name for. Used by the "Import from monitored talkgroups" button
+ * on the TG Names page so numbers don't have to be retyped by hand.
+ *
+ * @return list<string> TG numbers, "+" priority markers stripped
+ */
+function loadMonitoredTgNumbers(): array
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    $raw = $conf['ReflectorLogic']['MONITOR_TGS'] ?? '';
+    $numbers = [];
+    foreach (explode(',', $raw) as $tg) {
+        $tg = ltrim(trim($tg), '+');
+        if ($tg !== '' && ctype_digit($tg)) {
+            $numbers[] = $tg;
+        }
+    }
+    return $numbers;
+}
+
 function saveTgDb(array $tgdb): void
 {
     uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
