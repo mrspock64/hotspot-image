@@ -1,10 +1,16 @@
     <p style="padding-right: 5px; text-align: right; color: #000000;">
 	<a style="color: black;">Display</a> |
-	<a href="/index.php" style="color: #0000ff;">Dashboard</a> | 
-	<a href="/tg.php" style="color: #0000ff;">Talk Groups</a> | 
-	<a href="/" onclick="javascript:event.target.port=4200" style="color: #0000ff;">Shell</a> | 
+	<a href="/index.php" style="color: #0000ff;">Dashboard</a> |
+	<a href="/tg.php" style="color: #0000ff;">Talk Groups</a> |
+	<a href="/setup/" style="color: #0000ff;">Setup</a> |
+	<a href="/wifi.php" style="color: #0000ff;">WiFi</a> |
+	<a href="/network.php" style="color: #0000ff;">Network</a> |
+	<a href="/update/" style="color: #0000ff;">Update</a> |
+	<a href="/backup/" style="color: #0000ff;">Backup</a> |
+	<a href="/log.php" style="color: #0000ff;">Log</a> |
+	<a href="/" onclick="javascript:event.target.port=4200" style="color: #0000ff;">Shell</a> |
 	<a href="/power.php" style="color: #0000ff;">Power</a></p>
-	
+
 </p>
 	 
 
