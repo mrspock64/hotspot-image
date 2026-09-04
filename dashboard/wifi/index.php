@@ -74,6 +74,12 @@ textarea {
 //  }
 //}}
 
+// Only set inside specific POST branches below, but echoed into the form
+// on every load (including a plain GET) -- initialize so that doesn't
+// throw "Undefined variable" warnings the rest of the time.
+$ssid = '';
+$password = '';
+
 $screen[0] = "Welcome to WIFI configuration tool.";
 $screen[1] = "";
 $screen[2] = "Please use buttons for actions.";
@@ -89,8 +95,11 @@ if (isset($_POST['btnScan']))
 	$screen = null;
 	exec('nmcli dev wifi rescan');
 	exec('nmcli dev wifi list 2>&1',$screen,$retval);
-	//$screen[$screen.length]="\n";
-	$screen[$screen.$length]="Keep in mind the non-standard WIFI antenna.";
+	// Was "$screen[$screen.$length]=..." -- JS array-append syntax that
+	// doesn't exist in PHP; $screen (an array) got string-concatenated
+	// with an undefined $length, writing to a bogus "Array" key instead
+	// of appending to the end.
+	$screen[] = "Keep in mind the non-standard WIFI antenna.";
 }
 
 if (isset($_POST['btnConnList']))

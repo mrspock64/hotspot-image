@@ -78,10 +78,19 @@ textarea {
 //}}
 
 
+// Only set inside specific POST branches below, but echoed into the form
+// on every load (including a plain GET) -- initialize so that doesn't
+// throw "Undefined variable" warnings the rest of the time.
+$sAconn = '';
+$myIp = '';
+$cidr = '';
+$gw = '';
+$dns = '';
+
 // load the connlist
 $retval = null;
 $conns = null;
-exec('nmcli  -t -f NAME  con show',$conns,$retval);
+exec('nmcli  -t -f NAME  con show 2>&1',$conns,$retval);
 
 // find the gateway
 $ipgw = null;
@@ -302,7 +311,7 @@ foreach ($conns as $conn){
 	<BR>
 	<button name="btnDown" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">conn DOWN</button>
 	<BR>
-	<button name="btnStatic" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Set Static IP</$
+	<button name="btnStatic" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Set Static IP</button>
 
 </td>
 </tr>
