@@ -1,18 +1,12 @@
 [Unit]
-Description=RX Monitor - capture live RX audio and forward to the Web_Proxy
+Description=RX Monitor - stream SvxLink's QSO Recorder to the Web_Proxy
 After=svxlink.service rx-monitor-proxy.service
 Requires=rx-monitor-proxy.service
 
 [Service]
 Type=simple
 User=svxlink
-# svxlink.conf's AUDIO_DEV=alsa:default routes through the dsnoop/dmix asym
-# device in /etc/asound.conf specifically so this can tap the same capture
-# stream concurrently (dsnoop's IPC semaphore is only accessible to whichever
-# user created it -- svxlink runs as the "svxlink" user, so this must too).
-# AUDIO_CHANNEL=0 in svxlink.conf means SvxLink itself uses the left channel
-# of the stereo capture, so "remix 1" here (sox is 1-indexed) matches that.
-ExecStart=/bin/sh -c '/usr/bin/arecord -D array -f S16_LE -r 48000 -c 2 -t raw -q - | /usr/bin/sox -t raw -r 48000 -e signed -b 16 -c 2 - -t raw -r 48000 -e signed -b 16 -c 1 - remix 1 | /opt/rx-monitor/pcm_udp_forward.py'
+ExecStart=/opt/rx-monitor/tail_qso_recorder.py
 Restart=on-failure
 RestartSec=3
 

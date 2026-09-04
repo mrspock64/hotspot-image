@@ -25,6 +25,7 @@ echo mxNavLink('/update/', 'Update', $mxCurrent);
 echo mxNavLink('/backup/', 'Backup', $mxCurrent);
 echo mxNavLink('/docs/', 'Docs', $mxCurrent);
 echo mxNavLink('/log/', 'Log', $mxCurrent);
+echo mxNavLink('/qsolog/', 'QSO Log', $mxCurrent);
 ?>
 <a href="/" onclick="event.target.port=4200">Shell</a>
 <?php echo mxNavLink('/power/', 'Power', $mxCurrent); ?>
