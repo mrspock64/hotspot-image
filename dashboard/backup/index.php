@@ -34,7 +34,36 @@ private: it contains the node's private key.
 <div class="section-title">Backup</div>
 <p><a href="download.php"><button type="button" class="green" style="height:34px;width:220px;">Download backup</button></a></p>
 
-<div class="section-title">Restore</div>
+<div class="section-title">Previous versions</div>
+<p class="hint">
+Every save from the <a href="/setup/">Setup</a> page (and every restore below) automatically
+keeps a timestamped copy of what it replaced. Nothing new to configure — this just lists them.
+</p>
+<?php $backups = listConfigBackups(); ?>
+<?php if (empty($backups)): ?>
+  <p class="hint">No automatic backups yet — they appear here after the first Setup save.</p>
+<?php else: ?>
+  <table style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
+    <tr style="text-align:left; font-size:12px; color:#777;">
+      <th>File</th><th>Saved</th><th>Size</th><th></th>
+    </tr>
+    <?php foreach ($backups as $b): ?>
+      <tr style="border-top: 1px solid #ddd;">
+        <td><?php echo htmlspecialchars(basename($b['file'])); ?></td>
+        <td><?php echo htmlspecialchars($b['timestamp']->format('Y-m-d H:i:s')); ?></td>
+        <td><?php echo htmlspecialchars((string)$b['size']); ?> B</td>
+        <td>
+          <form method="post" style="margin:0;" onsubmit="return confirm('Restore this version of ' + <?php echo json_encode(basename($b['file'])); ?> + '? The current version will itself be backed up first.');">
+            <input type="hidden" name="restore_backup_path" value="<?php echo htmlspecialchars($b['backup']); ?>">
+            <button type="submit" class="red" style="font-size:11px;padding:3px 8px;">Restore</button>
+          </form>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+  </table>
+<?php endif; ?>
+
+<div class="section-title">Restore from file</div>
 <?php
 $errors = [];
 $log = [];
@@ -49,6 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['backup'])) {
         } catch (Throwable $e) {
             $errors[] = $e->getMessage();
         }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['restore_backup_path'])) {
+    try {
+        $log = [restoreConfigBackup($_POST['restore_backup_path'])];
+    } catch (Throwable $e) {
+        $errors[] = $e->getMessage();
     }
 }
 ?>

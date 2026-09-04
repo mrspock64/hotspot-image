@@ -105,3 +105,70 @@ function restoreFromTarball(string $tarballPath): array
 
     return $log;
 }
+
+/**
+ * List the timestamped .bak-YYYYmmdd-HHMMSS copies that Setup and Restore
+ * already leave behind before every write (see iniSyncUpdateSection() and
+ * writeNodeInfoJson() in include/inisync.php, and the restore paths above).
+ * Nothing new is being introduced here -- this just surfaces what already
+ * gets saved automatically, so reverting one doesn't require SSH.
+ *
+ * @return array Rows of ['file' => base config path, 'backup' => full
+ *   backup path, 'timestamp' => DateTime, 'size' => bytes], newest first.
+ */
+function listConfigBackups(): array
+{
+    $rows = [];
+    foreach ([SVX_CONF_FILE, NODE_INFO_FILE_PATH] as $file) {
+        foreach (glob($file . '.bak-*') ?: [] as $backup) {
+            if (!preg_match('/\.bak-(\d{8}-\d{6})$/', $backup, $m)) {
+                continue;
+            }
+            $ts = DateTime::createFromFormat('Ymd-His', $m[1]);
+            if ($ts === false) {
+                continue;
+            }
+            $rows[] = [
+                'file' => $file,
+                'backup' => $backup,
+                'timestamp' => $ts,
+                'size' => filesize($backup),
+            ];
+        }
+    }
+    usort($rows, fn($a, $b) => $b['timestamp'] <=> $a['timestamp']);
+    return $rows;
+}
+
+/**
+ * Restore one config file from one of its own .bak-* copies. The backup
+ * path is validated against the exact naming pattern our own code produces
+ * (base path + .bak- + timestamp) rather than trusted as free-form input,
+ * since it arrives from a form field.
+ */
+function restoreConfigBackup(string $backupPath): string
+{
+    $allowed = [SVX_CONF_FILE, NODE_INFO_FILE_PATH];
+    $target = null;
+    foreach ($allowed as $file) {
+        if (preg_match('/^' . preg_quote($file, '/') . '\.bak-\d{8}-\d{6}$/', $backupPath)) {
+            $target = $file;
+            break;
+        }
+    }
+    if ($target === null || !is_file($backupPath)) {
+        throw new RuntimeException('Unknown or invalid backup file.');
+    }
+    if ($target === NODE_INFO_FILE_PATH && json_decode(file_get_contents($backupPath)) === null) {
+        throw new RuntimeException('That backup is not valid JSON — refusing to restore it.');
+    }
+
+    // Back up whatever's live right now before overwriting it, same as
+    // every other write path here — restoring a backup is itself an edit.
+    @copy($target, $target . '.bak-' . date('Ymd-His'));
+    if (!copy($backupPath, $target)) {
+        throw new RuntimeException("Failed to copy $backupPath over $target.");
+    }
+
+    return basename($target) . ' restored from ' . basename($backupPath) . '.';
+}
