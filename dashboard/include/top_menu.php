@@ -24,6 +24,7 @@ function mxNavLink(string $href, string $label, string $current): string
 // "en admin-grupp räcker" decision).
 $mxAdminItems = [
     ['/setup/', 'Setup'],
+    ['/tgnames/', 'TG Names'],
     ['/wifi/', 'WiFi'],
     ['/network/', 'Network'],
     ['/echolink/', 'EchoLink'],
