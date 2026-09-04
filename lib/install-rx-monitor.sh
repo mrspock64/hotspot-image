@@ -60,6 +60,19 @@ else
   cp "$SVX_CONF" "$SVX_CONF.bak-qsorec-$(date +%Y%m%d-%H%M%S)"
   RESTART_NEEDED=0
 
+  # RF.Guru's stock ENCODER_CMD is missing a space between -Q and the
+  # quoted filename (oggenc -Q\"%f\" instead of -Q \"%f\"), which makes
+  # oggenc treat "-Q<path>" as one malformed argument and exit 1 on every
+  # single recording -- discovered live on svxlinkuhf: five real QSO
+  # recordings sat as .wav forever, never converted to .ogg, and the QSO
+  # Log page showed a permanent (stale) "recording now" because of it.
+  # Never triggered before since QSO_RECORDER was commented out everywhere.
+  if grep -q '^ENCODER_CMD=/usr/bin/oggenc -Q\\"%f\\"' "$SVX_CONF"; then
+    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc -Q\\"%f\\"|ENCODER_CMD=/usr/bin/oggenc -Q \\"%f\\"|' "$SVX_CONF"
+    echo "Fixed missing space in ENCODER_CMD (oggenc -Q\"%f\" -> -Q \"%f\")."
+    RESTART_NEEDED=1
+  fi
+
   if grep -q '^#QSO_RECORDER=8:QsoRecorder$' "$SVX_CONF"; then
     sed -i 's/^#QSO_RECORDER=8:QsoRecorder$/QSO_RECORDER=8:QsoRecorder/' "$SVX_CONF"
     echo "Enabled QSO_RECORDER in [SimplexLogic]."

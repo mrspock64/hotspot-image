@@ -30,9 +30,15 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
 def find_current_recording():
+    # Ignore .wav files untouched for a while -- SvxLink writes to an
+    # active recording continuously, so anything stale is a leftover
+    # (e.g. ENCODER_CMD failed to convert+remove it), not something to
+    # treat as live audio. Bit us once already: a broken ENCODER_CMD left
+    # five real recordings stuck as .wav indefinitely.
+    now = time.time()
     candidates = [
         p for p in glob.glob(os.path.join(REC_DIR, "*qsorec_*.wav"))
-        if os.path.getsize(p) > WAV_HEADER_BYTES
+        if os.path.getsize(p) > WAV_HEADER_BYTES and (now - os.path.getmtime(p)) < 10
     ]
     if not candidates:
         return None

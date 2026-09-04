@@ -72,8 +72,14 @@ function listQsoRecordings(): array
         if (preg_match('/^\.?qsorec_.*\.wav$/', $name)) {
             // A dot-prefixed placeholder with 0 bytes means "waiting for a
             // transmission to actually start" -- not useful to show as
-            // "recording" until it has content.
-            if (filesize($path) > 44) {
+            // "recording" until it has content. A .wav with an old mtime
+            // is a leftover, not something still being written -- SvxLink
+            // writes to an active recording continuously, so anything
+            // untouched for more than a few seconds has either finished
+            // and is stuck (ENCODER_CMD failed -- this exact bug bit us
+            // once already, see install-rx-monitor.sh) or is otherwise
+            // orphaned. Never show a stale file as "recording now".
+            if (filesize($path) > 44 && (time() - filemtime($path)) < 10) {
                 $inProgress = ['file' => $name, 'mtime' => filemtime($path), 'size' => filesize($path)];
             }
         } elseif (preg_match('/^qsorec_.*\.ogg$/', $name)) {
