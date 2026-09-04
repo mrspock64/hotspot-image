@@ -46,6 +46,7 @@ echo mxNavLink('/tg.php', 'Talk Groups', $mxCurrent);
 echo mxNavLink('/buttons/', 'Buttons', $mxCurrent);
 echo mxNavLink('/qsolog/', 'QSO Log', $mxCurrent);
 echo mxNavLink('/power/', 'Power', $mxCurrent);
+echo mxNavLink('/help/', 'Help', $mxCurrent);
 ?>
 <details class="mx-dropdown<?php echo $mxAdminOpen ? ' mx-active' : ''; ?>">
   <summary>Admin</summary>
