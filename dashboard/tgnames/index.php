@@ -60,13 +60,17 @@ if (isset($_POST['btnImport'])) {
     $added = 0;
     foreach (loadMonitoredTgNumbers() as $tg) {
         if (!array_key_exists($tg, $tgdb)) {
-            $tgdb[$tg] = '';
+            // Default the name to the TG number itself -- a real label
+            // beats a blank one as a starting point, and it means Save
+            // works right away without the "every talkgroup needs a name"
+            // validation forcing a detour through every row first.
+            $tgdb[$tg] = $tg;
             $added++;
         }
     }
     uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
     $message = $added > 0
-        ? "Added $added talkgroup(s) from Setup's Monitored talkgroups list — fill in names below and Save."
+        ? "Added $added talkgroup(s) from Setup's Monitored talkgroups list, named after their numbers for now — edit the names below and Save."
         : "Nothing to add — every monitored talkgroup is already listed below.";
 } elseif (isset($_POST['btnSave']) && !$error) {
     // reflect what was actually saved, not a stale disk read
