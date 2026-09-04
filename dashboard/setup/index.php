@@ -15,7 +15,9 @@ fieldset.form {
   border:#3083b8 2px groove;
   box-shadow:5px 5px 20px #999;
   background-color:#f1f1f1;
-  width:560px;
+  max-width:560px;
+  width:95%;
+  box-sizing:border-box;
   margin:15px auto;
   padding: 12px 20px 20px 20px;
   border-radius: 10px;
@@ -26,10 +28,10 @@ h1 {
   font-weight:bold;
   text-shadow: 0.25px 0.25px gray;
 }
-label { display:inline-block; width: 220px; font-weight:bold; }
-input[type=text], input[type=email], input[type=number] { width: 260px; padding:3px; }
-.row { margin-bottom: 8px; }
-.hint { color:#777; font-size: 11px; margin: -4px 0 8px 220px; }
+label { display:block; font-weight:bold; margin-bottom:2px; }
+input[type=text], input[type=email], input[type=number] { width: 100%; max-width:320px; padding:5px; box-sizing:border-box; }
+.row { margin-bottom: 10px; }
+.hint { color:#777; font-size: 11px; margin: -6px 0 10px 0; }
 .msg-ok { background:#d7f5da; border:1px solid #4aa361; padding:8px; border-radius:6px; margin-bottom:10px; }
 .msg-err { background:#f7d7d7; border:1px solid #c33; padding:8px; border-radius:6px; margin-bottom:10px; }
 .section-title { font-weight:bold; color:#00aee8; margin: 16px 0 6px 0; border-bottom: 1px solid #ccc; }

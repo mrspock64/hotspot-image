@@ -23,7 +23,7 @@
  */
 function iniSyncUpdateSection(string $filePath, string $section, array $keyValues): void
 {
-    $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+    $lines = @file($filePath, FILE_IGNORE_NEW_LINES);
     if ($lines === false) {
         throw new RuntimeException("Could not read $filePath");
     }

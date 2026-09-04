@@ -26,6 +26,10 @@ function format_time($seconds) {
 }
 
 function format_uptime($seconds) {
+    // $seconds comes from shell_exec('cat /proc/uptime') — defend against an
+    // empty/non-numeric result (command failed, unavailable, etc.) rather
+    // than letting a PHP 8 TypeError on '' % 60 take down the whole page.
+    $seconds = is_numeric($seconds) ? (int)$seconds : 0;
     $secs = intval($seconds % 60);
     $mins = intval($seconds / 60 % 60);
     $hours = intval($seconds / 3600 % 24);
