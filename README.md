@@ -1,6 +1,20 @@
 # hotspot-image
 
+**Stock SvxLink + a rebuilt dashboard for RF.Guru Analog-HotSPOT-SVXLink nodes.**
+
 An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink) node: stock SvxLink instead of RF.Guru's own buggy `Logic.tcl` (root cause of a cluster of bugs — see [issue #2](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink/issues/2) upstream), plus a rebuilt, secured, modernized dashboard fork.
+
+<!-- Drop a screenshot of the Dashboard page here, e.g.: ![Dashboard](docs/dashboard.png) -->
+
+## Highlights
+
+- **Fixes the root cause** of a cluster of SvxLink bugs (crashes, missing periodic ID, silent DTMF commands) inherited from RF.Guru's own `Logic.tcl` — traced to a missing `locale.tcl` sourcing step, not the individual symptoms
+- **A real security pass**: fixed command-injection bugs across WiFi/Network/EchoLink/Buttons, removed several unauthenticated/orphaned pages including a root-level remote code execution vulnerability in the stock dashboard
+- **RX Monitor** — listen live, in the browser, to whatever the node is currently receiving or relaying (local RX *and* reflector traffic), backed by SvxLink's own QSO Recorder rather than a raw ALSA hack
+- **QSO Log** — every transmission recorded automatically, browsable/playable/downloadable, with on/off and disk-limit controls in the dashboard itself
+- **Editable Buttons and Talk Group names** — no more SSH + text editor to relabel the quick-DTMF buttons or the Talk Groups table
+- **One-click Backup/Restore** — reflector certificate, node config, buttons, and TG names bundled into a single downloadable zip
+- **A modernized dashboard UI** on top of all of the above, without touching the underlying page logic more than the security/correctness fixes required
 
 ## What this is — and isn't
 
@@ -15,7 +29,7 @@ To provision a **new** node: boot RF.Guru's own stock image first (following the
 
 A true blank-Pi installer (generating `svxlink.conf`/`asound.conf`/`node_info.json` from a template, automating the CSR half of certificate signing) is future work, not something this does today.
 
-This exact path is what [svxlinkuhf](https://github.com/mrspock64/hotspot-image) (the project's test node) went through — verified live on real hardware, not just reviewed.
+This exact path is what **svxlinkuhf** (the project's test node) went through — verified live on real hardware, not just reviewed.
 
 ## Running it
 
@@ -48,3 +62,7 @@ After it finishes:
 - `lib/` — the individual steps `setup.sh` runs, plus `lib/rx-monitor/` (the RX Monitor/QSO Log backend: a vendored [DVSwitch Web_Proxy](https://github.com/DVSwitch/DVSwitch-Dashboard), a Python watcher over SvxLink's QSO Recorder output, and the systemd units for both)
 - `events.d/Logic.tcl` — our replacement for RF.Guru's `Logic.tcl`: correct `locale.tcl` sourcing (the actual root cause fix) plus a clean `D911#` IP-readout implementation
 - `dashboard/` — the dashboard fork itself (forked from [Guru-RF/SVXLink-Dash-V2](https://github.com/Guru-RF/SVXLink-Dash-V2))
+
+## Credits
+
+SA0LEK, Claude — plus the dashboard's original lineage: ON3URE, G4NAB, SP2ONG, SP0DZ.
