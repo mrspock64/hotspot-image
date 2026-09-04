@@ -28,6 +28,9 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
         throw new RuntimeException("Could not read $filePath");
     }
 
+    // This edits a live radio's config -- always leave a way back.
+    @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
+
     $sectionHeader = "[$section]";
     $sectionStart = null;
     $sectionEnd = null;
@@ -136,6 +139,10 @@ function writeNodeInfoJson(
     $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     if ($json === false) {
         throw new RuntimeException('Failed to encode node_info.json: ' . json_last_error_msg());
+    }
+
+    if (is_readable($filePath)) {
+        @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
     }
     file_put_contents($filePath, $json . "\n");
 }
