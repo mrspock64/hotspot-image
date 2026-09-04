@@ -2,67 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link href="/css/css.php" type="text/css" rel="stylesheet" />
-<style type="text/css">
-body {
-  background-color: #eee;
-  font-size: 18px;
-  font-family: Arial;
-  font-weight: 300;
-  margin: 2em auto;
-  max-width: 40em;
-  line-height: 1.5;
-  color: #444;
-  padding: 0 0.5em;
-}
-h1, h2, h3 {
-  line-height: 1.2;
-}
-a {
-  color: #607d8b;
-}
-.highlighter-rouge {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: .2em;
-  font-size: .8em;
-  overflow-x: auto;
-  padding: .2em .4em;
-}
-pre {
-  margin: 0;
-  padding: .6em;
-  overflow-x: auto;
-}
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+  </head>
+<body style="background: var(--mx-bg); margin: 0;">
 
-#player {
-    position:relative;
-    width:205px;
-    overflow: hidden;
-    direction: ltl;
-}
-
-textarea {
-    background-color: #111;
-    border: 1px solid #000;
-    color: #ffffff;
-    padding: 1px;
-    font-family: courier new;
-    font-size:10px;
-}
-
-
-
-
-</style>
-</head>
-<body style="background-color: #e1e1e1;font: 11pt arial, sans-serif;">
-<center>
-<fieldset style="border:#3083b8 2px groove;box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:555px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-<div style="padding:0px;width:550px;background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);border-radius: 10px;-moz-border-radius:10px;-webkit-border-radius:10px;border: 1px solid LightGrey;margin-left:0px; margin-right:0px;margin-top:4px;margin-bottom:0px;line-height:1.6;white-space:normal;">
-<center>
-<h1 id="echolink" style="color:#00aee8;font: 18pt arial, sans-serif;font-weight:bold; text-shadow: 0.25px 0.25px gray;">EchoLink Configurator</h1>
-
+<div class="mx-card" style="max-width: 600px; box-shadow: none; border: none;">
+  <h1 style="text-align:center;">EchoLink Configurator</h1>
 
 <?php
 include_once('include/functions.php');
@@ -117,38 +62,9 @@ if (isset($_POST['btnSave'])) {
 
   //Service SVXlink restart
   exec('sudo service svxlink restart 2>&1', $screen, $retval);
-
-
-
-  //debug
-//      echo '<pre>';
-  //     print_r($ini);
-  //     echo '</pre>';
-//end of debug
-
 }
 
-
-//if (fopen($svxConfigFile,'r'))
-//      {
-
-//        $elconfig = parse_ini_file($svxConfigFile,true,INI_SCANNER_RAW);
-//};
-
-//$svxConfigFile = '/etc/svxlink/svxlink.conf';
-//$svxConfigFile = '/var/www/html/svxlink.conf';    
-
-
-
-
-
-
-//if (fopen($elConfigFile,'r'))
-  //    { 
-
-//	$elconfig = parse_ini_file($elConfigFile,true,INI_SCANNER_RAW);
-        
-	      $inElDefaultLang = $elconfig['ModuleEchoLink']['DEFAULT_LANG'];
+      $inElDefaultLang = $elconfig['ModuleEchoLink']['DEFAULT_LANG'];
         $inElCallsign = $elconfig['ModuleEchoLink']['CALLSIGN'];
         $inElPassword = $elconfig['ModuleEchoLink']['PASSWORD'];
         $inElSysOpName = $elconfig['ModuleEchoLink']['SYSOPNAME'];
@@ -159,105 +75,34 @@ if (isset($_POST['btnSave'])) {
         $inElProxyPassword = $elconfig['ModuleEchoLink']['PROXY_PASSWORD'];
         $inElMuteLogicLinking = $elconfig['ModuleEchoLink']['MUTE_LOGIC_LINKING'];
 
-//}
-//    else { $callsign="NOCALL";}
-
-
-
-//if ($_SERVER["REQUEST_METHOD"] == "POST") {
-//  if (empty($_POST["ssid"])) {
-//     echo "Name is required";
-//  } else {
-//    $ssid = $_POST["ssid"]);
-//  }
-//}}
-
-
-// load the connlist
-$retval = null;
-$conns = null;
-// find the gateway
-//tbc - load the data from ini RF.
-
 ?>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
 
+  <div class="mx-row"><label>Default Language</label>
+    <input type="text" name="inElDefaultLang" value="<?php echo htmlspecialchars((string)$inElDefaultLang);?>"></div>
+  <div class="mx-row"><label>Callsign</label>
+    <input type="text" name="inElCallsign" value="<?php echo htmlspecialchars((string)$inElCallsign);?>"></div>
+  <div class="mx-row"><label>Password</label>
+    <input type="text" name="inElPassword" value="<?php echo htmlspecialchars((string)$inElPassword);?>"></div>
+  <div class="mx-row"><label>SysOp Name</label>
+    <input type="text" name="inElSysOpName" value="<?php echo htmlspecialchars((string)$inElSysOpName);?>"></div>
+  <div class="mx-row"><label>Location</label>
+    <input type="text" name="inElLocation" value="<?php echo htmlspecialchars((string)$inElLocation);?>"></div>
+  <div class="mx-row"><label>Servers</label>
+    <input type="text" name="inElServers" value="<?php echo htmlspecialchars((string)$inElServers);?>"></div>
+  <div class="mx-row"><label>Proxy Server</label>
+    <input type="text" name="inElProxyServer" value="<?php echo htmlspecialchars((string)$inElProxyServer);?>"></div>
+  <div class="mx-row"><label>Proxy Port</label>
+    <input type="text" name="inElProxyPort" value="<?php echo htmlspecialchars((string)$inElProxyPort);?>"></div>
+  <div class="mx-row"><label>Proxy Password</label>
+    <input type="text" name="inElProxyPassword" value="<?php echo htmlspecialchars((string)$inElProxyPassword);?>"></div>
+  <div class="mx-row"><label>Mute Logic Linking</label>
+    <input type="text" name="inElMuteLogicLinking" value="<?php echo htmlspecialchars((string)$inElMuteLogicLinking);?>"></div>
 
-<table>
-        <tr>
-        <th width = "380px">Echolink Input</th>
-        <th width = "100px">Action</th>
-        </tr>
-<tr>
-<TD>
-        <Table style="border-collapse: collapse; border: none;">
-        <tr style="border: none;">
-                <th width = "30%"></th>
-                <th width = "70%"></th>
-        </tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Default Language</td>
-        <td style="border: none;"><input type="text" name="inElDefaultLang" style="width:98%" value="<?php echo $inElDefaultLang;?>"></td>
-        </tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Callsign</td>
-        <td style="border: none;"><input type="text" name="inElCallsign" style="width:98%" value="<?php echo $inElCallsign;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Password</td>
-        <td style="border: none;"><input type="text" name="inElPassword" style="width:98%" value="<?php echo $inElPassword;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">SysOp Name</td>
-        <td style="border: none;"><input type="text" name="inElSysOpName" style="width:98%" value="<?php echo $inElSysOpName;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Location</td>
-        <td style="border: none;"><input type="text" name="inElLocation" style="width:98%" value="<?php echo $inElLocation;?>">
-        </td></tr>
-        <!--<tr style="border: none;"> 
-        <td style="border: none;">Description</td>
-        <td style="border: none;"><input type="text" name="inElDescription" style="width:98%" value="<?php echo $inElDescription;?>">
-        </td></tr>-->
-        <tr style="border: none;"> 
-        <td style="border: none;">Servers</td>
-        <td style="border: none;"><input type="text" name="inElServers" style="width:98%" value="<?php echo $inElServers;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Proxy Server</td>
-        <td style="border: none;"><input type="text" name="inElProxyServer" style="width:98%" value="<?php echo $inElProxyServer;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Proxy Port</td>
-        <td style="border: none;"><input type="text" name="inElProxyPort" style="width:98%" value="<?php echo $inElProxyPort;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Proxy Password</td>
-        <td style="border: none;"><input type="text" name="inElProxyPassword" style="width:98%" value="<?php echo $inElProxyPassword;?>">
-        </td></tr>
-        <tr style="border: none;"> 
-        <td style="border: none;">Mute Logic Linking</td>
-        <td style="border: none;"><input type="text" name="inElMuteLogicLinking" style="width:98%" value="<?php echo $inElMuteLogicLinking;?>">
-        </td></tr>
-        </Table>
-
-
-</TD>
-<td>
-        <button name="btnSave" type="submit" class="red" style="height:100px; width:105px; font-size:12px;">Save <BR><Br> & <BR><BR> ReLoad</button>
-</td>
-
-</tr>
-</table>
-
-
-
-
+  <p><button name="btnSave" type="submit" class="mx-btn">Save & Reload</button></p>
 </form>
 
-<p style="margin: 0 auto;"></p>
-<p style="margin-bottom:-2px;"></p>
-
+</div>
 </body>
 </html>

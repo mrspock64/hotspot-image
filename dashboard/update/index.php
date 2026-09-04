@@ -2,67 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link href="/css/css.php" type="text/css" rel="stylesheet" />
-<style type="text/css">
-body {
-  background-color: #eee;
-  font-size: 18px;
-  font-family: Arial;
-  font-weight: 300;
-  margin: 2em auto;
-  max-width: 40em;
-  line-height: 1.5;
-  color: #444;
-  padding: 0 0.5em;
-}
-h1, h2, h3 {
-  line-height: 1.2;
-}
-a {
-  color: #607d8b;
-}
-.highlighter-rouge {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: .2em;
-  font-size: .8em;
-  overflow-x: auto;
-  padding: .2em .4em;
-}
-pre {
-  margin: 0;
-  padding: .6em;
-  overflow-x: auto;
-}
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+  </head>
+<body style="background: var(--mx-bg); margin: 0;">
 
-#player {
-    position:relative;
-    width:205px;
-    overflow: hidden;
-    direction: ltl;
-}
-
-textarea {
-    background-color: #111;
-    border: 1px solid #000;
-    color: #ffffff;
-    padding: 1px;
-    font-family: courier new;
-    font-size:10px;
-}
-
-
-
-
-</style>
-</head>
-<body style="background-color: #e1e1e1;font: 11pt arial, sans-serif;">
-<center>
-<fieldset style="border:#3083b8 2px groove;box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:555px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-<div style="padding:0px;width:550px;background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);border-radius: 10px;-moz-border-radius:10px;-webkit-border-radius:10px;border: 1px solid LightGrey;margin-left:0px; margin-right:0px;margin-top:4px;margin-bottom:0px;line-height:1.6;white-space:normal;">
-<center>
-<h1 id="web-audio-peak-meters" style="color:#00aee8;font: 18pt arial, sans-serif;font-weight:bold; text-shadow: 0.25px 0.25px gray;">Updater</h1>
-
+<div class="mx-card" style="max-width: 600px; box-shadow: none; border: none;">
+  <h1 style="text-align:center;">Updater</h1>
 
 <?php
 // The check.*.sh/update.*.sh scripts below are invoked by bare filename
@@ -312,56 +257,27 @@ if (isset($_POST['btnUpdateSvxlink']))
 
 ?>
 
-<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"> 
-<DIV style="height:340px">
-<table>
-	<tr>
-	<th>Screen</th> 
-	</tr>
-<tr>
-<Td>
-	<textarea name="scan" rows="15" cols="80"><?php 
+<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+
+  <textarea name="scan" rows="14" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
 			echo implode("\n",$screen); ?></textarea>
 
-</td>
-</tr>  
-</table> 
-<table>
-        <tr>
-        <th>Check versions</th>
-        </tr>
-<tr>
-<Td>
-        <button name="btnChkOs" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">OS</button>
-        <button name="btnChkSounds" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">Sounds</button>
-	<button name="btnChkConfig" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">Config</button>
-	<button name="btnChkSvxlink" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">SVXLink</button>
-	<button name="btnChkDashboard" type="submit" class="red" style="height:30px; width:90px; font-size:12px;">Dashboard</button>
+  <div class="mx-section">Check versions</div>
+  <button name="btnChkOs" type="submit" class="mx-btn mx-btn-ghost">OS</button>
+  <button name="btnChkSounds" type="submit" class="mx-btn mx-btn-ghost">Sounds</button>
+  <button name="btnChkConfig" type="submit" class="mx-btn mx-btn-ghost">Config</button>
+  <button name="btnChkSvxlink" type="submit" class="mx-btn mx-btn-ghost">SVXLink</button>
+  <button name="btnChkDashboard" type="submit" class="mx-btn mx-btn-ghost">Dashboard</button>
 
-</td>
-</tr>
-</table>
-<table>
-        <tr>
-        <th>Upgrade</th>
-        </tr>
-<tr>
-<Td>
-        
-	<button name="btnUpdateOs" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">OS</button>
-        <button name="btnUpdateSounds" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">Sounds</button>
-        <button name="btnUpdateConfig" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">Config</button>
-        <button name="btnUpdateSvxlink" type="submit" class="red" style="height:30px; width:80px; font-size:12px;">SVXLink</button>
-	<button name="btnUpdateDashboard" type="submit" class="red" style="height:30px; width:90px; font-size:12px;">Dashboard</button>
-</td>
-</tr>
-</table>
+  <div class="mx-section">Upgrade</div>
+  <button name="btnUpdateOs" type="submit" class="mx-btn">OS</button>
+  <button name="btnUpdateSounds" type="submit" class="mx-btn">Sounds</button>
+  <button name="btnUpdateConfig" type="submit" class="mx-btn">Config</button>
+  <button name="btnUpdateSvxlink" type="submit" class="mx-btn">SVXLink</button>
+  <button name="btnUpdateDashboard" type="submit" class="mx-btn">Dashboard</button>
 
-</DIV>
 </form>
 
-<p style="margin: 0 auto;"></p>
-<p style="margin-bottom:-2px;"></p>
-
+</div>
 </body>
 </html>

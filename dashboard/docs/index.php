@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <title>svxlink.conf Reference</title>
     <link href="/css/css.php" type="text/css" rel="stylesheet" />
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <style type="text/css">
-body { background-color: #eee; font-size: 15px; font-family: Arial; color: #444; }
-.wrap { max-width: 900px; width: 95%; box-sizing: border-box; margin: 15px auto; }
-h1 { color:#00aee8; font: 18pt arial, sans-serif; font-weight:bold; text-shadow: 0.25px 0.25px gray; }
-.hint { color:#777; font-size: 12px; margin-bottom: 10px; }
-#searchBox { width: 100%; max-width: 400px; padding: 6px; box-sizing: border-box; margin-bottom: 8px; }
-#matchCount { color: #777; font-size: 12px; }
+#searchBox { width: 100%; max-width: 400px; padding: 7px 10px; box-sizing: border-box; margin-bottom: 8px; border: 1px solid var(--mx-border); border-radius: 6px; font-size: 13px; }
+#matchCount { color: var(--mx-text-dim); font-size: 12px; }
 pre {
-  background: #fff; border: 1px solid #ccc; border-radius: 6px;
+  background: var(--mx-bg); border: 1px solid var(--mx-border); border-radius: 6px;
   padding: 16px; overflow-x: auto; white-space: pre; font-size: 13px;
   line-height: 1.4;
 }
@@ -21,9 +18,10 @@ mark.current { background: #ff9a3d; }
 .msg-err { background:#f7d7d7; border:1px solid #c33; padding:8px; border-radius:6px; margin-bottom:10px; }
 </style>
   </head>
-  <body>
-<div class="wrap">
-<center><h1>svxlink.conf Reference</h1></center>
+  <body style="background: var(--mx-bg);">
+<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
+<div class="mx-card" style="max-width: 900px;">
+  <h1>svxlink.conf Reference</h1>
 
 <?php
 // This renders the actual `man svxlink.conf` page installed alongside
