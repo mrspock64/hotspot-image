@@ -137,7 +137,7 @@ include_once __DIR__."/include/buttons.php"; }
     echo '</div>'."\n";
     echo '</div>'."\n";
 ?>
-<center><span title="Dashboard" style="font: 7pt arial, sans-serif;">SvxLink Dashboard  ON3URE, G4NAB, SP2ONG, SP0DZ <?php $cdate=date("Y"); if ($cdate > "2021") {$cdate="2021-".date("Y");} echo $cdate; ?>
+<center><span title="Dashboard" style="font: 7pt arial, sans-serif;">SvxLink Dashboard  ON3URE, G4NAB, SP2ONG, SP0DZ, SA0LEK, Claude <?php $cdate=date("Y"); if ($cdate > "2021") {$cdate="2021-".date("Y");} echo $cdate; ?>
 </div>
 </fieldset>
 <br>
