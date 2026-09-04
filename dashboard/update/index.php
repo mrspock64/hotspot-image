@@ -64,7 +64,16 @@ textarea {
 <h1 id="web-audio-peak-meters" style="color:#00aee8;font: 18pt arial, sans-serif;font-weight:bold; text-shadow: 0.25px 0.25px gray;">Updater</h1>
 
 
-<?php 
+<?php
+// The check.*.sh/update.*.sh scripts below are invoked by bare filename
+// (e.g. "sh check.os.sh"), and their output was written to a hardcoded
+// /var/www/html/update/screen.log -- both assume PHP's cwd is this exact
+// directory, which isn't guaranteed (e.g. testing this dashboard from
+// anywhere other than /var/www/html, as we did during development).
+// Fixed the cwd explicitly instead and switched every reference below to
+// a plain relative "screen.log" / "check.os.sh" etc.
+chdir(__DIR__);
+
 ini_set("allow_url_fopen", 1);
 session_start();
 $isSimplex = false;
@@ -109,7 +118,7 @@ $screen[4] = "";
 
 if ($_SESSION['refresh']){
 	$screen =null;
-	$command = "tail -n 500 /var/www/html/update/screen.log |tac 2>&1";
+	$command = "tail -n 500 screen.log |tac 2>&1";
         exec($command,$screen,$retval);
 
 	$str = $screen[0];
@@ -131,12 +140,12 @@ if (isset($_POST['btnChkOs']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.os.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh check.os.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 	
 	$_SESSION['refresh']=True; header("Refresh: 3");
 	//sleep(1);
-	//$command = "tail -n 500 /var/www/html/update/screen.log |tac 2>&1";
+	//$command = "tail -n 500 screen.log |tac 2>&1";
         //exec($command,$screen,$retval);       
 
 	
@@ -152,7 +161,7 @@ if (isset($_POST['btnUpdateOs']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.os.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh update.os.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
 	$_SESSION['refresh']=True; header("Refresh: 3");
@@ -171,12 +180,12 @@ if (isset($_POST['btnChkSounds']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.sounds.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh check.sounds.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
         $_SESSION['refresh']=True; header("Refresh: 3");
         //sleep(1);
-        //$command = "tail -n 500 /var/www/html/update/screen.log |tac 2>&1";
+        //$command = "tail -n 500 screen.log |tac 2>&1";
         //exec($command,$screen,$retval);
 
 
@@ -191,7 +200,7 @@ if (isset($_POST['btnUpdateSounds']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.sounds.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh update.sounds.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
         $_SESSION['refresh']=True; header("Refresh: 3");
@@ -209,12 +218,12 @@ if (isset($_POST['btnChkConfig']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.config.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh check.config.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
         $_SESSION['refresh']=True; header("Refresh: 3");
         //sleep(1);
-        //$command = "tail -n 500 /var/www/html/update/screen.log |tac 2>&1";
+        //$command = "tail -n 500 screen.log |tac 2>&1";
         //exec($command,$screen,$retval);
 
 
@@ -229,7 +238,7 @@ if (isset($_POST['btnUpdateConfig']))
         //$sAconn = $_POST['sAconn'];
         //$password = $_POST['password'];
         //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.config.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh update.config.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
         $_SESSION['refresh']=True; header("Refresh: 3");
@@ -245,7 +254,7 @@ if (isset($_POST['btnChkDashboard']))
         $retval = null;
         $screen = null;
         
-	$command = "sudo nice -n 19 sh check.dashboard.sh > /var/www/html/update/screen.log 2>&1 &";
+	$command = "sudo nice -n 19 sh check.dashboard.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
         
 	$_SESSION['refresh']=True; header("Refresh: 3");
@@ -258,16 +267,16 @@ if (isset($_POST['btnUpdateDashboard']))
         $retval = null;
         $screen = null;
         
-	$command = "sudo cp /var/www/html/update/update.dashboard.sh /opt";
+	$command = "sudo cp update.dashboard.sh /opt";
 	exec($command,$screen,$retval);
-	$command = "sudo nice -n 19 sh /opt/update.dashboard.sh > /var/www/html/update/screen.log 2>&1 &";
+	$command = "sudo nice -n 19 sh /opt/update.dashboard.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
         //exec('nmcli dev wifi rescan');
-        //$command3 = "sudo wget ".$tgUri." >> /var/www/html/update/screen.log 2>&1";
+        //$command3 = "sudo wget ".$tgUri." >> screen.log 2>&1";
         //exec($command3,$screen,$retval);
 	//if ($retval) {
 	//echo "*";
-	//$command4 = "sudo mv /var/www/html/tgdb.txt /var/www/html/include/tgdb.php >> /var/www/html/update/screen.log 2>&1";
+	//$command4 = "sudo mv /var/www/html/tgdb.txt /var/www/html/include/tgdb.php >> screen.log 2>&1";
         //exec($command4,$screen,$retval);
 	//}
         //$_SESSION['refresh']=True; header("Refresh: 3");
@@ -280,7 +289,7 @@ if (isset($_POST['btnChkSvxlink']))
 
         $retval = null;
         $screen = null;
-        $command = "sudo nice -n 19 sh check.svxlink.sh > /var/www/html/update/screen.log 2>&1 &"; 
+        $command = "sudo nice -n 19 sh check.svxlink.sh > screen.log 2>&1 &"; 
         exec($command,$screen,$retval);
         $_SESSION['refresh']=True; header("Refresh: 3");
 }
@@ -294,7 +303,7 @@ if (isset($_POST['btnUpdateSvxlink']))
 
         $retval = null;
         $screen = null;
-        $command = "sudo nice -n 19 sh update.svxlink.sh > /var/www/html/update/screen.log 2>&1 &";
+        $command = "sudo nice -n 19 sh update.svxlink.sh > screen.log 2>&1 &";
         exec($command,$screen,$retval);
 
         $_SESSION['refresh']=True; header("Refresh: 3");

@@ -95,11 +95,15 @@ if (isset($_POST['btnLog']))
 
         $retval = null;
         $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-       $command = "tail -l /var/log/svxlink.log";
-       exec($command,$screen,$retval);
+        // Was "tail -l /var/log/svxlink.log" -- -l isn't a real tail flag
+        // and the log file has no .log suffix (it's /var/log/svxlink; see
+        // include/system.php's SVXLOGPATH/SVXLOGPREFIX constants, not
+        // pulled in here to avoid pulling in that file's own output).
+        // Both errors went to stderr, which exec() doesn't capture, so
+        // this silently produced an empty $screen instead of a visible
+        // error -- hence "nothing shows up" when clicking the button.
+        $command = "tail -n 200 " . escapeshellarg("/var/log/svxlink") . " 2>&1";
+        exec($command,$screen,$retval);
 }
 
 ?>
