@@ -29,28 +29,33 @@ function qsoRecorderDir(): string
     return $conf['QsoRecorder']['REC_DIR'] ?? QSO_RECORDER_DEFAULT_DIR;
 }
 
-/** @return array{active: bool, max_dirsize: int} */
+/** @return array{active: bool, max_dirsize: int, qso_timeout: int} */
 function getQsoRecorderSettings(): array
 {
     $conf = @parse_ini_file(QSO_RECORDER_SVX_CONF, true, INI_SCANNER_RAW) ?: [];
     return [
         'active'      => ($conf['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1',
         'max_dirsize' => (int)($conf['QsoRecorder']['MAX_DIRSIZE'] ?? 2000),
+        'qso_timeout' => (int)($conf['QsoRecorder']['QSO_TIMEOUT'] ?? 5),
     ];
 }
 
 /**
- * Persists the setting (so it survives a reboot/restart) and, for the
- * on/off switch, also applies it immediately via SvxLink's own DTMF
- * control for the recorder -- QSO_RECORDER=8:QsoRecorder in
- * [SimplexLogic] means "81#" turns it on and "80#" off right now, without
- * needing a service restart the way a plain config edit would.
+ * Persists all three settings (so they survive a reboot/restart) and, for
+ * the on/off switch specifically, also applies it immediately via
+ * SvxLink's own DTMF control for the recorder -- QSO_RECORDER=8:QsoRecorder
+ * in [SimplexLogic] means "81#" turns it on and "80#" off right now,
+ * without needing a service restart. QSO_TIMEOUT has no such live control
+ * (svxlink.conf(5) documents no DTMF command for it) -- it's only read at
+ * startup, so a change here needs a restart (Power page) to take effect,
+ * same as most Setup page fields.
  */
-function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb): void
+function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb, int $qsoTimeoutSec): void
 {
     iniSyncUpdateSection(QSO_RECORDER_SVX_CONF, 'QsoRecorder', [
         'DEFAULT_ACTIVE' => $active ? '1' : '0',
         'MAX_DIRSIZE'    => (string)$maxDirsizeMb,
+        'QSO_TIMEOUT'    => (string)$qsoTimeoutSec,
     ]);
     shell_exec('/usr/sbin/hotspot_dtmf ' . escapeshellarg(QSO_RECORDER_DTMF_CMD . ($active ? '1' : '0') . '#'));
 }

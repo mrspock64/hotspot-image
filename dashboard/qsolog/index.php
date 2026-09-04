@@ -16,12 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $active = isset($_POST['active']);
     $maxDirsize = trim($_POST['max_dirsize'] ?? '');
+    $qsoTimeout = trim($_POST['qso_timeout'] ?? '');
     if (!ctype_digit($maxDirsize) || (int)$maxDirsize < 100) {
         $error = 'Disk limit must be a number of megabytes, at least 100.';
+    } elseif (!ctype_digit($qsoTimeout) || (int)$qsoTimeout < 1) {
+        $error = 'QSO gap must be a number of seconds, at least 1.';
     } else {
         try {
-            saveQsoRecorderSettings($active, (int)$maxDirsize);
-            $message = 'Settings saved.';
+            saveQsoRecorderSettings($active, (int)$maxDirsize, (int)$qsoTimeout);
+            $message = 'Settings saved. On/off applied immediately -- the disk limit and QSO gap need a SvxLink restart (Power page) to take effect.';
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }
@@ -81,8 +84,13 @@ function formatBytes(int $bytes): string
       <label for="max_dirsize" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Disk limit (MB)</label>
       <input type="text" id="max_dirsize" name="max_dirsize" value="<?php echo htmlspecialchars((string)$settings['max_dirsize']); ?>" style="width:100px; margin:0;">
     </div>
+    <div>
+      <label for="qso_timeout" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">New file after (sec of silence)</label>
+      <input type="text" id="qso_timeout" name="qso_timeout" value="<?php echo htmlspecialchars((string)$settings['qso_timeout']); ?>" style="width:100px; margin:0;">
+    </div>
     <button type="submit" name="save_settings" class="mx-btn">Save</button>
   </form>
+  <p class="mx-hint" style="margin-top:-10px;">A gap of at least this long between transmissions starts a new recording -- shorter means one file per transmission, longer groups a whole back-and-forth exchange into one file.</p>
 
 <?php if ($recordings['inProgress']): ?>
   <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">
