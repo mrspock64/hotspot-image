@@ -13,8 +13,9 @@ if (!is_file($path)) {
     exit('Not found.');
 }
 
+$disposition = isset($_GET['dl']) ? 'attachment' : 'inline';
 header('Content-Type: audio/mpeg');
-header('Content-Disposition: inline; filename="' . $file . '"');
+header('Content-Disposition: ' . $disposition . '; filename="' . $file . '"');
 header('Content-Length: ' . filesize($path));
 header('Accept-Ranges: none');
 readfile($path);

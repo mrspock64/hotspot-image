@@ -110,14 +110,18 @@ function formatBytes(int $bytes): string
   <p style="color: var(--mx-text-dim); font-size: 13px;">No recordings yet.</p>
 <?php else: ?>
   <table class="mx-table">
-    <tr><th>When</th><th>Size</th><th></th><th></th></tr>
+    <tr><th>When</th><th>Size</th><th></th><th></th><th></th></tr>
 <?php foreach ($recordings['finished'] as $rec): ?>
     <tr>
       <td><?php echo htmlspecialchars(qsoRecordingLabel($rec['file'])); ?></td>
       <td><?php echo formatBytes($rec['size']); ?></td>
       <td>
         <button type="button" class="mx-btn mx-btn-ghost"
-          onclick="playRecording(<?php echo json_encode($rec['file']); ?>)">▶ Play</button>
+          onclick="playRecording(<?php echo htmlspecialchars(json_encode($rec['file']), ENT_QUOTES); ?>)">▶ Play</button>
+      </td>
+      <td>
+        <a class="mx-btn mx-btn-ghost" style="text-decoration:none; display:inline-block;"
+          href="play.php?file=<?php echo urlencode($rec['file']); ?>&amp;dl=1">⬇ Download</a>
       </td>
       <td>
         <form method="post" style="margin:0;" onsubmit="return confirm('Delete this recording? This cannot be undone.');">
