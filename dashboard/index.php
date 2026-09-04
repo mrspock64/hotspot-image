@@ -60,7 +60,9 @@ else { $callsign="NOCALL";
 </div>
 <?php
 if (isProcessRunning('node')) {
-echo '&nbsp;&nbsp;<button class="button link" onclick="playAudioToggle(8080, this)"><b>&nbsp;&nbsp;&nbsp;<img src=images/speaker.png alt="" style="vertical-align:middle">&nbsp;&nbsp;RX Monitor&nbsp;&nbsp;&nbsp;</b></button><br><br>';
+echo '<div style="max-width:900px;margin:0 auto;text-align:right;padding:2px 4px 0 0;">'
+   . '<button onclick="playAudioToggle(8080, this)" style="background:#2A6594;color:#fff;border:none;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">'
+   . '<img src="images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor</button></div>';
 }
 ?>
 <?php
