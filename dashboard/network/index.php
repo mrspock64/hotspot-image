@@ -2,70 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link href="/css/css.php" type="text/css" rel="stylesheet" />
-<style type="text/css">
-body {
-  background-color: #eee;
-  font-size: 18px;
-  font-family: Arial;
-  font-weight: 300;
-  margin: 2em auto;
-  max-width: 40em;
-  line-height: 1.5;
-  color: #444;
-  padding: 0 0.5em;
-}
-h1, h2, h3 {
-  line-height: 1.2;
-}
-a {
-  color: #607d8b;
-}
-.highlighter-rouge {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: .2em;
-  font-size: .8em;
-  overflow-x: auto;
-  padding: .2em .4em;
-}
-pre {
-  margin: 0;
-  padding: .6em;
-  overflow-x: auto;
-}
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+  </head>
+<body style="background: var(--mx-bg); margin: 0;">
 
-#player {
-    position:relative;
-    width:205px;
-    overflow: hidden;
-    direction: ltl;
-}
+<div class="mx-card" style="max-width: 640px; box-shadow: none; border: none;">
+  <h1 style="text-align:center;">Network Configurator</h1>
 
-textarea {
-    background-color: #111;
-    border: 1px solid #000;
-    color: #ffffff;
-    padding: 1px;
-    font-family: courier new;
-    font-size:10px;
-}
-
-
-
-
-</style>
-</head>
-<body style="background-color: #e1e1e1;font: 11pt arial, sans-serif;">
-<script src="web-audio-peak-meter.js"></script>
-<center>
-<fieldset style="border:#3083b8 2px groove;box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:555px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-<div style="padding:0px;width:550px;background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);border-radius: 10px;-moz-border-radius:10px;-webkit-border-radius:10px;border: 1px solid LightGrey;margin-left:0px; margin-right:0px;margin-top:4px;margin-bottom:0px;line-height:1.6;white-space:normal;">
-<center>
-<h1 id="web-audio-peak-meters" style="color:#00aee8;font: 18pt arial, sans-serif;font-weight:bold; text-shadow: 0.25px 0.25px gray;">Network Configurator</h1>
-
-
-<?php 
+<?php
 
 
 
@@ -123,7 +67,7 @@ if (isset($_POST['btnPingGw']))
 
 if (isset($_POST['btnPingGoogle']))
     {
-        
+
 	$retval = null;
 	$screen = null;
 	//exec('nmcli dev wifi rescan');
@@ -140,7 +84,7 @@ if (isset($_POST['btnPingRef']))
         $screen = null;
         //$ssid = $_POST['ssid'];
 	//exec('nmcli dev wifi rescan');
-        $command = 'nmap svxlink.pl -p 5295 2>&1'; 
+        $command = 'nmap svxlink.pl -p 5295 2>&1';
 	exec($command,$screen,$retval);
 }
 
@@ -155,7 +99,7 @@ if (isset($_POST['btnAuto']))
         //$password = $_POST['password'];
 	//exec('nmcli dev wifi rescan');
         //$command = "nmcli radio  2>&1";
-	
+
 	$command = "nmcli con mod " . escapeshellarg($sAconn) . " ipv4.method auto 2>&1";
         exec($command,$screen,$retval);
 	$command = "nmcli -p -f ipv4,general con show " . escapeshellarg($sAconn) . " 2>&1";
@@ -251,76 +195,50 @@ if (isset($_POST['btnDown']))
 
 ?>
 
-<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"> 
-<DIV style="height:150px">
-<table>
-	<tr>
-	<th>Screen</th> 
-	</tr>
-<tr>
-<Td>
-	<textarea name="scan" rows="10" cols="80"><?php 
+<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+
+  <textarea name="scan" rows="8" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
 			echo implode("\n",$screen); ?></textarea>
 
-</td>
-</tr>  
-</table> 
-</DIV>
-
-<table>
-        <tr>
-        <th width = "100px">Action</th>
-        <th width = "380px">Input</th>
-	<th width = "100px">Action</th>
-        </tr>
-<tr>
-<Td>
-	<button name="btnDetails" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Show Details</button>        
-	<BR>
-	<button name="btnPingGw" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Ping GW</button>
- 	<br>
-	<button name="btnPingGoogle" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Ping Google</button>
-	<br>
-        <button name="btnPingRef" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Ping Reflector</button>
-
-</tD><TD>
-	connection: 
-   <select name="sAconn">
-	
+  <div style="display:flex; gap:20px; margin-top:14px; flex-wrap:wrap;">
+    <div>
+	<button name="btnDetails" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">Show Details</button><br>
+	<button name="btnPingGw" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">Ping GW</button><br>
+	<button name="btnPingGoogle" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">Ping Google</button><br>
+        <button name="btnPingRef" type="submit" class="mx-btn" style="width:150px;">Ping Reflector</button>
+    </div>
+    <div style="flex:1; min-width:220px;">
+	<div class="mx-row" style="margin-bottom:8px;">
+	  <label style="font-weight:600; font-size:12.5px;">Connection</label>
+	  <select name="sAconn" style="padding:6px; border-radius:6px; border:1px solid var(--mx-border);">
 <?php
-  
 foreach ($conns as $conn){
-   echo "<option value=\"".$conn ."\">" .$conn."</option>";
-}; 
+   echo "<option value=\"".htmlspecialchars($conn) ."\">" .htmlspecialchars($conn)."</option>";
+};
 ?>
-
-  </select>
-	
-<br><br>	
-	IP: <input type="text" name="myIp" style="width: 150px;" value="<?php echo $myIp;?>">
-        /<input type="text" name="cidr" style="width: 50px;" value="<?php echo $cidr;?>">
-<BR>
-        GW: <input type="text" name="gw" style="width: 120px;" value="<?php echo $gw;?>">
-<BR> 
-       DNS: <input type="text" name="dns" style="width: 120px;" value="<?php echo $dns;?>">
-</td>
-<td> 
-	<button name="btnAuto" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Set Auto IP</button>
-	<BR>
-	<button name="btnUp" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">conn UP</button>
-	<BR>
-	<button name="btnDown" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">conn DOWN</button>
-	<BR>
-	<button name="btnStatic" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Set Static IP</button>
-
-</td>
-</tr>
-</table>
-
+	  </select>
+	</div>
+	<div class="mx-row" style="margin-bottom:8px;">
+	  <label style="font-weight:600; font-size:12.5px;">IP / CIDR</label>
+	  <input type="text" name="myIp" style="width:150px; display:inline-block;" value="<?php echo htmlspecialchars($myIp);?>">
+	  / <input type="text" name="cidr" style="width:60px; display:inline-block;" value="<?php echo htmlspecialchars($cidr);?>">
+	</div>
+	<div class="mx-row" style="margin-bottom:8px;">
+	  <label style="font-weight:600; font-size:12.5px;">Gateway</label>
+	  <input type="text" name="gw" value="<?php echo htmlspecialchars($gw);?>">
+	</div>
+	<div class="mx-row" style="margin-bottom:8px;">
+	  <label style="font-weight:600; font-size:12.5px;">DNS</label>
+	  <input type="text" name="dns" value="<?php echo htmlspecialchars($dns);?>">
+	</div>
+	<button name="btnAuto" type="submit" class="mx-btn" style="margin-bottom:6px;">Set Auto IP</button><br>
+	<button name="btnUp" type="submit" class="mx-btn mx-btn-ghost" style="margin-bottom:6px;">conn UP</button><br>
+	<button name="btnDown" type="submit" class="mx-btn mx-btn-ghost" style="margin-bottom:6px;">conn DOWN</button><br>
+	<button name="btnStatic" type="submit" class="mx-btn">Set Static IP</button>
+    </div>
+  </div>
 </form>
 
-<p style="margin: 0 auto;"></p>
-<p style="margin-bottom:-2px;"></p>
-
+</div>
 </body>
 </html>

@@ -1,68 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-        <meta charset="UTF-8">
-    <link href="/css/css.php" type="text/css" rel="stylesheet" />
-<style type="text/css">
-body {
-  background-color: #eee;
-  font-size: 18px;
-  font-family: Arial;
-  font-weight: 300;
-  margin: 2em auto;
-  max-width: 40em;
-  line-height: 1.5;
-  color: #444;
-  padding: 0 0.5em;
-}
-h1, h2, h3 {
-  line-height: 1.2;
-}
-a {
-  color: #607d8b;
-}
-.highlighter-rouge {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: .2em;
-  font-size: .8em;
-  overflow-x: auto;
-  padding: .2em .4em;
-}
-pre {
-  margin: 0;
-  padding: .6em;
-  overflow-x: auto;
-}
+    <meta charset="UTF-8">
+    <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+  </head>
+<body style="background: var(--mx-bg); margin: 0;">
 
-#player {
-    position:relative;
-    width:205px;
-    overflow: hidden;
-    direction: ltl;
-}
+<div class="mx-card" style="max-width: 600px; box-shadow: none; border: none;">
+  <h1 style="text-align:center;">WiFi Configurator</h1>
 
-textarea {
-    background-color: #111;
-    border: 1px solid #000;
-    color: #ffffff;
-    padding: 1px;
-    font-family: courier new;
-    font-size:10px;
-}
-
-
-
-
-</style>
-</head>
-<body style="background-color: #e1e1e1;font: 11pt arial, sans-serif;">
-<fieldset style="border:#3083b8 2px groove;box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:555px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-<div style="padding:0px;width:550px;background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);border-radius: 10px;-moz-border-radius:10px;-webkit-border-radius:10px;border: 1px solid LightGrey;margin-left:0px; margin-right:0px;margin-top:4px;margin-bottom:0px;line-height:1.6;white-space:normal;">
-<h1 id="web-audio-peak-meters" style="color:#00aee8;font: 18pt arial, sans-serif;font-weight:bold; text-shadow: 0.25px 0.25px gray;">WiFi Configurator</h1>
-
-
-<?php 
+<?php
 
 
 
@@ -104,7 +51,7 @@ if (isset($_POST['btnScan']))
 
 if (isset($_POST['btnConnList']))
     {
-        
+
 	$retval = null;
 	$screen = null;
 	//exec('nmcli dev wifi rescan');
@@ -177,57 +124,34 @@ if (isset($_POST['btnWifiOn']))
 
 
 ?>
- <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"> 
-<DIV style="height:150px">
-<table>
-	<tr>
-	<th>Screen</th> 
-	</tr>
-<tr>
-<Td>
-	 
-	<textarea name="scan" rows="10" cols="80"><?php 
+ <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+
+  <textarea name="scan" rows="8" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
 			echo implode("\n",$screen); ?></textarea>
- </td>
-</tr>  
-</table> 
-</DIV>
 
-<table>
-        <tr>
-        <th width = "110px">Action</th>
-        <th width = "380px">Input</th>
-	<th width = "110px">Action</th>
-        </tr>
-<tr>
-<Td>
-        <button name="btnScan" type="submit" class="red" style="height:30px;width:105px;font-size:12px;">Air Scan</button>
- 	<br>
-	<button name="btnConnList" type="submit" class="red" style="height:30px; width:105px;font-size:12px;">Conn List</button>
-	<BR>
-	<button name="btnWifiStatus" type="submit" class="red"  style="height:30px; width:105px; font-size:12px;">WiFi Status</button>
-</tD><TD>
-
-SSID (network name): <input type="text" name="ssid" value="<?php echo $ssid;?>">
-<BR>
-Password: <input type="password" name="password" value="<?php echo $password;?>">
-<BR>
-<button name="btnAdd" type="submit" class="red" style="height:30px;font-size:12px;">Add Network & Connect</button>
-</td>
-<td>
-        <button name="btnSwitch" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Switch to SSID</button>
-        <br>
-        <button name="btnDelete" type="submit" class="red" style="height:30px; width:105px; font-size:12px;">Delete SSID</button>
-	<br>
-	<button name="btnWifiOn" type="submit" class="red"  style="height:30px; width:105px; font-size:12px;">WiFi On</button>
-</td>
-</tr>
-</table>
-
+  <div style="display:flex; gap:20px; margin-top:14px; flex-wrap:wrap;">
+    <div>
+        <button name="btnScan" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">Air Scan</button><br>
+	<button name="btnConnList" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">Conn List</button><br>
+	<button name="btnWifiStatus" type="submit" class="mx-btn" style="width:150px; margin-bottom:6px;">WiFi Status</button><br>
+	<button name="btnWifiOn" type="submit" class="mx-btn" style="width:150px;">WiFi On</button>
+    </div>
+    <div style="flex:1; min-width:220px;">
+        <div class="mx-row" style="margin-bottom:8px;">
+          <label style="font-weight:600; font-size:12.5px;">SSID (network name)</label>
+          <input type="text" name="ssid" value="<?php echo htmlspecialchars($ssid);?>">
+        </div>
+        <div class="mx-row" style="margin-bottom:8px;">
+          <label style="font-weight:600; font-size:12.5px;">Password</label>
+          <input type="password" name="password" value="<?php echo htmlspecialchars($password);?>">
+        </div>
+        <button name="btnAdd" type="submit" class="mx-btn" style="margin-bottom:6px;">Add Network & Connect</button><br>
+        <button name="btnSwitch" type="submit" class="mx-btn mx-btn-ghost" style="margin-bottom:6px;">Switch to SSID</button><br>
+        <button name="btnDelete" type="submit" class="mx-btn mx-btn-danger">Delete SSID</button>
+    </div>
+  </div>
 </form>
 
-<p style="margin: 0 auto;"></p>
-<p style="margin-bottom:-2px;"></p>
-
+</div>
 </body>
 </html>
