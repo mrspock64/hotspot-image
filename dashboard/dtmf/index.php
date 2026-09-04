@@ -14,7 +14,7 @@
     </style>
   </head>
 <body style="background: var(--mx-bg); margin: 0;">
-<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
+<?php include_once __DIR__ . '/../include/site_header.php'; ?>
 
 <div class="mx-card" style="max-width: 400px;">
   <h1 style="text-align:center;">DTMF Dialer</h1>

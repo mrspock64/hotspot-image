@@ -5,7 +5,7 @@
     <link href="/css/modern.css" type="text/css" rel="stylesheet" />
   </head>
 <body style="background: var(--mx-bg); margin: 0;">
-<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
+<?php include_once __DIR__ . '/../include/site_header.php'; ?>
 
 <?php
 

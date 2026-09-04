@@ -12,7 +12,7 @@ p.hint { color: var(--mx-text-dim); font-size: 12px; }
 </style>
   </head>
   <body style="background: var(--mx-bg);">
-<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
+<?php include_once __DIR__ . '/../include/site_header.php'; ?>
 <?php require_once __DIR__ . '/lib.php'; ?>
 <div class="mx-card">
   <h1>Backup / Restore</h1>

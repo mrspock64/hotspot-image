@@ -7,7 +7,7 @@
     <link href="/css/modern.css" type="text/css" rel="stylesheet" />
   </head>
   <body style="background: var(--mx-bg);">
-<?php include_once __DIR__ . '/../include/top_menu.php'; ?>
+<?php include_once __DIR__ . '/../include/site_header.php'; ?>
 <?php
 
 require_once __DIR__ . '/../include/inisync.php';

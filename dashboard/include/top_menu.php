@@ -1,5 +1,6 @@
-<link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <?php
+// modern.css is loaded by site_header.php, which includes this file --
+// not linked again here to avoid a duplicate <link> on every page.
 $mxCurrent = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
 if ($mxCurrent === '' || $mxCurrent === 'index.php') { $mxCurrent = 'index.php'; }
 function mxNavLink(string $href, string $label, string $current): string

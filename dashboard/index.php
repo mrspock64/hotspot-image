@@ -49,21 +49,10 @@ else { $callsign="NOCALL";
 
 </head>
 <body style="background-color: #e1e1e1;font: 11pt arial, sans-serif;">
+<?php include_once __DIR__ . '/include/site_header.php'; ?>
 <center>
 <fieldset style="box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:0px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
 <div class="container">
-<div class="header" style="background: linear-gradient(135deg, var(--mx-accent) 0%, var(--mx-accent-dark) 100%);">
-<div class="parent">
-    <div class="img" style="padding-left:30px"><img src="images/svxlink.ico" /></div>
-    <div class="text"style="padding-right:230px">
-<center><p style="margin-top:5px;margin-bottom:0px;">
-<span style="font-size: 32px;letter-spacing:2px;font-family: -apple-system, 'Segoe UI', Arial, sans-serif;font-weight:600;color:#ffffff"><?php echo $callsign; ?></span>
-<p style="margin-top:0px;margin-bottom:0px;">
-<span style="font-size: 16px;letter-spacing:2px;font-family: -apple-system, 'Segoe UI', Arial, sans-serif;font-weight:400;color:#dbe6ff"><?php echo $fmnetwork; ?></span>
-</p></center>
-</div></div>
-</div>
-<?php include_once __DIR__."/include/top_menu.php"; ?>
 
 <div class="content"><center>
 <div style="margin-top:0px;">
