@@ -188,6 +188,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'antGain'      => $current['ant_gain'],
                 'antType'      => $current['ant_type'],
             ]);
+
+            // The physical radio module's frequency lives entirely outside
+            // svxlink.conf/node_info.json (see updateRadioFrequency()'s
+            // docblock) -- retune it too, or the two fields above are just
+            // portal display text that don't match what's actually on air.
+            $radioMsg = null;
+            if ($current['rx_freq'] !== '' && $current['tx_freq'] !== ''
+                && (float)$current['rx_freq'] !== (float)$current['tx_freq']) {
+                $radioMsg = 'Radio NOT retuned: RX and TX frequency differ, but this hotspot\'s '
+                    . 'SA818 module only supports a single simplex frequency.';
+            } elseif ($current['rx_freq'] !== '') {
+                try {
+                    $radioMsg = updateRadioFrequency((float)$current['rx_freq']);
+                } catch (Throwable $e) {
+                    $radioMsg = 'Radio NOT retuned: ' . $e->getMessage();
+                }
+            }
+
             $saved = true;
         } catch (Throwable $e) {
             $errors[] = 'Failed to write config: ' . $e->getMessage();
@@ -201,10 +219,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <?php if ($saved): ?>
   <div class="msg-ok">
-    Saved. Restart SvxLink from the <a href="/power/">Power</a> page for changes to take effect.
-    <br>Note: RX/TX frequency here only updates <code>node_info.json</code> (what the SvxReflector
-    portal shows) — it does not retune the radio module itself. That's a separate step, not yet
-    wired into this page.
+    Saved. Restart SvxLink from the <a href="/power/">Power</a> page for other changes (callsign,
+    reflector, idents, etc.) to take effect.
+    <?php if ($radioMsg !== null): ?><br><?php echo htmlspecialchars($radioMsg); ?><?php endif; ?>
   </div>
 <?php endif; ?>
 
@@ -242,6 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input type="text" id="rx_freq" name="rx_freq" value="<?php echo htmlspecialchars((string)$current['rx_freq']); ?>"></div>
   <div class="row"><label for="tx_freq">TX frequency (MHz)</label>
     <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
+  <div class="hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
   <div class="row"><label for="tx_power">TX power (W)</label>
     <input type="text" id="tx_power" name="tx_power" value="<?php echo htmlspecialchars((string)$current['tx_power']); ?>"></div>
   <div class="row"><label for="rx_sql_type">RX squelch type</label>

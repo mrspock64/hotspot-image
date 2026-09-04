@@ -1,4 +1,62 @@
 <?php
+define('HOTSPOT_SCRIPT', '/usr/sbin/hotspot');
+
+/**
+ * Retune the physical SA818 radio module. svxlink.conf/node_info.json have
+ * no concept of "operating frequency" at all -- SvxLink only cares about
+ * audio/squelch/DTMF. The actual RF frequency is set by a completely
+ * separate mechanism: /usr/sbin/hotspot, a root-owned script that shells
+ * out to the `sa818` CLI tool over the module's serial port. It's invoked
+ * as an ExecStartPre every time svxlink.service starts (see
+ * /lib/systemd/system/svxlink.service), which is also how a value written
+ * here survives a reboot without any extra step.
+ *
+ * Only the --frequency token is touched via regex substitution -- --bw,
+ * --squelch, --ctcss and --tail (set once at provisioning, not exposed in
+ * the Setup form) are preserved exactly as they were. This is the same
+ * file that had RF.Guru's hotspot-config tool corrupt it on svxlinkuhf
+ * (a `gum input --help` dump landed where the frequency value should have
+ * been) -- fixed by hand there; this function is what a Setup-page save
+ * should have done instead of requiring that manual SSH fix.
+ */
+function updateRadioFrequency(float $freq): string
+{
+    $content = @file_get_contents(HOTSPOT_SCRIPT);
+    if ($content === false) {
+        throw new RuntimeException(HOTSPOT_SCRIPT . ' not found — this node has no SA818 radio-tuning script to update.');
+    }
+    if (!preg_match('/sa818\s+--port\s+\S+\s+radio\s+.*--frequency\s+\S+/', $content)) {
+        throw new RuntimeException(HOTSPOT_SCRIPT . " doesn't contain a recognizable sa818 radio command — not touching it.");
+    }
+
+    $freqStr = number_format($freq, 6, '.', '');
+    $newContent = preg_replace(
+        '/(sa818\s+--port\s+\S+\s+radio\s+.*--frequency\s+)\S+/',
+        '${1}' . $freqStr,
+        $content,
+        1
+    );
+
+    exec('sudo cp ' . escapeshellarg(HOTSPOT_SCRIPT) . ' ' . escapeshellarg(HOTSPOT_SCRIPT . '.bak-' . date('Ymd-His')) . ' 2>&1');
+
+    $tmp = tempnam(sys_get_temp_dir(), 'hotspot-script-');
+    file_put_contents($tmp, $newContent);
+    exec('sudo cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg(HOTSPOT_SCRIPT) . ' 2>&1', $writeOut, $writeCode);
+    exec('sudo chmod 755 ' . escapeshellarg(HOTSPOT_SCRIPT) . ' 2>&1');
+    unlink($tmp);
+    if ($writeCode !== 0) {
+        throw new RuntimeException('Failed to update ' . HOTSPOT_SCRIPT . ': ' . implode(' ', $writeOut));
+    }
+
+    // Apply immediately -- running the script directly retunes the module
+    // without needing a full svxlink service restart.
+    exec('sudo ' . escapeshellarg(HOTSPOT_SCRIPT) . ' 2>&1', $runOut, $runCode);
+
+    return $runCode === 0
+        ? "Radio retuned to {$freqStr} MHz."
+        : "Frequency saved to " . HOTSPOT_SCRIPT . ", but retuning failed just now (" . implode(' ', $runOut) . ") — it will still apply on the next svxlink restart.";
+}
+
 /**
  * Small helper for editing specific keys inside one [section] of an INI-style
  * config file (svxlink.conf) without disturbing anything else in the file —
