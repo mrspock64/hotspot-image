@@ -44,11 +44,12 @@ p.hint { color: var(--mx-text-dim); font-size: 12px; }
   <h1>Backup / Restore</h1>
 
 <p class="hint">
-Bundles the reflector certificate (<code>/var/lib/svxlink/pki/</code>) plus
-<code>svxlink.conf</code> and <code>node_info.json</code> — everything that's
-specific to this node and would otherwise mean waiting on the sysop to
-re-sign a certificate after a reinstall. Keep the downloaded file somewhere
-private: it contains the node's private key.
+Bundles the reflector certificate (<code>/var/lib/svxlink/pki/</code>),
+<code>svxlink.conf</code>, <code>node_info.json</code>, and the
+<a href="/buttons/">front-page buttons</a> config (if you've customized
+it) — everything that's specific to this node and would otherwise mean
+waiting on the sysop to re-sign a certificate after a reinstall. Keep the
+downloaded file somewhere private: it contains the node's private key.
 </p>
 
 <?php foreach ($errors as $err): ?>

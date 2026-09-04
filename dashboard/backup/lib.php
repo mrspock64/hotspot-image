@@ -10,6 +10,7 @@
 define('PKI_DIR', '/var/lib/svxlink/pki');
 define('SVX_CONF_FILE', '/etc/svxlink/svxlink.conf');
 define('NODE_INFO_FILE_PATH', '/etc/svxlink/node_info.json');
+define('BUTTONS_CONFIG_FILE_PATH', '/etc/svxlink/dashboard_buttons.json');
 
 /**
  * Build the backup zip into a temp file and return its path. Caller is
@@ -36,17 +37,34 @@ function buildBackupZip(): string
     // 0600 mode into the staging dir, which www-data can't read back to
     // zip up itself. Only the final chmod hands the finished archive back
     // to www-data.
+    // dashboard_buttons.json only exists once someone has actually saved
+    // the Buttons page at least once (before that the front-page buttons
+    // come from config.inc.php's KEY1..10 constants, shipped with the
+    // dashboard code itself, not node-specific state) -- include it if
+    // present, skip it silently otherwise rather than failing the backup.
+    $hasButtonsConfig = is_file(BUTTONS_CONFIG_FILE_PATH);
+    $zipMembers = 'pki svxlink.conf node_info.json' . ($hasButtonsConfig ? ' dashboard_buttons.json' : '');
+
     $stagingDir = sys_get_temp_dir() . '/hs-backup-' . uniqid();
-    $cmd = sprintf(
-        'sudo mkdir -p %s && sudo cp -a %s %s/pki && sudo cp %s %s %s/ '
-        . '&& (cd %s && sudo zip -rq %s pki svxlink.conf node_info.json) '
-        . '&& sudo chmod 644 %s && sudo rm -rf %s',
+    $format = 'sudo mkdir -p %s && sudo cp -a %s %s/pki && sudo cp %s %s %s/ '
+        . ($hasButtonsConfig ? '&& sudo cp %s %s/ ' : '')
+        . '&& (cd %s && sudo zip -rq %s %s) '
+        . '&& sudo chmod 644 %s && sudo rm -rf %s';
+    $args = [
         escapeshellarg($stagingDir),
         escapeshellarg(PKI_DIR), escapeshellarg($stagingDir),
         escapeshellarg(SVX_CONF_FILE), escapeshellarg(NODE_INFO_FILE_PATH), escapeshellarg($stagingDir),
-        escapeshellarg($stagingDir), escapeshellarg($tmpFile),
-        escapeshellarg($tmpFile), escapeshellarg($stagingDir)
-    );
+    ];
+    if ($hasButtonsConfig) {
+        $args[] = escapeshellarg(BUTTONS_CONFIG_FILE_PATH);
+        $args[] = escapeshellarg($stagingDir);
+    }
+    $args[] = escapeshellarg($stagingDir);
+    $args[] = escapeshellarg($tmpFile);
+    $args[] = $zipMembers;
+    $args[] = escapeshellarg($tmpFile);
+    $args[] = escapeshellarg($stagingDir);
+    $cmd = vsprintf($format, $args);
     exec($cmd . ' 2>&1', $output, $exitCode);
 
     if ($exitCode !== 0 || !is_readable($tmpFile)) {
@@ -80,13 +98,15 @@ function restoreFromZip(string $zipPath): array
     $hasPki = false;
     $hasConf = false;
     $hasNodeInfo = false;
+    $hasButtonsConfig = false;
     foreach ($listing as $entry) {
         if (str_starts_with($entry, 'pki/')) $hasPki = true;
         if ($entry === 'svxlink.conf') $hasConf = true;
         if ($entry === 'node_info.json') $hasNodeInfo = true;
+        if ($entry === 'dashboard_buttons.json') $hasButtonsConfig = true;
     }
-    if (!$hasPki && !$hasConf && !$hasNodeInfo) {
-        throw new RuntimeException('This does not look like a hotspot-image backup (found none of pki/, svxlink.conf, node_info.json in it).');
+    if (!$hasPki && !$hasConf && !$hasNodeInfo && !$hasButtonsConfig) {
+        throw new RuntimeException('This does not look like a hotspot-image backup (found none of pki/, svxlink.conf, node_info.json, dashboard_buttons.json in it).');
     }
 
     $stagingDir = sys_get_temp_dir() . '/hs-restore-' . uniqid();
@@ -115,6 +135,17 @@ function restoreFromZip(string $zipPath): array
             @copy(NODE_INFO_FILE_PATH, NODE_INFO_FILE_PATH . '.bak-' . date('Ymd-His'));
             exec('sudo cp ' . escapeshellarg("$stagingDir/node_info.json") . ' ' . escapeshellarg(NODE_INFO_FILE_PATH) . ' 2>&1', $o4, $c4);
             $log[] = $c4 === 0 ? 'Restored node_info.json (previous version backed up).' : 'FAILED to restore node_info.json: ' . implode(' ', $o4);
+        }
+    }
+
+    if ($hasButtonsConfig && is_file("$stagingDir/dashboard_buttons.json")) {
+        if (json_decode(file_get_contents("$stagingDir/dashboard_buttons.json")) === null) {
+            $log[] = 'Skipped dashboard_buttons.json: the file in the backup is not valid JSON.';
+        } else {
+            exec('sudo cp ' . escapeshellarg(BUTTONS_CONFIG_FILE_PATH) . ' ' . escapeshellarg(BUTTONS_CONFIG_FILE_PATH . '.bak-' . date('Ymd-His')) . ' 2>&1');
+            exec('sudo cp ' . escapeshellarg("$stagingDir/dashboard_buttons.json") . ' ' . escapeshellarg(BUTTONS_CONFIG_FILE_PATH) . ' 2>&1', $o5, $c5);
+            exec('sudo chmod 644 ' . escapeshellarg(BUTTONS_CONFIG_FILE_PATH) . ' 2>&1');
+            $log[] = $c5 === 0 ? 'Restored dashboard_buttons.json (previous version backed up).' : 'FAILED to restore dashboard_buttons.json: ' . implode(' ', $o5);
         }
     }
 
