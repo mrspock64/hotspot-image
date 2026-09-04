@@ -23,7 +23,7 @@
 #    just commented out).
 #  - tail_qso_recorder.py watches REC_DIR for the currently-open recording
 #    (SvxLink writes exactly one *.wav at a time while a QSO is active;
-#    finished recordings get converted to *.ogg by ENCODER_CMD and the wav
+#    finished recordings get converted to *.mp3 by ENCODER_CMD and the wav
 #    removed) and forwards its raw PCM to proxy.js over UDP. No open file
 #    -> nothing forwarded -> RX Monitor is silent, which is correct.
 #  - rx-monitor-proxy.service: proxy.js itself.
@@ -39,7 +39,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SVX_CONF="/etc/svxlink/svxlink.conf"
 
 echo "--- RX Monitor / QSO Log: packages ---"
-apt-get install -y nodejs npm vorbis-tools
+apt-get install -y nodejs npm lame
 
 echo "--- RX Monitor / QSO Log: vendored files ---"
 mkdir -p /opt/rx-monitor /var/log/dvswitch
@@ -60,16 +60,18 @@ else
   cp "$SVX_CONF" "$SVX_CONF.bak-qsorec-$(date +%Y%m%d-%H%M%S)"
   RESTART_NEEDED=0
 
-  # RF.Guru's stock ENCODER_CMD is missing a space between -Q and the
-  # quoted filename (oggenc -Q\"%f\" instead of -Q \"%f\"), which makes
-  # oggenc treat "-Q<path>" as one malformed argument and exit 1 on every
-  # single recording -- discovered live on svxlinkuhf: five real QSO
-  # recordings sat as .wav forever, never converted to .ogg, and the QSO
-  # Log page showed a permanent (stale) "recording now" because of it.
-  # Never triggered before since QSO_RECORDER was commented out everywhere.
-  if grep -q '^ENCODER_CMD=/usr/bin/oggenc -Q\\"%f\\"' "$SVX_CONF"; then
-    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc -Q\\"%f\\"|ENCODER_CMD=/usr/bin/oggenc -Q \\"%f\\"|' "$SVX_CONF"
-    echo "Fixed missing space in ENCODER_CMD (oggenc -Q\"%f\" -> -Q \"%f\")."
+  # RF.Guru's stock ENCODER_CMD uses oggenc, which (a) is broken as shipped
+  # -- missing a space between -Q and the quoted filename, so oggenc treats
+  # "-Q<path>" as one malformed argument and exits 1 on every recording,
+  # discovered live on svxlinkuhf: five real QSO recordings sat as .wav
+  # forever, never converted, and the QSO Log page showed a permanent
+  # (stale) "recording now" because of it -- and (b) even fixed, produces
+  # Ogg Vorbis, which Safari (macOS and iOS) cannot play at all, so the
+  # dashboard's Play button silently did nothing there. Switch to lame/mp3
+  # instead of just patching oggenc's syntax: MP3 plays everywhere.
+  if grep -qE '^ENCODER_CMD=/usr/bin/oggenc' "$SVX_CONF"; then
+    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc.*$|ENCODER_CMD=/usr/bin/lame --quiet \\"%f\\" \\"%d/%b.mp3\\" \&\& rm \\"%f\\"|' "$SVX_CONF"
+    echo "Replaced oggenc ENCODER_CMD with lame/mp3 (Safari can't play Ogg Vorbis)."
     RESTART_NEEDED=1
   fi
 

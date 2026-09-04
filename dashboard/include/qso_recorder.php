@@ -9,10 +9,15 @@
  * SvxLink writes each recording as a hidden placeholder
  * (".qsorec_<Logic>.wav", 0 bytes) the instant a QSO starts, keeps writing
  * to a visible "qsorec_<Logic>_<timestamp>.wav" once real audio arrives,
- * then on close hands it to ENCODER_CMD (oggenc in this config), which
- * converts it to .ogg and removes the .wav. So: any *.wav file present is
- * (by construction) the one currently being recorded; *.ogg files are
+ * then on close hands it to ENCODER_CMD (lame in this config), which
+ * converts it to .mp3 and removes the .wav. So: any *.wav file present is
+ * (by construction) the one currently being recorded; *.mp3 files are
  * finished recordings.
+ *
+ * MP3, not the originally-used Ogg Vorbis: Safari (macOS and iOS) has no
+ * Vorbis decoder at all, so <audio src="...ogg"> silently does nothing
+ * there -- found the hard way when Play did nothing. MP3 plays natively
+ * everywhere.
  */
 
 require_once __DIR__ . '/inisync.php';
@@ -87,7 +92,7 @@ function listQsoRecordings(): array
             if (filesize($path) > 44 && (time() - filemtime($path)) < 10) {
                 $inProgress = ['file' => $name, 'mtime' => filemtime($path), 'size' => filesize($path)];
             }
-        } elseif (preg_match('/^qsorec_.*\.ogg$/', $name)) {
+        } elseif (preg_match('/^qsorec_.*\.mp3$/', $name)) {
             $finished[] = ['file' => $name, 'mtime' => filemtime($path), 'size' => filesize($path)];
         }
     }
@@ -100,7 +105,7 @@ function listQsoRecordings(): array
 /** Only ever accepts a bare filename matching the recorder's own naming pattern -- never a path. */
 function isValidQsoRecordingName(string $name): bool
 {
-    return (bool)preg_match('/^qsorec_[A-Za-z0-9._-]+\.ogg$/', $name);
+    return (bool)preg_match('/^qsorec_[A-Za-z0-9._-]+\.mp3$/', $name);
 }
 
 function deleteQsoRecording(string $name): void

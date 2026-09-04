@@ -34,10 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
 $settings = getQsoRecorderSettings();
 $recordings = listQsoRecordings();
 
-/** Parses the timestamp SvxLink embeds in "qsorec_<Logic>_<YYYY-MM-DD>_<HHMMSS>.ogg". */
+/**
+ * Parses the timestamp SvxLink embeds in the filename -- either just a
+ * start time ("qsorec_<Logic>_<YYYY-MM-DD>_<HHMMSS>.mp3") or start+end
+ * ("qsorec_<Logic>_<start>_<end>.mp3"); the non-greedy logic-name match
+ * naturally stops at the first timestamp either way.
+ */
 function qsoRecordingLabel(string $file): string
 {
-    if (preg_match('/qsorec_(.+?)_(\d{4}-\d{2}-\d{2})_(\d{6})\.(?:ogg|wav)$/', $file, $m)) {
+    if (preg_match('/^qsorec_(.+?)_(\d{4}-\d{2}-\d{2})_(\d{6})(?:_\d{4}-\d{2}-\d{2}_\d{6})?\.(?:mp3|ogg|wav)$/', $file, $m)) {
         [, $logic, $ymd, $his] = $m;
         $dt = DateTime::createFromFormat('Y-m-d His', $ymd . ' ' . $his);
         if ($dt) {

@@ -13,7 +13,7 @@ if (!is_file($path)) {
     exit('Not found.');
 }
 
-header('Content-Type: audio/ogg');
+header('Content-Type: audio/mpeg');
 header('Content-Disposition: inline; filename="' . $file . '"');
 header('Content-Length: ' . filesize($path));
 header('Accept-Ranges: none');
