@@ -34,8 +34,11 @@ bash "$SCRIPT_DIR/lib/build-svxlink.sh"
 echo "=== 4/5: dashboard ==="
 bash "$SCRIPT_DIR/lib/install-dashboard.sh"
 
-echo "=== 5/5: watchdog ==="
+echo "=== 5/6: watchdog ==="
 bash "$SCRIPT_DIR/lib/install-watchdog.sh"
+
+echo "=== 6/6: RX Monitor audio streaming ==="
+bash "$SCRIPT_DIR/lib/install-rx-monitor.sh"
 
 echo
 echo "=== Done ==="
