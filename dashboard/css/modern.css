@@ -1,0 +1,182 @@
+/* Modernization pass, started 2026-09. Additive on top of the legacy
+   css.php stylesheet -- existing pages keep working unchanged; new/updated
+   pages opt in by using these classes. See top_menu.php for the nav bar
+   that's now shared site-wide. */
+
+:root {
+    --mx-bg: #eef1f5;
+    --mx-surface: #ffffff;
+    --mx-border: #dde2e8;
+    --mx-text: #1f2937;
+    --mx-text-dim: #6b7280;
+    --mx-accent: #2563eb;
+    --mx-accent-dark: #1d4ed8;
+    --mx-green: #2f9e44;
+    --mx-blue: #2563eb;
+    --mx-red: #d92d20;
+    --mx-orange: #e8590c;
+    --mx-purple: #7048e8;
+    --mx-radius: 10px;
+    --mx-shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.mx-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    background: var(--mx-surface);
+    border: 1px solid var(--mx-border);
+    border-radius: var(--mx-radius);
+    box-shadow: var(--mx-shadow);
+    padding: 8px;
+    margin: 12px auto;
+    max-width: 900px;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+.mx-nav a {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 7px;
+    color: var(--mx-text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+}
+
+.mx-nav a:hover {
+    background: #eef2ff;
+    color: var(--mx-accent-dark);
+}
+
+.mx-nav a.mx-active {
+    background: var(--mx-accent);
+    color: #fff;
+}
+
+.mx-card {
+    background: var(--mx-surface);
+    border: 1px solid var(--mx-border);
+    border-radius: var(--mx-radius);
+    box-shadow: var(--mx-shadow);
+    max-width: 900px;
+    margin: 0 auto 16px auto;
+    padding: 20px 24px;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: var(--mx-text);
+    text-align: left;
+}
+
+.mx-card h1 {
+    font-size: 20px;
+    text-shadow: none;
+    text-align: left;
+    margin: 0 0 4px 0;
+    color: var(--mx-text);
+}
+
+.mx-card p.mx-sub {
+    color: var(--mx-text-dim);
+    font-size: 13px;
+    margin: 0 0 18px 0;
+}
+
+.mx-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+    border-spacing: 0;
+    font-size: 13px;
+    background: transparent;
+    color: var(--mx-text);
+    box-shadow: none;
+}
+
+.mx-table th, .mx-table td {
+    border: none;
+    border-bottom: 1px solid var(--mx-border);
+    padding: 8px 6px;
+    text-align: left;
+    background: transparent;
+    color: var(--mx-text);
+    font-family: inherit;
+    white-space: normal;
+}
+
+.mx-table th {
+    text-shadow: none;
+    color: var(--mx-text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+}
+
+.mx-table input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--mx-text);
+    padding: 5px 8px;
+    margin: 0;
+    border: 1px solid var(--mx-border);
+    border-radius: 6px;
+}
+
+.mx-table select {
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--mx-border);
+    font-size: 13px;
+}
+
+.mx-btn {
+    display: inline-block;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    background: var(--mx-accent);
+}
+
+.mx-btn:hover { background: var(--mx-accent-dark); }
+.mx-btn.mx-btn-danger { background: var(--mx-red); }
+.mx-btn.mx-btn-danger:hover { background: #b42318; }
+.mx-btn.mx-btn-ghost {
+    background: transparent;
+    color: var(--mx-text-dim);
+    border: 1px solid var(--mx-border);
+    padding: 5px 9px;
+}
+.mx-btn.mx-btn-ghost:hover { background: #f3f4f6; color: var(--mx-text); }
+
+.mx-swatch-green  { background: var(--mx-green) !important; }
+.mx-swatch-blue   { background: var(--mx-blue) !important; }
+.mx-swatch-red    { background: var(--mx-red) !important; }
+.mx-swatch-orange { background: var(--mx-orange) !important; }
+.mx-swatch-purple { background: var(--mx-purple) !important; }
+
+.mx-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 14px;
+    background: var(--mx-bg);
+    border-radius: 8px;
+    margin-bottom: 18px;
+}
+
+.mx-msg {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+.mx-msg-ok { background: #ecfdf3; color: #027a48; border: 1px solid #abefc6; }
+.mx-msg-err { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }

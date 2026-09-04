@@ -1,22 +1,34 @@
-    <p style="padding-right: 5px; text-align: right; color: #000000;">
-	<a style="color: black;">Display</a> |
-	<a href="/index.php" style="color: #0000ff;">Dashboard</a> |
-	<a href="/tg.php" style="color: #0000ff;">Talk Groups</a> |
-	<a href="/setup/" style="color: #0000ff;">Setup</a> |
-	<a href="/wifi.php" style="color: #0000ff;">WiFi</a> |
-	<a href="/network.php" style="color: #0000ff;">Network</a> |
-	<a href="/update/" style="color: #0000ff;">Update</a> |
-	<a href="/backup/" style="color: #0000ff;">Backup</a> |
-	<a href="/docs/" style="color: #0000ff;">Docs</a> |
-	<a href="/log.php" style="color: #0000ff;">Log</a> |
-	<a href="/" onclick="javascript:event.target.port=4200" style="color: #0000ff;">Shell</a> |
-	<a href="/power.php" style="color: #0000ff;">Power</a></p>
-
-</p>
-	 
+<link href="/css/modern.css" type="text/css" rel="stylesheet" />
+<?php
+$mxCurrent = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+if ($mxCurrent === '' || $mxCurrent === 'index.php') { $mxCurrent = 'index.php'; }
+function mxNavLink(string $href, string $label, string $current): string
+{
+    $file = basename(parse_url($href, PHP_URL_PATH));
+    $isActive = ($file === $current) || ($file === '' && $current === 'index.php');
+    $cls = $isActive ? 'mx-active' : '';
+    return '<a href="' . htmlspecialchars($href) . '" class="' . $cls . '">' . htmlspecialchars($label) . '</a>';
+}
+?>
+<nav class="mx-nav">
+<?php
+echo mxNavLink('/index.php', 'Dashboard', $mxCurrent);
+echo mxNavLink('/tg.php', 'Talk Groups', $mxCurrent);
+echo mxNavLink('/buttons/', 'Buttons', $mxCurrent);
+echo mxNavLink('/setup/', 'Setup', $mxCurrent);
+echo mxNavLink('/wifi.php', 'WiFi', $mxCurrent);
+echo mxNavLink('/network.php', 'Network', $mxCurrent);
+echo mxNavLink('/update/', 'Update', $mxCurrent);
+echo mxNavLink('/backup/', 'Backup', $mxCurrent);
+echo mxNavLink('/docs/', 'Docs', $mxCurrent);
+echo mxNavLink('/log.php', 'Log', $mxCurrent);
+?>
+<a href="/" onclick="event.target.port=4200">Shell</a>
+<?php echo mxNavLink('/power.php', 'Power', $mxCurrent); ?>
+</nav>
 
 <?php
-include_once('parse_svxconf.php') 
+include_once('parse_svxconf.php')
 /*if (fopen($svxConfigFile,'r'))
 {
 
@@ -24,7 +36,7 @@ include_once('parse_svxconf.php')
   $logics = explode(",",$svxconfig['GLOBAL']['LOGICS']);
   foreach ($logics as $key) {
 	if ($key == "SimplexLogic") $isSimplex = true;
-	if ($key == "RepeaterLogic") $isRepeater = true; 
+	if ($key == "RepeaterLogic") $isRepeater = true;
   };
   $logics = explode(",",$svxconfig['GLOBAL']['LOGICS']);
   if ($isSimplex) $modules = explode(",",str_replace('Module','',$svxconfig['SimplexLogic']['MODULES']));
@@ -42,4 +54,3 @@ include_once('parse_svxconf.php')
 }
 }*/
 ?>
-	
