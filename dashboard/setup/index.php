@@ -128,6 +128,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!is_numeric($current['short_ident']) || !is_numeric($current['long_ident'])) {
         $errors[] = 'Ident intervals must be numbers (minutes). Use 0 to disable.';
+    } elseif ((int)$current['short_ident'] > 0 && (int)$current['long_ident'] > 0
+              && (int)$current['long_ident'] % (int)$current['short_ident'] !== 0) {
+        // svxlink.conf(5): "The LONG_IDENT_INTERVAL must be an even multiple
+        // of the SHORT_IDENT_INTERVAL" -- not enforced by SvxLink itself at
+        // load time, so a bad combination fails silently at runtime instead.
+        $errors[] = 'Long ident interval must be an even multiple of the short ident interval (e.g. 15 and 60, not 10 and 45).';
     }
     if ($current['lat'] !== '' && !is_numeric($current['lat'])) {
         $errors[] = 'Latitude must be decimal (e.g. 59.3628802).';

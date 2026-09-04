@@ -7,6 +7,7 @@
 	<a href="/network.php" style="color: #0000ff;">Network</a> |
 	<a href="/update/" style="color: #0000ff;">Update</a> |
 	<a href="/backup/" style="color: #0000ff;">Backup</a> |
+	<a href="/docs/" style="color: #0000ff;">Docs</a> |
 	<a href="/log.php" style="color: #0000ff;">Log</a> |
 	<a href="/" onclick="javascript:event.target.port=4200" style="color: #0000ff;">Shell</a> |
 	<a href="/power.php" style="color: #0000ff;">Power</a></p>
