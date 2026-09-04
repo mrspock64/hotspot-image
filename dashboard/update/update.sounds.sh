@@ -1,0 +1,8 @@
+echo "###-START-###"
+echo "Disabled in the hotspot-image fork."
+echo "This used to download /usr/share/svxlink/sounds wholesale from the"
+echo "unrelated FM-POLAND/sounds GitHub repo (a different ham network's own"
+echo "sound/announcement pack) and overwrite the local node's sounds with it."
+echo "Official SvxLink sound packs come from sm0svx/svxlink itself, not this"
+echo "repo -- this action has been removed rather than pointed at a real one."
+echo "###-FINISH-####"

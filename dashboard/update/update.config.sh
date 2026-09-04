@@ -1,0 +1,8 @@
+echo "###-START-###"
+echo "Disabled in the hotspot-image fork."
+echo "This used to download /usr/share/svxlink/events.d/local wholesale from"
+echo "the unrelated FM-POLAND/config GitHub repo and overwrite the local node's"
+echo "own event scripts with it -- including any Logic.tcl fixes. There is no"
+echo "sane 'shared config' to pull for a single operator's node, so this action"
+echo "has been removed rather than pointed at a real destination."
+echo "###-FINISH-####"
