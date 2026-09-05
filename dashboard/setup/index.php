@@ -46,6 +46,7 @@ function readCurrent(): array
         'lat'          => $qth['pos']['lat'] ?? '',
         'long'         => $qth['pos']['long'] ?? '',
         'gridsquare'   => $qth['pos']['loc'] ?? '',
+        'dtmf_muting'  => ($conf['Rx1']['DTMF_MUTING'] ?? '0') === '1',
         'rx_freq'      => $qth['rx']['A']['freq'] ?? '',
         'tx_freq'      => $qth['tx']['A']['freq'] ?? '',
         'tx_power'     => $qth['tx']['A']['pwr'] ?? '',
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['short_ident'] = trim($in['short_ident'] ?? '15');
     $current['long_ident']  = trim($in['long_ident'] ?? '60');
     $current['hidden']      = isset($in['hidden']);
+    $current['dtmf_muting'] = isset($in['dtmf_muting']);
     $current['lat']         = trim($in['lat'] ?? '');
     $current['long']        = trim($in['long'] ?? '');
     $current['gridsquare']  = trim($in['gridsquare'] ?? '');
@@ -137,6 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'CTCSS_TO_TG'           => $current['ctcss_to_tg'],
                 'SHORT_IDENT_INTERVAL'  => $current['short_ident'],
                 'LONG_IDENT_INTERVAL'   => $current['long_ident'],
+            ]);
+            iniSyncUpdateSection(SVX_CONF, 'Rx1', [
+                'DTMF_MUTING' => $current['dtmf_muting'] ? '1' : '0',
             ]);
             writeNodeInfoJson(NODE_INFO, [
                 'nodeLocation' => $current['location'],
@@ -231,6 +236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="tx_freq">TX frequency (MHz)</label>
     <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
   <div class="mx-hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
+  <div class="mx-row"><label for="dtmf_muting">Mute DTMF tones locally</label>
+    <input type="checkbox" id="dtmf_muting" name="dtmf_muting" <?php echo $current['dtmf_muting'] ? 'checked' : ''; ?>></div>
+  <div class="mx-hint">Stops the DTMF tones of your own commands (e.g. changing talkgroup) from being sent out to the reflector network — on by default for new installs.</div>
   <div class="mx-row"><label for="tx_power">TX power (W)</label>
     <input type="text" id="tx_power" name="tx_power" value="<?php echo htmlspecialchars((string)$current['tx_power']); ?>"></div>
   <div class="mx-row"><label for="rx_sql_type">RX squelch type</label>

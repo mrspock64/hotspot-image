@@ -27,4 +27,17 @@ add_line "dtoverlay=i2s-mmap"
 add_line "dtoverlay=wm8960-soundcard"
 add_line "dtoverlay=disable-bt"
 
+SVX_CONF="/etc/svxlink/svxlink.conf"
+echo "--- Muting local DTMF tones in $SVX_CONF ---"
+# DTMF_MUTING=1 stops the tones of your own commands (e.g. changing
+# talkgroup) from being sent out to the reflector network -- documented in
+# svxlink.conf(5), on by default here since there's no real reason a new
+# install would want its own DTMF tones broadcast. Only added if the key
+# isn't already present, so a value someone already set via the Setup page
+# is never overwritten.
+if [ -f "$SVX_CONF" ] && grep -q '^\[Rx1\]$' "$SVX_CONF" && ! grep -q '^DTMF_MUTING=' "$SVX_CONF"; then
+  sed -i '/^\[Rx1\]$/a DTMF_MUTING=1' "$SVX_CONF"
+  echo "Added DTMF_MUTING=1 to [Rx1]."
+fi
+
 echo "--- Done. A reboot is required for the audio overlay to take effect. ---"
