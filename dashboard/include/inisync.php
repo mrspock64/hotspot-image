@@ -224,23 +224,39 @@ function writeNodeInfoJson(string $filePath, array $opts): void
         $tx['ant'] = $txAnt;
     }
 
-    $data = [
-        'nodeLocation' => $opts['nodeLocation'],
-        'nodeClass' => $opts['nodeClass'] !== '' ? $opts['nodeClass'] : 'hotspot',
-        'hidden' => $opts['hidden'],
-        'sysop' => $opts['sysop'],
-        'toneToTalkgroup' => parseToneToTalkgroup($opts['ctcssToTg'] ?? ''),
-        'qth' => [[
-            'name' => $opts['qthName'],
-            'pos' => [
-                'lat' => $opts['lat'],
-                'long' => $opts['long'],
-                'loc' => $opts['gridsquare'],
-            ],
-            'rx' => ['A' => $rx],
-            'tx' => ['A' => $tx],
-        ]],
-    ];
+    // Start from whatever is already on disk rather than an empty array, so
+    // any key this function doesn't know about (a field a future RF.Guru
+    // image or SvxLink version adds, or one this form simply hasn't grown a
+    // field for yet) survives a save instead of silently vanishing. This is
+    // exactly how nodeLocation/qthName/lat/long/gridsquare/txPower were lost
+    // at some point before this comment was written -- an earlier version of
+    // the Setup page didn't have fields for them yet, so saving with the old
+    // code wiped them from a full from-scratch rebuild of this file.
+    $data = [];
+    if (is_readable($filePath)) {
+        $raw = file_get_contents($filePath);
+        $decoded = json_decode($raw, true);
+        if ($decoded === null) {
+            $decoded = json_decode(preg_replace('/,(\s*[}\]])/', '$1', $raw), true);
+        }
+        $data = $decoded ?: [];
+    }
+
+    $data['nodeLocation'] = $opts['nodeLocation'];
+    $data['nodeClass'] = $opts['nodeClass'] !== '' ? $opts['nodeClass'] : 'hotspot';
+    $data['hidden'] = $opts['hidden'];
+    $data['sysop'] = $opts['sysop'];
+    $data['toneToTalkgroup'] = parseToneToTalkgroup($opts['ctcssToTg'] ?? '');
+    $data['qth'][0] = array_merge($data['qth'][0] ?? [], [
+        'name' => $opts['qthName'],
+        'pos' => [
+            'lat' => $opts['lat'],
+            'long' => $opts['long'],
+            'loc' => $opts['gridsquare'],
+        ],
+        'rx' => ['A' => $rx],
+        'tx' => ['A' => $tx],
+    ]);
 
     $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     if ($json === false) {
