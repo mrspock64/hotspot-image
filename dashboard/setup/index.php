@@ -47,8 +47,11 @@ function readCurrent(): array
         'long'         => $qth['pos']['long'] ?? '',
         'gridsquare'   => $qth['pos']['loc'] ?? '',
         'dtmf_muting'  => ($conf['Rx1']['DTMF_MUTING'] ?? '0') === '1',
-        'rx_freq'      => $qth['rx']['A']['freq'] ?? '',
-        'tx_freq'      => $qth['tx']['A']['freq'] ?? '',
+        // A single field: this hotspot's SA818 module only supports one
+        // simplex frequency, so RX and TX are always the same value. Fall
+        // back to whichever of the two is set, in case they were ever
+        // edited apart from this page (e.g. directly in node_info.json).
+        'freq'         => $qth['rx']['A']['freq'] ?? $qth['tx']['A']['freq'] ?? '',
         'tx_power'     => $qth['tx']['A']['pwr'] ?? '',
         'node_class'   => $nodeInfo['nodeClass'] ?? 'hotspot',
         'rx_sql_type'  => $qth['rx']['A']['sqlType'] ?? '',
@@ -78,8 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['lat']         = trim($in['lat'] ?? '');
     $current['long']        = trim($in['long'] ?? '');
     $current['gridsquare']  = trim($in['gridsquare'] ?? '');
-    $current['rx_freq']     = trim($in['rx_freq'] ?? '');
-    $current['tx_freq']     = trim($in['tx_freq'] ?? '');
+    $current['freq']        = trim($in['freq'] ?? '');
     $current['tx_power']    = trim($in['tx_power'] ?? '');
     $current['node_class']  = trim($in['node_class'] ?? 'hotspot');
     $current['rx_sql_type'] = trim($in['rx_sql_type'] ?? '');
@@ -113,11 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($current['long'] !== '' && !is_numeric($current['long'])) {
         $errors[] = 'Longitude must be decimal (e.g. 17.9681359).';
     }
-    if ($current['rx_freq'] !== '' && !is_numeric($current['rx_freq'])) {
-        $errors[] = 'RX frequency must be numeric (MHz).';
-    }
-    if ($current['tx_freq'] !== '' && !is_numeric($current['tx_freq'])) {
-        $errors[] = 'TX frequency must be numeric (MHz).';
+    if ($current['freq'] !== '' && !is_numeric($current['freq'])) {
+        $errors[] = 'Frequency must be numeric (MHz).';
     }
     if ($current['monitor_tgs'] !== '' && !preg_match('/^[0-9+,\s]*$/', $current['monitor_tgs'])) {
         $errors[] = 'Monitored talkgroups: only digits, commas and leading + for priority are allowed.';
@@ -153,8 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'gridsquare'   => $current['gridsquare'],
                 'nodeClass'    => $current['node_class'],
                 'ctcssToTg'    => $current['ctcss_to_tg'],
-                'rxFreq'       => (float)($current['rx_freq'] ?: 0),
-                'txFreq'       => (float)($current['tx_freq'] ?: 0),
+                'rxFreq'       => (float)($current['freq'] ?: 0),
+                'txFreq'       => (float)($current['freq'] ?: 0),
                 'txPower'      => $current['tx_power'],
                 'rxSqlType'    => $current['rx_sql_type'],
                 'antComment'   => $current['ant_comment'],
@@ -166,16 +165,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // The physical radio module's frequency lives entirely outside
             // svxlink.conf/node_info.json (see updateRadioFrequency()'s
-            // docblock) -- retune it too, or the two fields above are just
-            // portal display text that don't match what's actually on air.
+            // docblock) -- retune it too, or the field above is just portal
+            // display text that doesn't match what's actually on air.
             $radioMsg = null;
-            if ($current['rx_freq'] !== '' && $current['tx_freq'] !== ''
-                && (float)$current['rx_freq'] !== (float)$current['tx_freq']) {
-                $radioMsg = 'Radio NOT retuned: RX and TX frequency differ, but this hotspot\'s '
-                    . 'SA818 module only supports a single simplex frequency.';
-            } elseif ($current['rx_freq'] !== '') {
+            if ($current['freq'] !== '') {
                 try {
-                    $radioMsg = updateRadioFrequency((float)$current['rx_freq']);
+                    $radioMsg = updateRadioFrequency((float)$current['freq']);
                 } catch (Throwable $e) {
                     $radioMsg = 'Radio NOT retuned: ' . $e->getMessage();
                 }
@@ -231,11 +226,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="ctcss_to_tg">CTCSS-to-TG mapping</label>
     <input type="text" id="ctcss_to_tg" name="ctcss_to_tg" value="<?php echo htmlspecialchars($current['ctcss_to_tg']); ?>"></div>
   <div class="mx-hint">e.g. "88.5:0,82.5:240" — tone:talkgroup pairs.</div>
-  <div class="mx-row"><label for="rx_freq">RX frequency (MHz)</label>
-    <input type="text" id="rx_freq" name="rx_freq" value="<?php echo htmlspecialchars((string)$current['rx_freq']); ?>"></div>
-  <div class="mx-row"><label for="tx_freq">TX frequency (MHz)</label>
-    <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
-  <div class="mx-hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
+  <div class="mx-row"><label for="freq">Frequency (MHz)</label>
+    <input type="text" id="freq" name="freq" value="<?php echo htmlspecialchars((string)$current['freq']); ?>"></div>
+  <div class="mx-hint">Saving this actually retunes the SA818 radio module (not just the portal display). One field, since this is a simplex hotspot — RX and TX are always the same frequency.</div>
   <div class="mx-row"><label>SSA suggested channels</label>
     <div>
       <div style="font-size:11px;color:#888;margin-bottom:3px;">70cm (434.450–434.500 MHz, 12.5 kHz spacing)</div>
@@ -250,11 +243,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?php endforeach; ?>
     </div>
   </div>
-  <div class="mx-hint">SSA's recommended channels for DV/analog internet gateways ("hotspots") — click one to fill in both RX and TX above, then Save to actually retune the radio.</div>
+  <div class="mx-hint">SSA's recommended channels for DV/analog internet gateways ("hotspots") — click one to fill in the field above, then Save to actually retune the radio.</div>
   <script>
     function setSuggestedFreq(f) {
-      document.getElementById('rx_freq').value = f;
-      document.getElementById('tx_freq').value = f;
+      document.getElementById('freq').value = f;
     }
   </script>
   <div class="mx-row"><label for="dtmf_muting">Mute DTMF tones locally</label>
