@@ -35,7 +35,6 @@ function readCurrent(): array
         'callsign'     => trim($conf['ReflectorLogic']['CALLSIGN'] ?? '', '" '),
         'domain'       => $conf['ReflectorLogic']['DNS_DOMAIN'] ?? 'sm.svxlink.org',
         'cert_email'   => trim($conf['ReflectorLogic']['CERT_EMAIL'] ?? '', '" '),
-        'monitor_tgs'  => $conf['ReflectorLogic']['MONITOR_TGS'] ?? '',
         'ctcss_to_tg'  => $conf['SimplexLogic']['CTCSS_TO_TG'] ?? '',
         'short_ident'  => $conf['SimplexLogic']['SHORT_IDENT_INTERVAL'] ?? '15',
         'long_ident'   => $conf['SimplexLogic']['LONG_IDENT_INTERVAL'] ?? '60',
@@ -73,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach (['callsign', 'domain', 'cert_email', 'location', 'sysop', 'qth_name'] as $f) {
         $current[$f] = trim($in[$f] ?? '');
     }
-    $current['monitor_tgs'] = trim($in['monitor_tgs'] ?? '');
     $current['ctcss_to_tg'] = trim($in['ctcss_to_tg'] ?? '');
     $current['short_ident'] = trim($in['short_ident'] ?? '15');
     $current['long_ident']  = trim($in['long_ident'] ?? '60');
@@ -119,9 +117,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($current['freq'] !== '' && !is_numeric($current['freq'])) {
         $errors[] = 'Frequency must be numeric (MHz).';
     }
-    if ($current['monitor_tgs'] !== '' && !preg_match('/^[0-9+,\s]*$/', $current['monitor_tgs'])) {
-        $errors[] = 'Monitored talkgroups: only digits, commas and leading + for priority are allowed.';
-    }
     if ($current['ctcss_to_tg'] !== '' && !preg_match('/^[0-9.:,\s]*$/', $current['ctcss_to_tg'])) {
         $errors[] = 'CTCSS-to-TG mapping: expected <tone>:<talkgroup>,... e.g. "88.5:0,82.5:240".';
     }
@@ -132,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'CALLSIGN'    => '"' . $current['callsign'] . '"',
                 'DNS_DOMAIN'  => $current['domain'],
                 'CERT_EMAIL'  => '"' . $current['cert_email'] . '"',
-                'MONITOR_TGS' => $current['monitor_tgs'],
             ]);
             iniSyncUpdateSection(SVX_CONF, 'SimplexLogic', [
                 'CALLSIGN'              => $current['callsign'],
@@ -222,9 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="cert_email">Certificate email</label>
     <input type="email" id="cert_email" name="cert_email" value="<?php echo htmlspecialchars($current['cert_email']); ?>"></div>
   <div class="mx-hint">Must match your SM callbook email — the reflector checks this.</div>
-  <div class="mx-row"><label for="monitor_tgs">Monitored talkgroups</label>
-    <input type="text" id="monitor_tgs" name="monitor_tgs" value="<?php echo htmlspecialchars($current['monitor_tgs']); ?>"></div>
-  <div class="mx-hint">Comma-separated, e.g. "240,2400". Prefix with + for priority.</div>
+  <div class="mx-hint">Monitored talkgroups have moved to the <a href="/tg.php">Talk Groups</a> page — a checkbox per TG instead of hand-typing a comma list.</div>
 
   <div class="mx-section">Radio</div>
   <div class="mx-row"><label for="ctcss_to_tg">CTCSS-to-TG mapping</label>
