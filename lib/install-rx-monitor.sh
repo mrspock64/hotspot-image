@@ -45,7 +45,8 @@ echo "--- RX Monitor / QSO Log: vendored files ---"
 mkdir -p /opt/rx-monitor /var/log/dvswitch
 cp "$SCRIPT_DIR/rx-monitor/proxy.js" /opt/rx-monitor/proxy.js
 cp "$SCRIPT_DIR/rx-monitor/tail_qso_recorder.py" /opt/rx-monitor/tail_qso_recorder.py
-chmod +x /opt/rx-monitor/tail_qso_recorder.py
+cp "$SCRIPT_DIR/rx-monitor/tag_and_encode.py" /opt/rx-monitor/tag_and_encode.py
+chmod +x /opt/rx-monitor/tail_qso_recorder.py /opt/rx-monitor/tag_and_encode.py
 (cd /opt/rx-monitor && npm install ws --no-fund --no-audit --loglevel=error)
 
 echo "--- RX Monitor / QSO Log: SvxLink QSO Recorder ---"
@@ -67,21 +68,19 @@ else
   # forever, never converted, and the QSO Log page showed a permanent
   # (stale) "recording now" because of it -- and (b) even fixed, produces
   # Ogg Vorbis, which Safari (macOS and iOS) cannot play at all, so the
-  # dashboard's Play button silently did nothing there. Switch to lame/mp3
-  # instead of just patching oggenc's syntax: MP3 plays everywhere.
-  if grep -qE '^ENCODER_CMD=/usr/bin/oggenc' "$SVX_CONF"; then
-    # nice/ionice matter on RF.Guru's actual hardware (2 cores, ~400MB RAM):
-    # measured live on svxlinkuhf, lame encoding at normal priority was
-    # competing with SvxLink's real-time audio thread right as a QSO ends,
-    # contributing to audible TX-time stutter.
-    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc.*$|ENCODER_CMD=nice -n 19 ionice -c3 /usr/bin/lame --quiet \\"%f\\" \\"%d/%b.mp3\\" \&\& rm \\"%f\\"|' "$SVX_CONF"
-    echo "Replaced oggenc ENCODER_CMD with a niced lame/mp3 (Safari can't play Ogg Vorbis; nice/ionice keep it off SvxLink's real-time thread)."
-    RESTART_NEEDED=1
-  elif grep -qE '^ENCODER_CMD=/usr/bin/lame' "$SVX_CONF"; then
-    # A prior run of this script (before nice/ionice were added) already
-    # switched this to lame -- upgrade it in place rather than leaving it.
-    sed -i 's|^ENCODER_CMD=/usr/bin/lame|ENCODER_CMD=nice -n 19 ionice -c3 /usr/bin/lame|' "$SVX_CONF"
-    echo "Added nice/ionice to the existing lame ENCODER_CMD."
+  # dashboard's Play button silently did nothing there.
+  #
+  # tag_and_encode.py replaces a plain lame invocation: it still encodes to
+  # mp3 (nice/ionice'd, for the same real-time-thread-contention reason a
+  # bare lame command needed them), but also correlates the recording's
+  # start time against SvxLink's own log to tag the output filename with
+  # which talkgroup/callsign was talking, and enforces an optional
+  # RECORD_ONLY_TGS filter (see qso_recorder.php). Matches any of: RF.Guru's
+  # original oggenc, an earlier lame-only version of this script, or an
+  # already-niced lame version -- all migrate to the same script.
+  if grep -qE '^ENCODER_CMD=(nice -n 19 ionice -c3 )?/usr/bin/(oggenc|lame)' "$SVX_CONF"; then
+    sed -i 's|^ENCODER_CMD=.*$|ENCODER_CMD=/usr/bin/python3 /opt/rx-monitor/tag_and_encode.py \\"%f\\"|' "$SVX_CONF"
+    echo "Replaced ENCODER_CMD with tag_and_encode.py (tags recordings with TG/callsign, enforces RECORD_ONLY_TGS)."
     RESTART_NEEDED=1
   fi
 

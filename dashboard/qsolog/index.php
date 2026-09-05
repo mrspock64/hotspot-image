@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/../include/qso_recorder.php';
+require_once __DIR__ . '/../include/tgdb_store.php';
+
+const RECORDINGS_PER_PAGE = 25;
 
 $error = null;
 $message = null;
@@ -17,14 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $active = isset($_POST['active']);
     $maxDirsize = trim($_POST['max_dirsize'] ?? '');
     $qsoTimeout = trim($_POST['qso_timeout'] ?? '');
+    $recordOnly = array_filter($_POST['record_only'] ?? [], fn($tg) => ctype_digit($tg));
     if (!ctype_digit($maxDirsize) || (int)$maxDirsize < 100) {
         $error = 'Disk limit must be a number of megabytes, at least 100.';
     } elseif (!ctype_digit($qsoTimeout) || (int)$qsoTimeout < 1) {
         $error = 'QSO gap must be a number of seconds, at least 1.';
     } else {
         try {
-            saveQsoRecorderSettings($active, (int)$maxDirsize, (int)$qsoTimeout);
-            $message = 'Settings saved. On/off applied immediately -- the disk limit and QSO gap need a SvxLink restart (Power page) to take effect.';
+            saveQsoRecorderSettings($active, (int)$maxDirsize, (int)$qsoTimeout, array_values($recordOnly));
+            $message = 'Settings saved. On/off and the talkgroup filter apply immediately -- the disk limit and QSO gap need a SvxLink restart (Power page) to take effect.';
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }
@@ -33,24 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
 
 $settings = getQsoRecorderSettings();
 $recordings = listQsoRecordings();
+$tgDb = loadTgDb();
+ksort($tgDb, SORT_NUMERIC);
 
-/**
- * Parses the timestamp SvxLink embeds in the filename -- either just a
- * start time ("qsorec_<Logic>_<YYYY-MM-DD>_<HHMMSS>.mp3") or start+end
- * ("qsorec_<Logic>_<start>_<end>.mp3"); the non-greedy logic-name match
- * naturally stops at the first timestamp either way.
- */
-function qsoRecordingLabel(string $file): string
-{
-    if (preg_match('/^qsorec_(.+?)_(\d{4}-\d{2}-\d{2})_(\d{6})(?:_\d{4}-\d{2}-\d{2}_\d{6})?\.(?:mp3|ogg|wav)$/', $file, $m)) {
-        [, $logic, $ymd, $his] = $m;
-        $dt = DateTime::createFromFormat('Y-m-d His', $ymd . ' ' . $his);
-        if ($dt) {
-            return $dt->format('Y-m-d H:i:s') . ' (' . $logic . ')';
-        }
-    }
-    return $file;
-}
+$page = max(1, (int)($_GET['page'] ?? 1));
+$totalPages = max(1, (int)ceil(count($recordings['finished']) / RECORDINGS_PER_PAGE));
+$page = min($page, $totalPages);
+$pageItems = array_slice($recordings['finished'], ($page - 1) * RECORDINGS_PER_PAGE, RECORDINGS_PER_PAGE);
 
 function formatBytes(int $bytes): string
 {
@@ -77,29 +70,50 @@ function formatBytes(int $bytes): string
 <?php if ($message): ?><div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
-  <form method="post" style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; padding:14px; background:var(--mx-bg); border-radius:8px; margin-bottom:16px;">
-    <div>
-      <label style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Logging</label>
-      <label style="font-size:13px; font-weight:normal;">
-        <input type="checkbox" name="active" <?php echo $settings['active'] ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
-        Record every transmission
+  <form method="post" style="padding:14px; background:var(--mx-bg); border-radius:8px; margin-bottom:16px;">
+    <div style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;">
+      <div>
+        <label style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Logging</label>
+        <label style="font-size:13px; font-weight:normal;">
+          <input type="checkbox" name="active" <?php echo $settings['active'] ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
+          Record every transmission
+        </label>
+      </div>
+      <div>
+        <label for="max_dirsize" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Disk limit (MB)</label>
+        <input type="text" id="max_dirsize" name="max_dirsize" value="<?php echo htmlspecialchars((string)$settings['max_dirsize']); ?>" style="width:100px; margin:0;">
+      </div>
+      <div>
+        <label for="qso_timeout" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">New file after (sec of silence)</label>
+        <input type="text" id="qso_timeout" name="qso_timeout" value="<?php echo htmlspecialchars((string)$settings['qso_timeout']); ?>" style="width:100px; margin:0;">
+      </div>
+    </div>
+    <p class="mx-hint" style="margin:8px 0 4px;">A gap of at least this long between transmissions starts a new recording -- shorter means one file per transmission, longer groups a whole back-and-forth exchange into one file.</p>
+
+    <label style="font-weight:600; font-size:12.5px; display:block; margin:12px 0 4px;">Record only these talkgroups</label>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;background:#fff;padding:3px 8px;border-radius:6px;border:1px solid var(--mx-border, #ddd);">
+        <input type="checkbox" id="record_only_all" <?php echo empty($settings['record_only_tgs']) ? 'checked' : ''; ?>
+          onchange="document.querySelectorAll('.mx-record-only-tg').forEach(c => c.disabled = this.checked)">
+        All talkgroups
       </label>
+<?php foreach ($tgDb as $tg => $name): $tg = (string)$tg; ?>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;background:#f1f1f1;padding:3px 8px;border-radius:6px;">
+        <input type="checkbox" class="mx-record-only-tg" name="record_only[]" value="<?php echo htmlspecialchars($tg); ?>"
+          <?php echo in_array($tg, $settings['record_only_tgs'], true) ? 'checked' : ''; ?>
+          <?php echo empty($settings['record_only_tgs']) ? 'disabled' : ''; ?>>
+        <?php echo htmlspecialchars($tg); ?><?php echo ($name !== '' && $name !== $tg) ? ' (' . htmlspecialchars($name) . ')' : ''; ?>
+      </label>
+<?php endforeach; ?>
     </div>
-    <div>
-      <label for="max_dirsize" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Disk limit (MB)</label>
-      <input type="text" id="max_dirsize" name="max_dirsize" value="<?php echo htmlspecialchars((string)$settings['max_dirsize']); ?>" style="width:100px; margin:0;">
-    </div>
-    <div>
-      <label for="qso_timeout" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">New file after (sec of silence)</label>
-      <input type="text" id="qso_timeout" name="qso_timeout" value="<?php echo htmlspecialchars((string)$settings['qso_timeout']); ?>" style="width:100px; margin:0;">
-    </div>
+    <p class="mx-hint" style="margin:4px 0 12px;">Recordings whose talkgroup can't be determined (local-only transmissions) are always kept, regardless of this filter. Applies to the next recording immediately -- no restart needed.</p>
+
     <button type="submit" name="save_settings" class="mx-btn">Save</button>
   </form>
-  <p class="mx-hint" style="margin-top:-10px;">A gap of at least this long between transmissions starts a new recording -- shorter means one file per transmission, longer groups a whole back-and-forth exchange into one file.</p>
 
 <?php if ($recordings['inProgress']): ?>
   <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">
-    ● Recording now — <?php echo htmlspecialchars(qsoRecordingLabel($recordings['inProgress']['file'])); ?>
+    ● Recording now — <?php echo htmlspecialchars(qsoRecordingInfo($recordings['inProgress']['file'])['when']); ?>
     (<?php echo formatBytes($recordings['inProgress']['size']); ?> so far)
   </div>
 <?php endif; ?>
@@ -109,11 +123,21 @@ function formatBytes(int $bytes): string
 <?php if (!$recordings['finished']): ?>
   <p style="color: var(--mx-text-dim); font-size: 13px;">No recordings yet.</p>
 <?php else: ?>
+  <p class="mx-hint" style="margin-top:0;"><?php echo count($recordings['finished']); ?> recording(s) total.</p>
   <table class="mx-table">
-    <tr><th>When</th><th>Size</th><th></th><th></th><th></th></tr>
-<?php foreach ($recordings['finished'] as $rec): ?>
+    <tr><th>When</th><th>TG</th><th>Callsign</th><th>Size</th><th></th><th></th><th></th></tr>
+<?php foreach ($pageItems as $rec): $info = qsoRecordingInfo($rec['file']); ?>
     <tr>
-      <td><?php echo htmlspecialchars(qsoRecordingLabel($rec['file'])); ?></td>
+      <td><?php echo htmlspecialchars($info['when']); ?></td>
+      <td><?php
+        if ($info['tg'] === null) {
+            echo '<span style="color:var(--mx-text-dim);">&mdash;</span>';
+        } else {
+            $tgName = $tgDb[$info['tg']] ?? null;
+            echo htmlspecialchars($info['tg']) . ($tgName && $tgName !== $info['tg'] ? ' (' . htmlspecialchars($tgName) . ')' : '');
+        }
+      ?></td>
+      <td><?php echo $info['callsign'] !== null ? htmlspecialchars($info['callsign']) : '<span style="color:var(--mx-text-dim);">&mdash;</span>'; ?></td>
       <td><?php echo formatBytes($rec['size']); ?></td>
       <td>
         <button type="button" class="mx-btn mx-btn-ghost"
@@ -132,6 +156,13 @@ function formatBytes(int $bytes): string
     </tr>
 <?php endforeach; ?>
   </table>
+<?php if ($totalPages > 1): ?>
+  <div style="display:flex; gap:6px; justify-content:center; margin-top:14px;">
+<?php for ($p = 1; $p <= $totalPages; $p++): ?>
+    <a href="?page=<?php echo $p; ?>" class="mx-btn <?php echo $p === $page ? '' : 'mx-btn-ghost'; ?>" style="padding:4px 10px; font-size:12px; text-decoration:none;"><?php echo $p; ?></a>
+<?php endfor; ?>
+  </div>
+<?php endif; ?>
 <?php endif; ?>
 </div>
 

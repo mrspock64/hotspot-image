@@ -34,33 +34,44 @@ function qsoRecorderDir(): string
     return $conf['QsoRecorder']['REC_DIR'] ?? QSO_RECORDER_DEFAULT_DIR;
 }
 
-/** @return array{active: bool, max_dirsize: int, qso_timeout: int} */
+/** @return array{active: bool, max_dirsize: int, qso_timeout: int, record_only_tgs: list<string>} */
 function getQsoRecorderSettings(): array
 {
     $conf = @parse_ini_file(QSO_RECORDER_SVX_CONF, true, INI_SCANNER_RAW) ?: [];
+    $raw = $conf['QsoRecorder']['RECORD_ONLY_TGS'] ?? '';
+    $recordOnly = $raw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $raw)), fn($tg) => $tg !== ''));
     return [
-        'active'      => ($conf['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1',
-        'max_dirsize' => (int)($conf['QsoRecorder']['MAX_DIRSIZE'] ?? 2000),
-        'qso_timeout' => (int)($conf['QsoRecorder']['QSO_TIMEOUT'] ?? 5),
+        'active'          => ($conf['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1',
+        'max_dirsize'     => (int)($conf['QsoRecorder']['MAX_DIRSIZE'] ?? 2000),
+        'qso_timeout'     => (int)($conf['QsoRecorder']['QSO_TIMEOUT'] ?? 5),
+        'record_only_tgs' => $recordOnly,
     ];
 }
 
 /**
- * Persists all three settings (so they survive a reboot/restart) and, for
- * the on/off switch specifically, also applies it immediately via
- * SvxLink's own DTMF control for the recorder -- QSO_RECORDER=8:QsoRecorder
- * in [SimplexLogic] means "81#" turns it on and "80#" off right now,
- * without needing a service restart. QSO_TIMEOUT has no such live control
+ * Persists all settings (so they survive a reboot/restart) and, for the
+ * on/off switch specifically, also applies it immediately via SvxLink's
+ * own DTMF control for the recorder -- QSO_RECORDER=8:QsoRecorder in
+ * [SimplexLogic] means "81#" turns it on and "80#" off right now, without
+ * needing a service restart. QSO_TIMEOUT has no such live control
  * (svxlink.conf(5) documents no DTMF command for it) -- it's only read at
  * startup, so a change here needs a restart (Power page) to take effect,
  * same as most Setup page fields.
+ *
+ * RECORD_ONLY_TGS is a key SvxLink itself never reads -- it's read fresh
+ * off disk by tag_and_encode.py (this project's ENCODER_CMD) every time a
+ * recording finishes, so a change here applies to the very next recording
+ * with no restart needed at all.
+ *
+ * @param list<string> $recordOnlyTgs
  */
-function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb, int $qsoTimeoutSec): void
+function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb, int $qsoTimeoutSec, array $recordOnlyTgs = []): void
 {
     iniSyncUpdateSection(QSO_RECORDER_SVX_CONF, 'QsoRecorder', [
-        'DEFAULT_ACTIVE' => $active ? '1' : '0',
-        'MAX_DIRSIZE'    => (string)$maxDirsizeMb,
-        'QSO_TIMEOUT'    => (string)$qsoTimeoutSec,
+        'DEFAULT_ACTIVE'   => $active ? '1' : '0',
+        'MAX_DIRSIZE'      => (string)$maxDirsizeMb,
+        'QSO_TIMEOUT'      => (string)$qsoTimeoutSec,
+        'RECORD_ONLY_TGS'  => implode(',', $recordOnlyTgs),
     ]);
     shell_exec('/usr/sbin/hotspot_dtmf ' . escapeshellarg(QSO_RECORDER_DTMF_CMD . ($active ? '1' : '0') . '#'));
 }
@@ -100,6 +111,43 @@ function listQsoRecordings(): array
     usort($finished, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
 
     return ['finished' => $finished, 'inProgress' => $inProgress];
+}
+
+/**
+ * Parses the timestamp (and, for recordings made since tag_and_encode.py,
+ * the talkgroup/callsign) SvxLink/our own ENCODER_CMD embed in the
+ * filename. Two formats:
+ *   - Tagged (current):  qsorec_<Logic>_TG<n|none>_<CALL|none>_<start>[_<end>].mp3
+ *   - Untagged (older, from before this feature): qsorec_<Logic>_<start>[_<end>].mp3
+ * Recordings made before this feature shipped only ever match the second
+ * form and simply have no tg/callsign -- there's no reliable way to
+ * attribute them after the fact, so they're left as-is.
+ *
+ * @return array{when:string, logic:string, tg:?string, callsign:?string}
+ */
+function qsoRecordingInfo(string $file): array
+{
+    if (preg_match('/^qsorec_(.+?)_TG(\d+|none)_([A-Za-z0-9]+|none)_(\d{4}-\d{2}-\d{2})_(\d{6})(?:_\d{4}-\d{2}-\d{2}_\d{6})?\.(?:mp3|ogg|wav)$/', $file, $m)) {
+        [, $logic, $tg, $call, $ymd, $his] = $m;
+        $dt = DateTime::createFromFormat('Y-m-d His', $ymd . ' ' . $his);
+        return [
+            'when'     => $dt ? $dt->format('Y-m-d H:i:s') : $file,
+            'logic'    => $logic,
+            'tg'       => $tg === 'none' ? null : $tg,
+            'callsign' => $call === 'none' ? null : $call,
+        ];
+    }
+    if (preg_match('/^qsorec_(.+?)_(\d{4}-\d{2}-\d{2})_(\d{6})(?:_\d{4}-\d{2}-\d{2}_\d{6})?\.(?:mp3|ogg|wav)$/', $file, $m)) {
+        [, $logic, $ymd, $his] = $m;
+        $dt = DateTime::createFromFormat('Y-m-d His', $ymd . ' ' . $his);
+        return [
+            'when'     => $dt ? $dt->format('Y-m-d H:i:s') : $file,
+            'logic'    => $logic,
+            'tg'       => null,
+            'callsign' => null,
+        ];
+    }
+    return ['when' => $file, 'logic' => '', 'tg' => null, 'callsign' => null];
 }
 
 /** Only ever accepts a bare filename matching the recorder's own naming pattern -- never a path. */
