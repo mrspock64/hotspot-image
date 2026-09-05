@@ -236,6 +236,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="tx_freq">TX frequency (MHz)</label>
     <input type="text" id="tx_freq" name="tx_freq" value="<?php echo htmlspecialchars((string)$current['tx_freq']); ?>"></div>
   <div class="mx-hint">Saving these actually retunes the SA818 radio module (not just the portal display) — RX and TX must match, since this is a simplex hotspot.</div>
+  <div class="mx-row"><label>SSA suggested channels</label>
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:3px;">70cm (434.450–434.500 MHz, 12.5 kHz spacing)</div>
+      <?php foreach (['434.450000', '434.462500', '434.475000', '434.487500', '434.500000'] as $f): ?>
+      <button type="button" class="mx-btn mx-btn-ghost" style="padding:2px 8px;font-size:12px;margin:0 4px 4px 0;" onclick="setSuggestedFreq('<?php echo $f; ?>')"><?php echo number_format((float)$f, 4); ?></button>
+      <?php endforeach; ?>
+    </div>
+    <div style="margin-top:4px;">
+      <div style="font-size:11px;color:#888;margin-bottom:3px;">2m (144.8250–144.8625 MHz, 12.5 kHz spacing)</div>
+      <?php foreach (['144.825000', '144.837500', '144.850000', '144.862500'] as $f): ?>
+      <button type="button" class="mx-btn mx-btn-ghost" style="padding:2px 8px;font-size:12px;margin:0 4px 4px 0;" onclick="setSuggestedFreq('<?php echo $f; ?>')"><?php echo number_format((float)$f, 4); ?></button>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <div class="mx-hint">SSA's recommended channels for DV/analog internet gateways ("hotspots") — click one to fill in both RX and TX above, then Save to actually retune the radio.</div>
+  <script>
+    function setSuggestedFreq(f) {
+      document.getElementById('rx_freq').value = f;
+      document.getElementById('tx_freq').value = f;
+    }
+  </script>
   <div class="mx-row"><label for="dtmf_muting">Mute DTMF tones locally</label>
     <input type="checkbox" id="dtmf_muting" name="dtmf_muting" <?php echo $current['dtmf_muting'] ? 'checked' : ''; ?>></div>
   <div class="mx-hint">Stops the DTMF tones of your own commands (e.g. changing talkgroup) from being sent out to the reflector network — on by default for new installs.</div>
