@@ -99,6 +99,7 @@ if (isset($_POST['btnSave']) && !$error) {
 
     <p>
       <button type="button" class="mx-btn mx-btn-ghost" onclick="addRow()">+ Add button</button>
+      <button type="button" class="mx-btn mx-btn-ghost" onclick="addSm0to7()">+ Insert SM0–SM7 shortcuts</button>
     </p>
 
     <p style="margin-top:18px;">
@@ -125,6 +126,22 @@ if (isset($_POST['btnSave']) && !$error) {
 function addRow() {
   const tpl = document.getElementById('rowTemplate');
   document.getElementById('buttonRows').appendChild(tpl.content.cloneNode(true));
+}
+
+// "91" + TG + "#" is the verified ReflectorLogic select command (this
+// hotspot's NetLink command prefix is "9", "1" is SvxLink's own "select
+// talk group" sub-command) -- confirmed against SvxLink 1.10.1's own
+// ReflectorLogic.cpp source and tested live. TG 2400-2407 are the Swedish
+// district talkgroups (Stockholm, Gotland, ...).
+function addSm0to7() {
+  for (let i = 0; i <= 7; i++) {
+    const tg = 2400 + i;
+    const tpl = document.getElementById('rowTemplate');
+    const row = tpl.content.cloneNode(true);
+    row.querySelector('input[name="label[]"]').value = 'SM' + i;
+    row.querySelector('input[name="dtmf[]"]').value = '91' + tg + '#';
+    document.getElementById('buttonRows').appendChild(row);
+  }
 }
 </script>
 </body>
