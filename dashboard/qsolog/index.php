@@ -72,7 +72,7 @@ function formatBytes(int $bytes): string
 
 <div class="mx-card">
   <h1>QSO Log</h1>
-  <p class="mx-sub">Every transmission is recorded automatically (SvxLink's built-in QSO Recorder) -- useful history if there's ever a question about interference or unauthorized use.</p>
+  <p class="mx-sub">Records transmissions when switched on (SvxLink's built-in QSO Recorder) -- off by default, useful to turn on if there's ever a question about interference or unauthorized use.</p>
 
 <?php if ($message): ?><div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>

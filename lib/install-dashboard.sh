@@ -10,7 +10,11 @@
 #
 set -euo pipefail
 
-DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL:-https://github.com/mrspock64/hotspot-image.git}"
+# Note the missing ':' -- ${VAR:-default} treats an explicitly-empty value
+# the same as unset, which defeats DASHBOARD_REPO_URL="" as a way to force
+# the local-copy fallback below (e.g. while the repo is still private).
+# ${VAR-default} only defaults when truly unset.
+DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL-https://github.com/mrspock64/hotspot-image.git}"
 REPO_DIR="/opt/hotspot-image"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -29,7 +33,10 @@ else
   cp -r "$SCRIPT_DIR" "$REPO_DIR"
   git -C "$REPO_DIR" init -q
   git -C "$REPO_DIR" add -A
-  git -C "$REPO_DIR" commit -q -m "Initial install (no remote configured yet)"
+  # -c user.{email,name} so this works even when the account running setup
+  # (typically root, via sudo) has no git identity configured anywhere --
+  # this commit is just a local install marker, not attributed to anyone.
+  git -C "$REPO_DIR" -c user.email="setup@hotspot-image.local" -c user.name="hotspot-image setup" commit -q -m "Initial install (no remote configured yet)"
 fi
 
 echo "--- Syncing dashboard/ into /var/www/html ---"
@@ -73,10 +80,20 @@ if [ -f "$MPM_CONF" ]; then
 # Tuned down from Debian's defaults (5/5/10/150) -- this is a single-user
 # dashboard on RF.Guru's hardware (as little as 416MB RAM), not a public
 # server. See hotspot-image's svxlinkuhf performance notes.
+#
+# MaxRequestWorkers is a ceiling, not something kept pre-spawned (that's
+# MinSpareServers/MaxSpareServers, which control idle RAM) -- it only
+# limits how far Apache can grow under a burst. 10 turned out too low in
+# practice: the dashboard's own pages poll several things every few
+# seconds (status, talk groups, system info), so even one open tab can
+# hold multiple connections at once (KeepAliveTimeout 5s keeps each one
+# reserved briefly after use), and "MaxRequestWorkers setting reached"
+# started showing up in the log with just light real use. 20 gives real
+# headroom for a couple of simultaneous viewers without raising idle RAM.
 StartServers            1
 MinSpareServers         1
 MaxSpareServers         3
-MaxRequestWorkers       10
+MaxRequestWorkers       20
 MaxConnectionsPerChild  0
 EOF
 fi
