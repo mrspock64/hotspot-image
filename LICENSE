@@ -1,0 +1,49 @@
+MIT License
+
+Copyright (c) 2026 Lars-Erik Karlsson (SA0LEK)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+---
+
+## Scope
+
+This MIT license covers this project's own original work: `setup.sh`,
+`lib/*.sh` (excluding the vendored file noted below), `events.d/Logic.tcl`,
+and the dashboard pages written from scratch for this fork (`qsolog/`,
+`tgnames/`, `help/`, the rewritten `backup/`, and the security/correctness
+fixes applied throughout).
+
+It does not — and cannot — extend new rights to two things this project
+builds on:
+
+- **`dashboard/`'s base pages** are forked from
+  [Guru-RF/SVXLink-Dash-V2](https://github.com/Guru-RF/SVXLink-Dash-V2),
+  itself downstream of earlier work by ON3URE, G4NAB, SP2ONG, and SP0DZ.
+  None of these publish a license file; by the ham radio community's own
+  long-standing informal norm, this lineage is shared freely for
+  non-commercial amateur radio use, and this fork continues under that same
+  understanding rather than asserting terms the upstream authors never
+  granted.
+- **`lib/rx-monitor/proxy.js`** is vendored unmodified from
+  [DVSwitch's Web_Proxy](https://github.com/DVSwitch/DVSwitch-Dashboard)
+  (Copyright (C) 2020 Mike Zingman, N4IRR and DVSwitch, INAD) and keeps its
+  own header notice in full: for use on amateur radio networks only,
+  educational purposes only, commercial use strictly prohibited. That
+  restriction applies to this file regardless of the MIT terms above.

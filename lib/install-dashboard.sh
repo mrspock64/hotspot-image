@@ -33,6 +33,12 @@ else
 fi
 
 echo "--- Syncing dashboard/ into /var/www/html ---"
+if [ -d /var/www/html ]; then
+  BACKUP_DIR="/var/backups/hotspot-image/www-html-$(date +%Y%m%d_%H%M%S)"
+  echo "Backing up existing /var/www/html to $BACKUP_DIR first"
+  mkdir -p "$(dirname "$BACKUP_DIR")"
+  cp -a /var/www/html "$BACKUP_DIR"
+fi
 rm -rf /var/www/html
 cp -r "$REPO_DIR/dashboard" /var/www/html
 chown -R www-data:www-data /var/www/html
@@ -48,6 +54,32 @@ echo "--- Granting www-data passwordless sudo ---"
 echo "www-data ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_www-data-nopasswd
 chmod 440 /etc/sudoers.d/010_www-data-nopasswd
 chsh -s /bin/bash www-data
+
+echo "--- Tuning Apache for this hardware ---"
+# Debian's prefork MPM defaults (5/5/10/150) assume a real server. Measured
+# live on svxlinkuhf: 10-12 idle workers at ~15MB RSS each ate ~167MB, over
+# a third of a 416MB board's RAM, contributing to swap pressure and TX-time
+# audio stutter. This is a single-operator dashboard, not a public site.
+MPM_CONF=/etc/apache2/mods-enabled/mpm_prefork.conf
+if [ -f "$MPM_CONF" ]; then
+  cat > "$MPM_CONF" <<'EOF'
+# prefork MPM
+# StartServers: number of server processes to start
+# MinSpareServers: minimum number of server processes which are kept spare
+# MaxSpareServers: maximum number of server processes which are kept spare
+# MaxRequestWorkers: maximum number of server processes allowed to start
+# MaxConnectionsPerChild: maximum number of requests a server process serves
+
+# Tuned down from Debian's defaults (5/5/10/150) -- this is a single-user
+# dashboard on RF.Guru's hardware (as little as 416MB RAM), not a public
+# server. See hotspot-image's svxlinkuhf performance notes.
+StartServers            1
+MinSpareServers         1
+MaxSpareServers         3
+MaxRequestWorkers       10
+MaxConnectionsPerChild  0
+EOF
+fi
 
 echo "--- Enabling Apache ---"
 systemctl enable apache2

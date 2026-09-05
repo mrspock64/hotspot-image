@@ -16,7 +16,7 @@
   <div class="mx-section" style="margin-top:0;">New in this fork</div>
   <ul style="padding-left:20px; font-size:13px; line-height:1.7;">
     <li><b>RX Monitor</b> (small speaker button, top right of the Dashboard) — listen live to whatever this node is currently receiving or relaying, right in your browser. See "RX Monitor" below for what it does and doesn't cover.</li>
-    <li><b>QSO Log</b> — every transmission is recorded automatically and browsable/playable/downloadable, with on/off and disk-limit controls right on the page.</li>
+    <li><b>QSO Log</b> — records transmissions when switched on, browsable/playable/downloadable, with on/off and disk-limit controls right on the page. Off by default — turn it on here when you actually need it.</li>
     <li><b>Talk Group Names</b> — the names shown on the Talk Groups page are now editable, with a one-click import from Setup's monitored talkgroups list.</li>
     <li><b>Buttons</b> — the front-page quick-DTMF buttons (TG4, TG8, ...) are editable instead of requiring an SSH login and a text editor.</li>
     <li><b>Backup / Restore</b> — one download bundles the reflector certificate, node config, buttons, and TG names; restoring is one upload.</li>
@@ -29,7 +29,7 @@
     <tr><td><b>Dashboard</b></td><td>Node status at a glance — active logics, loaded modules, last-heard stations, system info. The RX Monitor button (if present) lets you listen live.</td></tr>
     <tr><td><b>Talk Groups</b></td><td>One row per talkgroup. <b>M</b> = Monitor (listen to that TG without switching to it — you'll hear it but stay on your current one). <b>A</b> = Activate (switch to it). Names are edited on the <a href="/tgnames/">TG Names</a> page.</td></tr>
     <tr><td><b>Buttons</b></td><td>The quick-DTMF buttons shown at the top of Dashboard/Talk Groups. Add, remove, or relabel them here; each just sends a DTMF string when clicked.</td></tr>
-    <tr><td><b>QSO Log</b></td><td>Every transmission recorded automatically (receivers, modules, and reflector traffic all included). Play or download any recording, turn logging on/off, set the disk-space limit and how long a gap between transmissions counts as a new recording.</td></tr>
+    <tr><td><b>QSO Log</b></td><td>Records transmissions (receivers, modules, and reflector traffic all included) once switched on -- off by default. Play or download any recording, turn logging on/off, set the disk-space limit and how long a gap between transmissions counts as a new recording.</td></tr>
     <tr><td><b>Power</b></td><td>Restart SvxLink, restart the device, or power it off.</td></tr>
   </table>
 

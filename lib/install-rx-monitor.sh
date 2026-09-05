@@ -70,8 +70,18 @@ else
   # dashboard's Play button silently did nothing there. Switch to lame/mp3
   # instead of just patching oggenc's syntax: MP3 plays everywhere.
   if grep -qE '^ENCODER_CMD=/usr/bin/oggenc' "$SVX_CONF"; then
-    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc.*$|ENCODER_CMD=/usr/bin/lame --quiet \\"%f\\" \\"%d/%b.mp3\\" \&\& rm \\"%f\\"|' "$SVX_CONF"
-    echo "Replaced oggenc ENCODER_CMD with lame/mp3 (Safari can't play Ogg Vorbis)."
+    # nice/ionice matter on RF.Guru's actual hardware (2 cores, ~400MB RAM):
+    # measured live on svxlinkuhf, lame encoding at normal priority was
+    # competing with SvxLink's real-time audio thread right as a QSO ends,
+    # contributing to audible TX-time stutter.
+    sed -i 's|^ENCODER_CMD=/usr/bin/oggenc.*$|ENCODER_CMD=nice -n 19 ionice -c3 /usr/bin/lame --quiet \\"%f\\" \\"%d/%b.mp3\\" \&\& rm \\"%f\\"|' "$SVX_CONF"
+    echo "Replaced oggenc ENCODER_CMD with a niced lame/mp3 (Safari can't play Ogg Vorbis; nice/ionice keep it off SvxLink's real-time thread)."
+    RESTART_NEEDED=1
+  elif grep -qE '^ENCODER_CMD=/usr/bin/lame' "$SVX_CONF"; then
+    # A prior run of this script (before nice/ionice were added) already
+    # switched this to lame -- upgrade it in place rather than leaving it.
+    sed -i 's|^ENCODER_CMD=/usr/bin/lame|ENCODER_CMD=nice -n 19 ionice -c3 /usr/bin/lame|' "$SVX_CONF"
+    echo "Added nice/ionice to the existing lame ENCODER_CMD."
     RESTART_NEEDED=1
   fi
 
@@ -89,7 +99,15 @@ else
   # Per-QSO files (not one giant recording) and a sane disk cap. Only added
   # if missing, so a value someone already tuned via the Setup page (which
   # writes MAX_DIRSIZE) is never overwritten here.
-  for kv in "MIN_TIME=1500" "QSO_TIMEOUT=5" "DEFAULT_ACTIVE=1" "MAX_DIRSIZE=2000"; do
+  #
+  # DEFAULT_ACTIVE=0: recording starts OFF. QSO_RECORDER=8:QsoRecorder above
+  # still wires the recorder into the audio path so the dashboard's QSO Log
+  # on/off toggle (DTMF 80#/81#) works -- it's just not running from boot.
+  # Off-by-default because (a) it has a real, measured CPU cost even when
+  # idle-active (see the svxlinkuhf performance notes) and (b) silently
+  # recording every transmission isn't something this project should turn
+  # on for someone by default -- that's a per-node decision to opt into.
+  for kv in "MIN_TIME=1500" "QSO_TIMEOUT=5" "DEFAULT_ACTIVE=0" "MAX_DIRSIZE=2000"; do
     key="${kv%%=*}"
     if ! grep -q "^${key}=" "$SVX_CONF"; then
       sed -i "/^\[QsoRecorder\]$/a ${kv}" "$SVX_CONF"
