@@ -44,16 +44,37 @@ function loadTgDb(): array
  */
 function loadMonitoredTgNumbers(): array
 {
+    // Priority markers are trailing plus signs (svxlink.conf(5): "112++"),
+    // so this must rtrim, not ltrim -- ltrim was a no-op here and would
+    // silently drop any prioritized entry from the returned list, since
+    // e.g. "2403+" isn't all-digit and ctype_digit() would reject it.
     $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
     $raw = $conf['ReflectorLogic']['MONITOR_TGS'] ?? '';
     $numbers = [];
     foreach (explode(',', $raw) as $tg) {
-        $tg = ltrim(trim($tg), '+');
+        $tg = rtrim(trim($tg), '+');
         if ($tg !== '' && ctype_digit($tg)) {
             $numbers[] = $tg;
         }
     }
     return $numbers;
+}
+
+// Same source as loadMonitoredTgNumbers(), but keyed by TG number with its
+// priority level: 0 = none, 1 = "+", 2 = "++", and so on.
+function loadMonitoredTgPriorities(): array
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    $raw = $conf['ReflectorLogic']['MONITOR_TGS'] ?? '';
+    $priorities = [];
+    foreach (explode(',', $raw) as $entry) {
+        $entry = trim($entry);
+        $tg = rtrim($entry, '+');
+        if ($tg !== '' && ctype_digit($tg)) {
+            $priorities[$tg] = strlen($entry) - strlen($tg);
+        }
+    }
+    return $priorities;
 }
 
 function saveTgDb(array $tgdb): void
