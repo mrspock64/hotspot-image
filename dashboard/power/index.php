@@ -9,34 +9,35 @@
 
 <?php
 
-if (isset($_POST['btnPower']))
-    {
-        $retval = null;
-        $screen = null;
-        $command = "sudo shutdown -h now 2>&1";
-        exec($command,$screen,$retval);
+// Each command runs backgrounded ("&") so PHP can respond with a status
+// message immediately, rather than the page hanging until svxlink has
+// fully restarted (or, for Restart/Power OFF, never responding at all
+// because the device goes down mid-request).
+$message = null;
+
+if (isset($_POST['btnPower'])) {
+    exec("sudo shutdown -h now > /dev/null 2>&1 &");
+    $message = "Powering off now. The device will go offline in a few seconds -- you'll need physical access to turn it back on.";
 }
 
-if (isset($_POST['btnSvxlink']))
-    {
-        $retval = null;
-        $screen = null;
-        $command = "sudo service svxlink restart 2>&1";
-        exec($command,$screen,$retval);
+if (isset($_POST['btnSvxlink'])) {
+    exec("sudo service svxlink restart > /dev/null 2>&1 &");
+    $message = "Restarting the SVXlink service. This takes a few seconds -- the dashboard itself stays up throughout.";
 }
 
-if (isset($_POST['btnRestart']))
-    {
-        $retval = null;
-        $screen = null;
-        $command = "sudo shutdown -r now 2>&1";
-        exec($command,$screen,$retval);
+if (isset($_POST['btnRestart'])) {
+    exec("sudo shutdown -r now > /dev/null 2>&1 &");
+    $message = "Restarting the device now. The dashboard will be unreachable for about a minute.";
 }
 
 ?>
 
 <div class="mx-card" style="max-width: 500px; text-align: center;">
   <h1 style="text-align: center;">Power</h1>
+
+<?php if ($message): ?>
+  <p class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></p>
+<?php endif; ?>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
     <p><button name="btnSvxlink" type="submit" class="mx-btn" style="width:260px;">Restart SVXlink Service</button></p>
