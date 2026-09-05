@@ -31,10 +31,25 @@ if (isset($_POST['btnSave'])) {
         $tgdb[$tg] = $name;
     }
 
+    // A TG that's currently monitored (Talk Groups page) but gets removed
+    // here would keep listening -- MONITOR_TGS in svxlink.conf doesn't
+    // know or care whether this list still names it -- while vanishing
+    // from every page that reads this list, including Talk Groups itself.
+    // Caught here as the authoritative check; the Remove button is also
+    // disabled client-side for these rows so this should be rare.
+    $removedMonitored = array_intersect(
+        array_map('strval', array_keys(loadTgDb())),
+        loadMonitoredTgNumbers()
+    );
+    $removedMonitored = array_diff($removedMonitored, array_keys($tgdb));
+
     if ($invalidNumber) {
         $error = 'TG numbers must be plain numbers (e.g. 240, not "TG240").';
     } elseif ($invalidName) {
         $error = 'Every talkgroup needs a name — remove empty rows instead of leaving them blank.';
+    } elseif ($removedMonitored) {
+        $error = 'Can\'t remove TG ' . implode(', ', $removedMonitored) . ' — still monitored. '
+            . 'Uncheck it on the Talk Groups page first, then remove it here.';
     } else {
         try {
             saveTgDb($tgdb);
@@ -70,7 +85,7 @@ if (isset($_POST['btnImport'])) {
     }
     uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
     $message = $added > 0
-        ? "Added $added talkgroup(s) from Setup's Monitored talkgroups list, named after their numbers for now — edit the names below and Save."
+        ? "Added $added talkgroup(s) from the Talk Groups page's monitored list, named after their numbers for now — edit the names below and Save."
         : "Nothing to add — every monitored talkgroup is already listed below.";
 } elseif (isset($_POST['btnSave']) && !$error) {
     // reflect what was actually saved, not a stale disk read
@@ -103,6 +118,10 @@ if (isset($_POST['btnImport'])) {
     <b>M</b> there means "monitor" (listen to that talkgroup without switching to it), <b>A</b> means
     "activate" (switch to it). This just names the numbers — it doesn't change what your reflector
     actually carries.</p>
+  <p class="mx-sub">How the two pages fit together: this page is the master list of talkgroups the dashboard
+    knows about. <a href="/tg.php">Talk Groups</a> is where you pick which of them SvxLink actually
+    monitors. A talkgroup can't be removed from here while it's still monitored there — uncheck it on
+    Talk Groups first.</p>
 
 <?php if ($message): ?><div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
@@ -111,11 +130,21 @@ if (isset($_POST['btnImport'])) {
     <table class="mx-table">
       <tr><th style="width:30%">TG #</th><th style="width:55%">Name</th><th style="width:15%"></th></tr>
       <tbody id="tgRows">
-<?php foreach ($tgdb as $tg => $name): ?>
+<?php
+$mxMonitoredForNames = loadMonitoredTgNumbers();
+foreach ($tgdb as $tg => $name):
+    $isMonitored = in_array((string)$tg, $mxMonitoredForNames, true);
+?>
       <tr>
-        <td><input type="text" name="tg[]" value="<?php echo htmlspecialchars((string)$tg); ?>" placeholder="240"></td>
+        <td><input type="text" name="tg[]" value="<?php echo htmlspecialchars((string)$tg); ?>" placeholder="240" <?php echo $isMonitored ? 'readonly' : ''; ?>></td>
         <td><input type="text" name="name[]" value="<?php echo htmlspecialchars((string)$name); ?>" placeholder="SM Repeaters"></td>
-        <td><button type="button" class="mx-btn mx-btn-ghost" onclick="this.closest('tr').remove()">Remove</button></td>
+        <td>
+<?php if ($isMonitored): ?>
+          <span class="mx-btn mx-btn-ghost" style="opacity:.5;cursor:default;" title="Monitored on the Talk Groups page — uncheck it there first">Monitored</span>
+<?php else: ?>
+          <button type="button" class="mx-btn mx-btn-ghost" onclick="this.closest('tr').remove()">Remove</button>
+<?php endif; ?>
+        </td>
       </tr>
 <?php endforeach; ?>
       </tbody>
@@ -125,7 +154,7 @@ if (isset($_POST['btnImport'])) {
       <button type="button" class="mx-btn mx-btn-ghost" onclick="addRow()">+ Add talkgroup</button>
       <button type="submit" name="btnImport" class="mx-btn mx-btn-ghost">⇩ Import from monitored talkgroups</button>
     </p>
-    <p class="mx-hint" style="margin-top:-6px;">Pulls the TG numbers from Setup's "Monitored talkgroups" field — only adds ones not already listed below; doesn't touch existing names.</p>
+    <p class="mx-hint" style="margin-top:-6px;">Pulls the TG numbers from the <a href="/tg.php">Talk Groups</a> page's monitored list — only adds ones not already listed below; doesn't touch existing names.</p>
 
     <p style="margin-top:18px;">
       <button type="submit" name="btnSave" class="mx-btn">Save</button>
