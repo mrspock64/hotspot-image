@@ -2,6 +2,23 @@
 $progname = basename($_SERVER['SCRIPT_FILENAME'],".php");
 include_once 'include/config.php';
 include_once 'include/tools.php';
+include_once 'include/tgdb_store.php';
+include_once 'include/inisync.php';
+
+$monitorMsg = null;
+if (isset($_POST['btnSaveMonitor'])) {
+    $checked = array_filter($_POST['monitor'] ?? [], fn($tg) => ctype_digit($tg));
+    try {
+        iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'ReflectorLogic', [
+            'MONITOR_TGS' => implode(',', $checked),
+        ]);
+        exec('sudo service svxlink restart > /dev/null 2>&1 &');
+        $monitorMsg = 'Saved and restarting SvxLink -- takes a few seconds, the dashboard stays up.';
+    } catch (Throwable $e) {
+        $monitorMsg = 'Failed to save: ' . $e->getMessage();
+    }
+}
+
 $svxConfigFile = '/etc/svxlink/svxlink.conf';
     if (fopen($svxConfigFile,'r'))
        { $svxconfig = parse_ini_file($svxConfigFile,true,INI_SCANNER_RAW);
@@ -100,6 +117,34 @@ include_once __DIR__."/include/buttons.php";
     include 'include/tg.php';
     echo '</div></center>'."\n";
     echo "<br />\n";
+?>
+<center>
+<div class="mx-card" style="max-width:550px;text-align:left;">
+  <h2 style="margin-top:0;font-size:16px;">Monitored talkgroups</h2>
+  <p class="mx-sub">Which talkgroups this node listens to for activity when no other TG is selected. Requires a SvxLink restart to take effect -- Save does that for you.</p>
+<?php if ($monitorMsg): ?>
+  <div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($monitorMsg); ?></div>
+<?php endif; ?>
+<?php
+$mxMonitored = loadMonitoredTgNumbers();
+$mxTgDb = loadTgDb();
+ksort($mxTgDb, SORT_NUMERIC);
+?>
+  <form method="post">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+<?php foreach ($mxTgDb as $tg => $name): $tg = (string)$tg; ?>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;background:#f1f1f1;padding:4px 8px;border-radius:6px;">
+        <input type="checkbox" name="monitor[]" value="<?php echo htmlspecialchars($tg); ?>" <?php echo in_array($tg, $mxMonitored, true) ? 'checked' : ''; ?>>
+        <?php echo htmlspecialchars($tg); ?><?php echo ($name !== '' && $name !== $tg) ? ' (' . htmlspecialchars($name) . ')' : ''; ?>
+      </label>
+<?php endforeach; ?>
+    </div>
+    <button type="submit" name="btnSaveMonitor" class="mx-btn">Save &amp; restart SvxLink</button>
+  </form>
+</div>
+</center>
+<br>
+<?php
     if (URLSVXRAPI!="") {
     echo '<center><div id="svxref" style="margin-bottom:30px;">'."\n";
     //include 'include/svxref.php';
