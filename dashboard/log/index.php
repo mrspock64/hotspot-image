@@ -3,43 +3,70 @@
   <head>
     <meta charset="UTF-8">
     <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+    <title>Log</title>
   </head>
 <body style="background: var(--mx-bg); margin: 0;">
 <?php include_once __DIR__ . '/../include/site_header.php'; ?>
 
-<div class="mx-card" style="max-width: 600px;">
+<div class="mx-card" style="max-width: 700px;">
   <h1 style="text-align:center;">Log viewer</h1>
+  <p class="mx-sub" style="text-align:center;">Live -- streams new lines as SvxLink writes them (a real <code>tail -f</code>, not a periodic refresh). Stops after 10 minutes to free up the connection; click Reconnect to keep watching.</p>
 
-<?php
+  <p id="logStatus" style="text-align:center; font-size:12.5px; color:var(--mx-text-dim);">Connecting…</p>
 
-$screen[0] = "Welcome to Svxlink log viewer tool.";
-$screen[1] = "";
-$screen[2] = "Click on the button to get current running log.";
-$screen[3] = "";
+  <pre id="logOutput" style="background:#111; color:#0f0; border:1px solid #000; font-family:'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px; height:420px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; margin:0 0 12px;"></pre>
 
-if (isset($_POST['btnLog']))
-    {
-        $retval = null;
-        $screen = null;
-        // Was "tail -l /var/log/svxlink.log" -- -l isn't a real tail flag
-        // and the log file has no .log suffix (it's /var/log/svxlink; see
-        // include/system.php's SVXLOGPATH/SVXLOGPREFIX constants, not
-        // pulled in here to avoid pulling in that file's own output).
-        // Both errors went to stderr, which exec() doesn't capture, so
-        // this silently produced an empty $screen instead of a visible
-        // error -- hence "nothing shows up" when clicking the button.
-        $command = "tail -n 200 " . escapeshellarg("/var/log/svxlink") . " 2>&1";
-        exec($command,$screen,$retval);
+  <p style="text-align:center;">
+    <button type="button" id="reconnectBtn" class="mx-btn" style="display:none;" onclick="connect()">Reconnect</button>
+  </p>
+</div>
+
+<script>
+let source = null;
+const output = document.getElementById('logOutput');
+const status = document.getElementById('logStatus');
+const reconnectBtn = document.getElementById('reconnectBtn');
+
+function appendLine(text) {
+  const atBottom = output.scrollTop + output.clientHeight >= output.scrollHeight - 20;
+  output.textContent += text + "\n";
+  if (atBottom) {
+    output.scrollTop = output.scrollHeight;
+  }
 }
 
-?>
+function connect() {
+  reconnectBtn.style.display = 'none';
+  status.textContent = 'Connecting…';
+  output.textContent = '';
 
-<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
-  <textarea name="scan" rows="18" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
-			echo implode("\n",$screen); ?></textarea>
-  <p><button name="btnLog" type="submit" class="mx-btn">Show Log</button></p>
-</form>
+  source = new EventSource('/log/stream.php');
 
-</div>
+  source.onopen = () => { status.textContent = 'Live'; };
+
+  source.onmessage = (e) => appendLine(e.data);
+
+  source.addEventListener('timeout', (e) => {
+    appendLine('--- ' + e.data + ' ---');
+    status.textContent = 'Stopped (timed out)';
+    reconnectBtn.style.display = 'inline-block';
+    source.close();
+  });
+
+  source.addEventListener('error', (e) => {
+    if (e.data) appendLine('--- ' + e.data + ' ---');
+  });
+
+  source.onerror = () => {
+    // A real connection drop (network/server), not our own timeout event
+    // above -- EventSource would otherwise retry forever on its own.
+    status.textContent = 'Disconnected';
+    reconnectBtn.style.display = 'inline-block';
+    source.close();
+  };
+}
+
+connect();
+</script>
 </body>
 </html>
