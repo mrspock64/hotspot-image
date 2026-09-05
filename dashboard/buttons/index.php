@@ -99,7 +99,7 @@ if (isset($_POST['btnSave']) && !$error) {
 
     <p>
       <button type="button" class="mx-btn mx-btn-ghost" onclick="addRow()">+ Add button</button>
-      <button type="button" class="mx-btn mx-btn-ghost" onclick="addSm0to7()">+ Insert SM0–SM7 shortcuts</button>
+      <button type="button" class="mx-btn mx-btn-ghost" onclick="addSm0to7()">+ Insert SM0–SM7 + utility shortcuts</button>
     </p>
 
     <p style="margin-top:18px;">
@@ -133,15 +133,27 @@ function addRow() {
 // talk group" sub-command) -- confirmed against SvxLink 1.10.1's own
 // ReflectorLogic.cpp source and tested live. TG 2400-2407 are the Swedish
 // district talkgroups (Stockholm, Gotland, ...).
+//
+// TALKGROUP/STATUS/PARROT/IPADRESS are the existing utility commands
+// already saved on this node (D911# is the custom IP-readout command in
+// this project's own Logic.tcl) -- reused as-is, not re-derived.
+function addQuickButtonRow(label, dtmf, color) {
+  const tpl = document.getElementById('rowTemplate');
+  const row = tpl.content.cloneNode(true);
+  row.querySelector('input[name="label[]"]').value = label;
+  row.querySelector('input[name="dtmf[]"]').value = dtmf;
+  row.querySelector('select[name="color[]"]').value = color;
+  document.getElementById('buttonRows').appendChild(row);
+}
+
 function addSm0to7() {
   for (let i = 0; i <= 7; i++) {
-    const tg = 2400 + i;
-    const tpl = document.getElementById('rowTemplate');
-    const row = tpl.content.cloneNode(true);
-    row.querySelector('input[name="label[]"]').value = 'SM' + i;
-    row.querySelector('input[name="dtmf[]"]').value = '91' + tg + '#';
-    document.getElementById('buttonRows').appendChild(row);
+    addQuickButtonRow('SM' + i, '91' + (2400 + i) + '#', 'green');
   }
+  addQuickButtonRow('TALKGROUP', '9*#', 'red');
+  addQuickButtonRow('STATUS', '*#', 'red');
+  addQuickButtonRow('PARROT', 'D1#', 'red');
+  addQuickButtonRow('IPADRESS', 'D911#', 'red');
 }
 </script>
 </body>
