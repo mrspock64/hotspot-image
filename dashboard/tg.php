@@ -111,11 +111,6 @@ include_once __DIR__."/include/buttons.php";
     echo 'setTimeout(reloadSVXREF,90000);'."\n";
      }
 
-    echo 'function reloadTalkGroups(){'."\n";
-    echo '  $("#TalkGroups").load("include/tg.php",function(){ setTimeout(reloadLastHeard,3000) });'."\n";
-    echo '}'."\n";
-    echo 'setTimeout(reloadTalkGroups,3000);'."\n";
-
     echo '$(window).trigger(\'resize\');'."\n";
     echo '</script>'."\n";
     echo '<center><div id="TalkGroups" style="margin-bottom:30px;">'."\n";
@@ -123,41 +118,6 @@ include_once __DIR__."/include/buttons.php";
     echo '</div></center>'."\n";
     echo "<br />\n";
 ?>
-<center>
-<div class="mx-card" style="max-width:680px;text-align:left;">
-  <h2 style="margin-top:0;font-size:16px;">Monitored talkgroups</h2>
-  <p class="mx-sub">Which talkgroups this node listens to for activity when no other TG is selected.<br>Priority: if there's activity on a higher-priority TG while a lower one is selected, the node switches to it (unless there's been local activity). Requires a SvxLink restart to take effect -- Save does that for you.</p>
-<?php if ($monitorMsg): ?>
-  <div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($monitorMsg); ?></div>
-<?php endif; ?>
-<?php
-$mxMonitored = loadMonitoredTgNumbers();
-$mxPriorities = loadMonitoredTgPriorities();
-$mxTgDb = loadTgDb();
-ksort($mxTgDb, SORT_NUMERIC);
-$mxPrioLabels = ['No priority', '+', '++', '+++'];
-?>
-  <form method="post">
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
-<?php foreach ($mxTgDb as $tg => $name): $tg = (string)$tg; ?>
-      <div style="display:flex;flex-direction:column;gap:3px;font-size:13px;background:#f1f1f1;padding:4px 8px;border-radius:6px;">
-        <label style="display:flex;align-items:center;gap:4px;">
-          <input type="checkbox" name="monitor[]" value="<?php echo htmlspecialchars($tg); ?>" <?php echo in_array($tg, $mxMonitored, true) ? 'checked' : ''; ?>>
-          <?php echo htmlspecialchars($tg); ?><?php echo ($name !== '' && $name !== $tg) ? ' (' . htmlspecialchars($name) . ')' : ''; ?>
-        </label>
-        <select name="priority[<?php echo htmlspecialchars($tg); ?>]" style="font-size:11px;">
-<?php foreach ($mxPrioLabels as $p => $label): ?>
-          <option value="<?php echo $p; ?>" <?php echo ($mxPriorities[$tg] ?? 0) === $p ? 'selected' : ''; ?>><?php echo $label; ?></option>
-<?php endforeach; ?>
-        </select>
-      </div>
-<?php endforeach; ?>
-    </div>
-    <button type="submit" name="btnSaveMonitor" class="mx-btn">Save &amp; restart SvxLink</button>
-  </form>
-</div>
-</center>
-<br>
 <?php
     if (URLSVXRAPI!="") {
     echo '<center><div id="svxref" style="margin-bottom:30px;">'."\n";
