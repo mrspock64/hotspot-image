@@ -18,17 +18,17 @@ $svxConfigFile = '/etc/svxlink/svxlink.conf';
 ?>
 <span style="font-weight: bold;font-size:14px;">Talk Groups <a href="/tgnames/" style="font-size:11px;font-weight:normal;">(edit names)</a></span>
 <?php if (!empty($monitorMsg)): ?>
-<div class="mx-msg mx-msg-ok" style="max-width:700px;margin:8px auto 0;"><?php echo htmlspecialchars($monitorMsg); ?></div>
+<div class="mx-msg mx-msg-ok" style="max-width:560px;margin:8px auto 0;"><?php echo htmlspecialchars($monitorMsg); ?></div>
 <?php endif; ?>
-<fieldset style=" width:700px;box-shadow:5px 5px 20px #999;background-color:#e8e8e8e8;margin-top:10px;margin-left:0px;margin-right:0px;font-size:12px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+<fieldset style=" width:560px;box-shadow:5px 5px 20px #999;background-color:#e8e8e8e8;margin-top:10px;margin-left:0px;margin-right:0px;font-size:12px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
   <form method="post">
-  <table style="margin-top:0px;">
+  <table style="margin-top:0px;table-layout:fixed;width:100%;">
     <tr height=25px>
-      <th width=90px>TG #</th>
+      <th width=70px>TG #</th>
       <th width=30px> M </th>
       <th width=30px> A </th>
-      <th>TG Name</th>
-      <th width=60px>Monitor</th>
+      <th width=150px>TG Name</th>
+      <th width=55px>Monitor</th>
       <th width=90px>Priority</th>
     </tr>
 <?php
@@ -39,7 +39,7 @@ foreach ($tgdb_array as $tg => $tgname)
 		echo "<td align=\"left\">&nbsp;<span style=\"color:#b5651d;font-weight:bold;\">" . htmlspecialchars($tg) . "</span></td>";
 		echo "<td><button type=submit id=jumptoM name=jmptoM class=monitor_id value=\"" . htmlspecialchars($tg) . "\"><i class=\"material-icons\" style=\"font-size:15px;\">volume_up</i></button></td>";
                 echo "<td><button type=submit id=jumptoA name=jmptoA class=active_id value=\"" . htmlspecialchars($tg) . "\"><i class=\"material-icons\" style=\"font-size:15px;\">cell_tower</i></button></td>";
-		echo "<td style=\"font-weight:bold;color:#464646;\">&nbsp;<b>" . htmlspecialchars((string)$tgname) . "</b></td>";
+		echo "<td style=\"font-weight:bold;color:#464646;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;\">&nbsp;<b>" . htmlspecialchars((string)$tgname) . "</b></td>";
 		echo "<td align=\"center\"><input type=\"checkbox\" name=\"monitor[]\" value=\"" . htmlspecialchars($tg) . "\" " . (in_array($tg, $mxMonitored, true) ? 'checked' : '') . "></td>";
 		echo "<td><select name=\"priority[" . htmlspecialchars($tg) . "]\" style=\"font-size:11px;\">";
 		foreach ($mxPrioLabels as $p => $label) {
