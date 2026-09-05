@@ -20,6 +20,7 @@ set -euo pipefail
 # deliberate, ${VAR:-default} would treat an explicitly-empty override the
 # same as unset and defeat DASHBOARD_REPO_URL="" too.)
 DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL-}"
+REAL_REPO_URL="https://github.com/mrspock64/hotspot-image.git"
 REPO_DIR="/opt/hotspot-image"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -33,16 +34,30 @@ if [ -n "$DASHBOARD_REPO_URL" ]; then
   git clone "$DASHBOARD_REPO_URL" "$REPO_DIR"
 else
   echo "WARNING: DASHBOARD_REPO_URL is not set — copying the local checkout"
-  echo "         instead. The dashboard's Update page will have nothing to"
-  echo "         pull from until this repo has a real remote."
+  echo "         instead. The dashboard's Update page won't have anything"
+  echo "         new to pull until this repo goes public (git fetch needs"
+  echo "         auth against a private repo), but 'origin' is still"
+  echo "         pointed at the real URL so it's ready the moment it does."
   cp -r "$SCRIPT_DIR" "$REPO_DIR"
   git -C "$REPO_DIR" init -q
+  git -C "$REPO_DIR" remote add origin "$REAL_REPO_URL"
   git -C "$REPO_DIR" add -A
   # -c user.{email,name} so this works even when the account running setup
   # (typically root, via sudo) has no git identity configured anywhere --
   # this commit is just a local install marker, not attributed to anyone.
   git -C "$REPO_DIR" -c user.email="setup@hotspot-image.local" -c user.name="hotspot-image setup" commit -q -m "Initial install (no remote configured yet)"
 fi
+
+# The dashboard's own Update page runs git fetch/pull here as www-data (via
+# Apache), but everything above just ran as root (setup.sh needs root) --
+# without this, check.dashboard.sh/update.dashboard.sh fail outright:
+# www-data can't write root-owned .git/config, and even read-only git
+# commands refuse to run at all ("detected dubious ownership") once the
+# directory owner doesn't match the calling user. Found live on svxlinkuhf:
+# the Update page's "Dashboard" check silently reported a bogus "UPDATE
+# AVAILABLE" instead of the real permission failure underneath it.
+chown -R www-data:www-data "$REPO_DIR"
+git config --system --add safe.directory "$REPO_DIR"
 
 echo "--- Syncing dashboard/ into /var/www/html ---"
 if [ -d /var/www/html ]; then
