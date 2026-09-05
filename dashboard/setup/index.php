@@ -66,6 +66,7 @@ function readCurrent(): array
 $errors = [];
 $saved = false;
 $current = readCurrent();
+$previousFreq = $current['freq'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $in = $_POST;
@@ -166,9 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // The physical radio module's frequency lives entirely outside
             // svxlink.conf/node_info.json (see updateRadioFrequency()'s
             // docblock) -- retune it too, or the field above is just portal
-            // display text that doesn't match what's actually on air.
+            // display text that doesn't match what's actually on air. Only
+            // when it actually changed, though -- saving the rest of this
+            // form (location, monitored TGs, ...) shouldn't re-key the SA818
+            // module every time.
             $radioMsg = null;
-            if ($current['freq'] !== '') {
+            if ($current['freq'] !== '' && (float)$current['freq'] !== (float)$previousFreq) {
                 try {
                     $radioMsg = updateRadioFrequency((float)$current['freq']);
                 } catch (Throwable $e) {
