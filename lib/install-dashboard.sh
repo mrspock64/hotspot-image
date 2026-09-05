@@ -10,11 +10,16 @@
 #
 set -euo pipefail
 
-# Note the missing ':' -- ${VAR:-default} treats an explicitly-empty value
-# the same as unset, which defeats DASHBOARD_REPO_URL="" as a way to force
-# the local-copy fallback below (e.g. while the repo is still private).
-# ${VAR-default} only defaults when truly unset.
-DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL-https://github.com/mrspock64/hotspot-image.git}"
+# Defaults to empty (local-copy fallback below) while mrspock64/hotspot-image
+# stays private -- setup.sh calls this script with no override, so a real
+# GitHub URL default here would make every setup.sh run try to `git clone`
+# a private repo and fail with "could not read Username for 'https://
+# github.com'". Flip this back to the real URL once the repo goes public;
+# until then, override with DASHBOARD_REPO_URL=<url> for a one-off test of
+# the clone path itself. (Note the missing ':' in ${VAR-default} -- that's
+# deliberate, ${VAR:-default} would treat an explicitly-empty override the
+# same as unset and defeat DASHBOARD_REPO_URL="" too.)
+DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL-}"
 REPO_DIR="/opt/hotspot-image"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
