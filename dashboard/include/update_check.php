@@ -9,7 +9,16 @@
  * down a page load.
  */
 
-const UPDATE_CHECK_CACHE_FILE = '/tmp/hotspot-image-update-check.json';
+// NOT /tmp: apache2's systemd unit runs with PrivateTmp=yes (Debian's
+// default hardening), which gives Apache -- and every PHP script running
+// under it -- its own private /tmp namespace, invisible to everything
+// else on the system (an SSH session, a cron job, another service).
+// Confirmed live: this cache silently never worked when it lived in
+// /tmp -- Apache read and wrote its own private copy every time, so the
+// badge always recomputed the live (always-false, repo still private)
+// result instead of ever actually hitting the cache.
+const UPDATE_CHECK_CACHE_DIR = '/var/cache/hotspot-image';
+const UPDATE_CHECK_CACHE_FILE = UPDATE_CHECK_CACHE_DIR . '/update_check.json';
 const UPDATE_CHECK_TTL_SECONDS = 6 * 3600;
 const UPDATE_CHECK_REPO_DIR = '/opt/hotspot-image';
 
@@ -41,6 +50,9 @@ function isDashboardUpdateAvailable(): array
         }
     }
 
+    if (!is_dir(UPDATE_CHECK_CACHE_DIR)) {
+        @mkdir(UPDATE_CHECK_CACHE_DIR, 0755, true);
+    }
     @file_put_contents(UPDATE_CHECK_CACHE_FILE, json_encode($result));
     return $result;
 }

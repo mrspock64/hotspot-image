@@ -59,6 +59,14 @@ fi
 chown -R www-data:www-data "$REPO_DIR"
 git config --system --add safe.directory "$REPO_DIR"
 
+# The header's "update available" badge caches its check here rather than
+# /tmp -- apache2's systemd unit runs with PrivateTmp=yes, which gives it
+# a private /tmp invisible to everything else, so a cache file living
+# there would just silently never be reused (confirmed live: every page
+# load recomputed the check from scratch instead of hitting the cache).
+mkdir -p /var/cache/hotspot-image
+chown www-data:www-data /var/cache/hotspot-image
+
 echo "--- Syncing dashboard/ into /var/www/html ---"
 if [ -d /var/www/html ]; then
   BACKUP_DIR="/var/backups/hotspot-image/www-html-$(date +%Y%m%d_%H%M%S)"
