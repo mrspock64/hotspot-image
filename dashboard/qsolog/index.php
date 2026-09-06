@@ -69,6 +69,11 @@ function formatBytes(int $bytes): string
 
 <?php if ($message): ?><div class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="mx-msg mx-msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php if (!empty($settings['record_only_tgs'])): ?>
+  <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">
+    &#9888; Recording is filtered — only TG <?php echo htmlspecialchars(implode(', ', $settings['record_only_tgs'])); ?> will be kept. Everything else is recorded then immediately discarded. Select "All talkgroups" below and Save if that's not intended.
+  </div>
+<?php endif; ?>
 
   <form method="post" style="padding:14px; background:var(--mx-bg); border-radius:8px; margin-bottom:16px;">
     <div style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;">

@@ -44,7 +44,15 @@ def load_record_only_tgs():
             text = f.read()
     except OSError:
         return None
-    m = re.search(r'^\s*RECORD_ONLY_TGS\s*=\s*(.*)$', text, re.MULTILINE)
+    # [ \t]*, not \s* -- \s matches newlines too, so \s* right after "="
+    # would swallow the line break and, when the value is empty, greedily
+    # grab the *next* line's content as if it were the value. Confirmed
+    # live: with RECORD_ONLY_TGS= (empty, meaning "record everything") on
+    # its own line right before "[Rx1]", this used to capture the literal
+    # string "[Rx1]" as the "allowed" talkgroup -- which no real TG number
+    # ever matches, so every recording with a detected TG got silently
+    # deleted. Cost a whole evening of QSOs on svxlinkuhf (2026-09-05).
+    m = re.search(r'^[ \t]*RECORD_ONLY_TGS[ \t]*=[ \t]*(.*)$', text, re.MULTILINE)
     if not m:
         return None
     value = m.group(1).strip()
