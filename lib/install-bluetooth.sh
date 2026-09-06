@@ -286,4 +286,13 @@ run "systemctl daemon-reload"
 run "systemctl enable hotspot-bluetooth"
 run "systemctl restart hotspot-bluetooth"
 
+# Deviation from RF.Guru's own script (which leaves it enabled, i.e.
+# on-by-default at every boot): dashboard/bluetooth/'s on/off toggle
+# deliberately never touches the "enabled" state, so it can only ever
+# guarantee "off after a reboot" if the service starts out disabled here.
+# Left running now (started above) so this install can be verified/used
+# immediately -- only the next-boot behavior changes.
+say "Disabling auto-start on boot (dashboard/bluetooth/ controls on/off per-session; stays off after a reboot until turned on there)"
+run "systemctl disable hotspot-bluetooth"
+
 say "Done. Advertising as $(hostname)"
