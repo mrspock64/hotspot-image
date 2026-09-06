@@ -38,27 +38,56 @@ NAME_RE = re.compile(
 )
 
 
-def load_record_only_tgs():
+def _read_conf_key(key):
+    """Reads a single QsoRecorder key from svxlink.conf. [ \\t]*, not \\s*,
+    around "=" -- \\s matches newlines too, so \\s* right after "=" would
+    swallow the line break and, when the value is empty, greedily grab the
+    *next* line's content as if it were the value. Confirmed live: with
+    RECORD_ONLY_TGS= (empty, meaning "record everything") on its own line
+    right before "[Rx1]", this used to capture the literal string "[Rx1]"
+    as the "allowed" talkgroup -- which no real TG number ever matches, so
+    every recording with a detected TG got silently deleted. Cost a whole
+    evening of QSOs on svxlinkuhf (2026-09-05)."""
     try:
         with open(SVX_CONF) as f:
             text = f.read()
     except OSError:
         return None
-    # [ \t]*, not \s* -- \s matches newlines too, so \s* right after "="
-    # would swallow the line break and, when the value is empty, greedily
-    # grab the *next* line's content as if it were the value. Confirmed
-    # live: with RECORD_ONLY_TGS= (empty, meaning "record everything") on
-    # its own line right before "[Rx1]", this used to capture the literal
-    # string "[Rx1]" as the "allowed" talkgroup -- which no real TG number
-    # ever matches, so every recording with a detected TG got silently
-    # deleted. Cost a whole evening of QSOs on svxlinkuhf (2026-09-05).
-    m = re.search(r'^[ \t]*RECORD_ONLY_TGS[ \t]*=[ \t]*(.*)$', text, re.MULTILINE)
-    if not m:
-        return None
-    value = m.group(1).strip()
-    if value == "":
+    m = re.search(r'^[ \t]*' + re.escape(key) + r'[ \t]*=[ \t]*(.*)$', text, re.MULTILINE)
+    return m.group(1).strip() if m else None
+
+
+def load_record_only_tgs():
+    value = _read_conf_key("RECORD_ONLY_TGS")
+    if not value:
         return None
     return {v.strip() for v in value.split(",") if v.strip()}
+
+
+def load_max_recordings():
+    """MAX_RECORDINGS, an optional key SvxLink itself never reads (like
+    RECORD_ONLY_TGS) -- caps the *count* of kept recordings, on top of
+    SvxLink's own MAX_DIRSIZE (a total-megabytes cap). 0 or unset: no
+    limit, matching svxlink.conf(5)'s own convention for MAX_DIRSIZE."""
+    value = _read_conf_key("MAX_RECORDINGS")
+    if not value or not value.isdigit():
+        return 0
+    return int(value)
+
+
+def prune_to_max(directory, max_count):
+    if max_count <= 0:
+        return
+    files = [
+        os.path.join(directory, f) for f in os.listdir(directory)
+        if f.startswith("qsorec_") and f.endswith(".mp3")
+    ]
+    files.sort(key=os.path.getmtime)
+    for f in files[:max(0, len(files) - max_count)]:
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
 
 def find_talker(start_dt):
@@ -118,6 +147,9 @@ def main():
     record_only = load_record_only_tgs()
     if record_only is not None and tg is not None and tg not in record_only:
         os.remove(out_path)
+        return
+
+    prune_to_max(directory, load_max_recordings())
 
 
 if __name__ == "__main__":

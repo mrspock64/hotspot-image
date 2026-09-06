@@ -16,19 +16,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_all'])) {
+    try {
+        $n = deleteAllQsoRecordings();
+        $message = $n === 1 ? '1 recording deleted.' : "$n recordings deleted.";
+    } catch (Throwable $e) {
+        $error = $e->getMessage();
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_page'])) {
+    try {
+        $n = deleteQsoRecordings($_POST['page_files'] ?? []);
+        $message = $n === 1 ? '1 recording deleted.' : "$n recordings deleted.";
+    } catch (Throwable $e) {
+        $error = $e->getMessage();
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $active = isset($_POST['active']);
     $maxDirsize = trim($_POST['max_dirsize'] ?? '');
     $qsoTimeout = trim($_POST['qso_timeout'] ?? '');
+    $maxRecordings = trim($_POST['max_recordings'] ?? '0');
     $recordOnly = array_filter($_POST['record_only'] ?? [], fn($tg) => ctype_digit($tg));
     if (!ctype_digit($maxDirsize) || (int)$maxDirsize < 100) {
         $error = 'Disk limit must be a number of megabytes, at least 100.';
     } elseif (!ctype_digit($qsoTimeout) || (int)$qsoTimeout < 1) {
         $error = 'QSO gap must be a number of seconds, at least 1.';
+    } elseif (!ctype_digit($maxRecordings)) {
+        $error = 'Max recordings must be a number (0 for no limit).';
     } else {
         try {
-            saveQsoRecorderSettings($active, (int)$maxDirsize, (int)$qsoTimeout, array_values($recordOnly));
-            $message = 'Settings saved. On/off and the talkgroup filter apply immediately -- the disk limit and QSO gap need a SvxLink restart (Power page) to take effect.';
+            saveQsoRecorderSettings($active, (int)$maxDirsize, (int)$qsoTimeout, (int)$maxRecordings, array_values($recordOnly));
+            $message = 'Settings saved. On/off, the talkgroup filter, and max recordings apply immediately -- the disk limit and QSO gap need a SvxLink restart (Power page) to take effect.';
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }
@@ -92,8 +113,12 @@ function formatBytes(int $bytes): string
         <label for="qso_timeout" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">New file after (sec of silence)</label>
         <input type="text" id="qso_timeout" name="qso_timeout" value="<?php echo htmlspecialchars((string)$settings['qso_timeout']); ?>" style="width:100px; margin:0;">
       </div>
+      <div>
+        <label for="max_recordings" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Max recordings to keep</label>
+        <input type="text" id="max_recordings" name="max_recordings" value="<?php echo htmlspecialchars((string)$settings['max_recordings']); ?>" style="width:100px; margin:0;">
+      </div>
     </div>
-    <p class="mx-hint" style="margin:8px 0 4px;">A gap of at least this long between transmissions starts a new recording -- shorter means one file per transmission, longer groups a whole back-and-forth exchange into one file.</p>
+    <p class="mx-hint" style="margin:8px 0 4px;">A gap of at least this long between transmissions starts a new recording -- shorter means one file per transmission, longer groups a whole back-and-forth exchange into one file. Max recordings keeps only the newest N (0 = no limit) -- on top of, not instead of, the disk limit above.</p>
 
     <label style="font-weight:600; font-size:12.5px; display:block; margin:12px 0 4px;">Record only these talkgroups</label>
     <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
@@ -128,7 +153,20 @@ function formatBytes(int $bytes): string
 <?php if (!$recordings['finished']): ?>
   <p style="color: var(--mx-text-dim); font-size: 13px;">No recordings yet.</p>
 <?php else: ?>
-  <p class="mx-hint" style="margin-top:0;"><?php echo count($recordings['finished']); ?> recording(s) total.</p>
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+    <p class="mx-hint" style="margin:0;"><?php echo count($recordings['finished']); ?> recording(s) total.</p>
+    <div style="display:flex; gap:8px;">
+      <form method="post" style="margin:0;" onsubmit="return confirm('Delete the <?php echo count($pageItems); ?> recording(s) on this page? This cannot be undone.');">
+<?php foreach ($pageItems as $rec): ?>
+        <input type="hidden" name="page_files[]" value="<?php echo htmlspecialchars($rec['file']); ?>">
+<?php endforeach; ?>
+        <button type="submit" name="clear_page" class="mx-btn mx-btn-ghost" style="font-size:11px; padding:4px 10px;">Clear this page (<?php echo count($pageItems); ?>)</button>
+      </form>
+      <form method="post" style="margin:0;" onsubmit="return confirm('Delete ALL <?php echo count($recordings['finished']); ?> recordings? This cannot be undone.');">
+        <button type="submit" name="clear_all" class="mx-btn mx-btn-danger" style="font-size:11px; padding:4px 10px;">Clear all (<?php echo count($recordings['finished']); ?>)</button>
+      </form>
+    </div>
+  </div>
   <table class="mx-table">
     <tr><th>When</th><th>TG</th><th>Callsign</th><th>Size</th><th></th><th></th><th></th></tr>
 <?php foreach ($pageItems as $rec): $info = qsoRecordingInfo($rec['file']); ?>

@@ -34,7 +34,7 @@ function qsoRecorderDir(): string
     return $conf['QsoRecorder']['REC_DIR'] ?? QSO_RECORDER_DEFAULT_DIR;
 }
 
-/** @return array{active: bool, max_dirsize: int, qso_timeout: int, record_only_tgs: list<string>} */
+/** @return array{active: bool, max_dirsize: int, qso_timeout: int, max_recordings: int, record_only_tgs: list<string>} */
 function getQsoRecorderSettings(): array
 {
     $conf = @parse_ini_file(QSO_RECORDER_SVX_CONF, true, INI_SCANNER_RAW) ?: [];
@@ -44,6 +44,7 @@ function getQsoRecorderSettings(): array
         'active'          => ($conf['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1',
         'max_dirsize'     => (int)($conf['QsoRecorder']['MAX_DIRSIZE'] ?? 2000),
         'qso_timeout'     => (int)($conf['QsoRecorder']['QSO_TIMEOUT'] ?? 5),
+        'max_recordings'  => (int)($conf['QsoRecorder']['MAX_RECORDINGS'] ?? 0),
         'record_only_tgs' => $recordOnly,
     ];
 }
@@ -58,22 +59,64 @@ function getQsoRecorderSettings(): array
  * startup, so a change here needs a restart (Power page) to take effect,
  * same as most Setup page fields.
  *
- * RECORD_ONLY_TGS is a key SvxLink itself never reads -- it's read fresh
- * off disk by tag_and_encode.py (this project's ENCODER_CMD) every time a
- * recording finishes, so a change here applies to the very next recording
- * with no restart needed at all.
+ * RECORD_ONLY_TGS and MAX_RECORDINGS are keys SvxLink itself never reads
+ * -- they're read fresh off disk by tag_and_encode.py (this project's
+ * ENCODER_CMD) every time a recording finishes, so a change here applies
+ * to the very next recording with no restart needed at all. MAX_RECORDINGS
+ * is also applied immediately below, in case lowering it should already
+ * trim existing recordings rather than waiting for the next one.
  *
  * @param list<string> $recordOnlyTgs
  */
-function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb, int $qsoTimeoutSec, array $recordOnlyTgs = []): void
+function saveQsoRecorderSettings(bool $active, int $maxDirsizeMb, int $qsoTimeoutSec, int $maxRecordings, array $recordOnlyTgs = []): void
 {
     iniSyncUpdateSection(QSO_RECORDER_SVX_CONF, 'QsoRecorder', [
         'DEFAULT_ACTIVE'   => $active ? '1' : '0',
         'MAX_DIRSIZE'      => (string)$maxDirsizeMb,
         'QSO_TIMEOUT'      => (string)$qsoTimeoutSec,
+        'MAX_RECORDINGS'   => (string)$maxRecordings,
         'RECORD_ONLY_TGS'  => implode(',', $recordOnlyTgs),
     ]);
     shell_exec('/usr/sbin/hotspot_dtmf ' . escapeshellarg(QSO_RECORDER_DTMF_CMD . ($active ? '1' : '0') . '#'));
+    pruneQsoRecordingsToMax($maxRecordings);
+}
+
+/** Same "keep the newest N, oldest first" rule as tag_and_encode.py's prune_to_max -- applied immediately on save so lowering the limit takes effect right away instead of waiting for the next recording. */
+function pruneQsoRecordingsToMax(int $maxRecordings): void
+{
+    if ($maxRecordings <= 0) {
+        return;
+    }
+    $finished = listQsoRecordings()['finished'];
+    if (count($finished) <= $maxRecordings) {
+        return;
+    }
+    // listQsoRecordings() sorts newest-first; drop everything past the limit.
+    $toDelete = array_slice($finished, $maxRecordings);
+    deleteQsoRecordings(array_map(fn($r) => $r['file'], $toDelete));
+}
+
+/** Deletes every finished (.mp3) recording in the recorder directory. Returns how many were removed. */
+function deleteAllQsoRecordings(): int
+{
+    $files = array_map(fn($r) => $r['file'], listQsoRecordings()['finished']);
+    return deleteQsoRecordings($files);
+}
+
+/** Deletes a set of recordings by bare filename (validated, never a path). Returns how many were removed. */
+function deleteQsoRecordings(array $names): int
+{
+    $valid = array_values(array_filter($names, 'isValidQsoRecordingName'));
+    if (!$valid) {
+        return 0;
+    }
+    $dir = qsoRecorderDir();
+    $paths = array_map(fn($n) => $dir . '/' . $n, $valid);
+    exec('sudo rm -f ' . implode(' ', array_map('escapeshellarg', $paths)) . ' 2>&1', $out, $code);
+    if ($code !== 0) {
+        throw new RuntimeException('Failed to delete recordings: ' . implode(' ', $out));
+    }
+    return count($valid);
 }
 
 /**
