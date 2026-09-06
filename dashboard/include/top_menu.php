@@ -29,6 +29,7 @@ $mxAdminItems = [
     ['/network/', 'Network'],
     ['/echolink/', 'EchoLink'],
     ['/dtmf/', 'DTMF'],
+    ['/bluetooth/', 'Bluetooth'],
     ['/update/', 'Update'],
     ['/backup/', 'Backup'],
     ['/docs/', 'Docs'],
