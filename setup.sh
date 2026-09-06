@@ -39,11 +39,11 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "=== 1/7: base packages ==="
+echo "=== 1/8: base packages ==="
 apt-get update -y
 apt-get install -y avahi-daemon avahi-utils network-manager
 
-echo "=== 2/7: persistent crash logging ==="
+echo "=== 2/8: persistent crash logging ==="
 # RF.Guru's stock image logs to memory only (journald Storage=volatile) --
 # confirmed live on svxlinkuhf: an actual crash/reboot mid-investigation
 # left zero forensic logs, since the reboot wiped the in-memory journal.
@@ -53,20 +53,31 @@ mkdir -p /var/log/journal
 sed -i 's/^#\?Storage=.*/Storage=persistent/' /etc/systemd/journald.conf
 systemctl restart systemd-journald
 
-echo "=== 3/7: audio (WM8960) + GPIO PTT ==="
+echo "=== 3/8: audio (WM8960) + GPIO PTT ==="
 bash "$SCRIPT_DIR/lib/audio-gpio.sh"
 
-echo "=== 4/7: building SvxLink (stock) + installing our Logic.tcl ==="
+echo "=== 4/8: building SvxLink (stock) + installing our Logic.tcl ==="
 bash "$SCRIPT_DIR/lib/build-svxlink.sh"
 
-echo "=== 5/7: dashboard ==="
+echo "=== 5/8: dashboard ==="
 bash "$SCRIPT_DIR/lib/install-dashboard.sh"
 
-echo "=== 6/7: watchdog ==="
+echo "=== 6/8: watchdog ==="
 bash "$SCRIPT_DIR/lib/install-watchdog.sh"
 
-echo "=== 7/7: RX Monitor audio streaming + QSO Log ==="
+echo "=== 7/8: RX Monitor audio streaming + QSO Log ==="
 bash "$SCRIPT_DIR/lib/install-rx-monitor.sh"
+
+echo "=== 8/8: Bluetooth companion app support ==="
+if [ -f /etc/systemd/system/hotspot-bluetooth.service ]; then
+  echo "Already installed -- skipping (use lib/install-bluetooth.sh directly to update it)."
+else
+  # Self-gating: bails cleanly with instructions (doesn't fail this script)
+  # if the OS needs an apt upgrade + reboot first, or if enabling the BT
+  # chip itself needs a reboot -- re-run setup.sh, or just
+  # lib/install-bluetooth.sh, afterwards to finish.
+  bash "$SCRIPT_DIR/lib/install-bluetooth.sh"
+fi
 
 echo
 echo "=== Done ==="

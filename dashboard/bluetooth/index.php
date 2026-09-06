@@ -9,20 +9,25 @@
 <?php include_once __DIR__ . '/../include/site_header.php'; ?>
 
 <?php
+require_once __DIR__ . '/../include/ble.php';
+
 // The companion app's BLE service (hotspot-bluetooth, installed by
 // RF.Guru's own install-bluetooth.sh) advertises with no pairing/PIN and
-// no encrypt-* flags on its characteristics -- by design, so iOS/Android
+// no encrypt-* flags on its characteristics by default -- so iOS/Android
 // connect without a prompt (see the vendor script's own comments on why:
 // Android's eager bonding stack fights encrypted GATT in ways that broke
 // their app). That means anyone within BLE range while it's on can send
-// DTMF, restart SvxLink, or reboot/power off the device -- no password.
+// DTMF, restart SvxLink, or reboot/power off the device -- no password,
+// unless bonded mode (below) is turned on.
 //
-// Since we can't change that without risking breaking the app, and don't
-// have its source to test against, the mitigation is exposure time
-// instead: this toggle only starts/stops the service for the current
-// session and deliberately never touches its systemd "enabled" state, so
-// it always comes back OFF after a reboot regardless of how it was left
-// -- turn it on only while actually using the app, then off again.
+// Since forcing bonded mode isn't guaranteed compatible with every client
+// (we don't have the app's source to test against, though RF.Guru's own
+// BLE.md documents it as the supported option for a mobile/public node),
+// the default mitigation is exposure time instead: this toggle only
+// starts/stops the service for the current session and deliberately never
+// touches its systemd "enabled" state, so it always comes back OFF after a
+// reboot regardless of how it was left -- turn it on only while actually
+// using the app, then off again.
 if (isset($_POST['btnOn'])) {
     exec('sudo systemctl start hotspot-bluetooth > /dev/null 2>&1 &');
     $message = 'Turning Bluetooth on -- the companion app should find this hotspot within a few seconds.';
@@ -31,6 +36,27 @@ if (isset($_POST['btnOn'])) {
 if (isset($_POST['btnOff'])) {
     exec('sudo systemctl stop hotspot-bluetooth > /dev/null 2>&1 &');
     $message = 'Turning Bluetooth off.';
+}
+
+$bleIsInstalled = bleInstalled();
+$bleBonded = $bleIsInstalled && bleBondedModeEnabled();
+$bleMsg = null;
+
+if ($bleIsInstalled && isset($_POST['btnSaveBonded'])) {
+    $bleWanted = isset($_POST['ble_bonded']);
+    if ($bleWanted !== $bleBonded) {
+        try {
+            setBleBondedMode($bleWanted);
+            $bleBonded = $bleWanted;
+            $bleMsg = $bleWanted
+                ? 'Bluetooth now requires pairing (bonded) for DTMF/command writes.'
+                : 'Bluetooth pairing requirement removed -- back to open/unbonded.';
+        } catch (Throwable $e) {
+            $bleMsg = 'Bluetooth security mode NOT changed: ' . $e->getMessage();
+        }
+    } else {
+        $bleMsg = 'No change.';
+    }
 }
 
 $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/dev/null')) === 'active';
@@ -43,16 +69,22 @@ $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/d
 <?php if (isset($message)): ?>
   <p class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></p>
 <?php endif; ?>
+<?php if ($bleMsg !== null): ?>
+  <p class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($bleMsg); ?></p>
+<?php endif; ?>
 
   <p style="font-weight:600; margin-bottom:14px;">Status:
     <?php echo $isActive
         ? '<span style="color:#15803d;">&#9679; On</span> — advertising as ' . htmlspecialchars(trim((string)@shell_exec('hostname')))
         : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>'; ?>
+    <?php if ($bleBonded): ?><span style="color:#2563eb;"> &middot; pairing required</span><?php endif; ?>
   </p>
 
+<?php if (!$bleBonded): ?>
   <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">
     &#9888; No pairing or password is required to connect while this is on -- anyone within Bluetooth range (roughly 10-30m) can send DTMF, restart SvxLink, or reboot/power off the device. Turn it on only while you're actively using the app nearby, then off again. It always starts OFF after a reboot, regardless of how you leave it here.
   </div>
+<?php endif; ?>
 
   <form method="post" style="margin-top:14px;">
 <?php if ($isActive): ?>
@@ -61,6 +93,16 @@ $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/d
     <button name="btnOn" type="submit" class="mx-btn" style="width:200px;">Turn on</button>
 <?php endif; ?>
   </form>
+
+<?php if ($bleIsInstalled): ?>
+  <div class="mx-section">Security</div>
+  <form method="post">
+    <div class="mx-row"><label for="ble_bonded">Require pairing for Bluetooth commands</label>
+      <input type="checkbox" id="ble_bonded" name="ble_bonded" <?php echo $bleBonded ? 'checked' : ''; ?>></div>
+    <p class="mx-hint">Off by default: DTMF and device commands (reboot, restart SvxLink) are accepted from anyone in range with no pairing. Turn this on to require the phone to pair (bond) first -- recommended if this hotspot is mobile or somewhere public rather than on a home desk. Applies immediately if Bluetooth is currently on. Note: reinstalling Bluetooth support resets this back off.</p>
+    <button name="btnSaveBonded" type="submit" class="mx-btn" style="width:200px;">Save</button>
+  </form>
+<?php endif; ?>
 </div>
 </body>
 </html>

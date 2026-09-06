@@ -11,7 +11,6 @@
 <?php
 
 require_once __DIR__ . '/../include/inisync.php';
-require_once __DIR__ . '/../include/ble.php';
 
 define('SVX_CONF', '/etc/svxlink/svxlink.conf');
 define('NODE_INFO', '/etc/svxlink/node_info.json');
@@ -67,9 +66,6 @@ $errors = [];
 $saved = false;
 $current = readCurrent();
 $previousFreq = $current['freq'];
-$bleInstalled = bleInstalled();
-$bleBonded = $bleInstalled && bleBondedModeEnabled();
-$bleMsg = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $in = $_POST;
@@ -178,25 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Same "only touch it if it actually changed" restraint as the
-            // radio frequency above -- and independent of it: a config
-            // write failure here shouldn't be reported as if the rest of
-            // Setup failed to save too.
-            if ($bleInstalled) {
-                $bleWanted = isset($in['ble_bonded']);
-                if ($bleWanted !== $bleBonded) {
-                    try {
-                        setBleBondedMode($bleWanted);
-                        $bleBonded = $bleWanted;
-                        $bleMsg = $bleWanted
-                            ? 'Bluetooth now requires pairing (bonded) for DTMF/command writes.'
-                            : 'Bluetooth pairing requirement removed -- back to open/unbonded.';
-                    } catch (Throwable $e) {
-                        $bleMsg = 'Bluetooth security mode NOT changed: ' . $e->getMessage();
-                    }
-                }
-            }
-
             $saved = true;
         } catch (Throwable $e) {
             $errors[] = 'Failed to write config: ' . $e->getMessage();
@@ -214,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Saved. Restart SvxLink from the <a href="/power/">Power</a> page for other changes (callsign,
     reflector, idents, etc.) to take effect.
     <?php if ($radioMsg !== null): ?><br><?php echo htmlspecialchars($radioMsg); ?><?php endif; ?>
-    <?php if ($bleMsg !== null): ?><br><?php echo htmlspecialchars($bleMsg); ?><?php endif; ?>
   </div>
 <?php endif; ?>
 
@@ -277,13 +253,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="rx_sql_type">RX squelch type</label>
     <input type="text" id="rx_sql_type" name="rx_sql_type" value="<?php echo htmlspecialchars($current['rx_sql_type']); ?>"></div>
   <div class="mx-hint">Portal display only, e.g. "CTCSS" — matches SQL_DET in svxlink.conf's [Rx1] but isn't read from it automatically.</div>
-
-<?php if ($bleInstalled): ?>
-  <div class="mx-section">Bluetooth</div>
-  <div class="mx-row"><label for="ble_bonded">Require pairing for Bluetooth commands</label>
-    <input type="checkbox" id="ble_bonded" name="ble_bonded" <?php echo $bleBonded ? 'checked' : ''; ?>></div>
-  <div class="mx-hint">Off by default: the <a href="/bluetooth/">companion app</a>'s BLE service accepts DTMF and device commands (reboot, restart SvxLink) from anyone in range with no pairing. Turn this on to require the phone to pair (bond) first — recommended if this hotspot is mobile or somewhere public rather than on a home desk. Applies immediately if Bluetooth is currently on.</div>
-<?php endif; ?>
 
   <div class="mx-section">Antenna (portal display only)</div>
   <div class="mx-row"><label for="ant_comment">Description</label>
