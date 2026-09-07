@@ -27,7 +27,13 @@ $mxAdminItems = [
     ['/tgnames/', 'TG Names'],
     ['/wifi/', 'WiFi'],
     ['/network/', 'Network'],
-    ['/echolink/', 'EchoLink'],
+    // EchoLink deliberately hidden from the nav for now, per user request --
+    // not configured (still placeholder credentials) and the module isn't
+    // even in svxlink.conf's MODULES= list, so the page wouldn't actually
+    // do anything useful yet. The page itself (dashboard/echolink/) is
+    // untouched and still reachable directly by URL -- add the row back
+    // here (and finish wiring MODULES= toggling + basic cleanup, see the
+    // EchoLink investigation this came from) if EchoLink is ever wanted.
     ['/dtmf/', 'DTMF'],
     ['/bluetooth/', 'Bluetooth'],
     ['/update/', 'Update'],
