@@ -6,13 +6,19 @@
  * configured [QsoRecorder] section, just never wired up via QSO_RECORDER=
  * in [SimplexLogic]/[ReflectorLogic]).
  *
- * SvxLink writes each recording as a hidden placeholder
- * (".qsorec_<Logic>.wav", 0 bytes) the instant a QSO starts, keeps writing
- * to a visible "qsorec_<Logic>_<timestamp>.wav" once real audio arrives,
- * then on close hands it to ENCODER_CMD (lame in this config), which
- * converts it to .mp3 and removes the .wav. So: any *.wav file present is
- * (by construction) the one currently being recorded; *.mp3 files are
- * finished recordings.
+ * SvxLink writes EVERY recording to a hidden placeholder
+ * (".qsorec_<Logic>.wav") for its entire duration -- confirmed straight
+ * from SvxLink's own source (QsoRecorder.cpp): openFile() always targets
+ * that fixed hidden name, and closeFile() is the ONLY place that renames
+ * it to the timestamped public "qsorec_<Logic>_<start>_<end>.wav" name,
+ * immediately before handing off to ENCODER_CMD (lame in this config),
+ * which converts it to .mp3 and removes the .wav. So the public name
+ * never exists while a QSO is actually in progress -- it appears already
+ * finished. (An earlier version of this comment claimed the rename
+ * happened early, once real audio arrived -- wrong, and cost RX Monitor a
+ * real bug, see the rx_monitor_qso_recorder memory note.) Any *.wav file
+ * present -- hidden or not -- is therefore the one currently being
+ * recorded; *.mp3 files are finished recordings.
  *
  * MP3, not the originally-used Ogg Vorbis: Safari (macOS and iOS) has no
  * Vorbis decoder at all, so <audio src="...ogg"> silently does nothing
