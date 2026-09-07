@@ -105,17 +105,23 @@ $screen = [
     "",
     "Please use buttons for appropriate actions.",
 ];
+$stillRunning = $justTriggered;
 if (is_file(UPDATER_SCREEN_LOG) && filesize(UPDATER_SCREEN_LOG) > 0) {
     $screen = [];
     exec('tail -n 500 ' . escapeshellarg(UPDATER_SCREEN_LOG) . ' 2>&1', $screen);
     if (($screen[count($screen) - 1] ?? '') !== '###-FINISH-####') {
-        header('Refresh: 3');
+        $stillRunning = true;
     }
-} elseif ($justTriggered) {
-    // screen.log doesn't exist/isn't populated yet -- normal in the
-    // instant right after triggering, before the backgrounded script has
-    // had a chance to write anything. Keep polling regardless, or this
-    // page would show the "Welcome" placeholder and never check again.
+}
+if ($stillRunning) {
+    // The flock in runUpdaterScript() already stops a second action from
+    // actually running (or corrupting the shared log), but until now
+    // gave no visual sign that a click while one was already in progress
+    // did nothing -- confirmed live, the user had no way to tell a check
+    // click landed on a no-op while an upgrade was still building.
+    // Disabling every button while something is running (this page
+    // auto-refreshes every 3s regardless, so they re-enable themselves
+    // the moment it finishes) makes that state visible instead of silent.
     header('Refresh: 3');
 }
 ?>
@@ -126,15 +132,18 @@ if (is_file(UPDATER_SCREEN_LOG) && filesize(UPDATER_SCREEN_LOG) > 0) {
 			echo htmlspecialchars(implode("\n", $screen)); ?></textarea>
   <script>document.getElementById('updater-screen').scrollTop = 1e9;</script>
 
+<?php if ($stillRunning): ?>
+  <p class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">&#9203; An action is already running -- buttons are disabled until it finishes. This page updates itself every few seconds.</p>
+<?php endif; ?>
   <div class="mx-section">Check versions</div>
-  <button name="btnChkOs" type="submit" class="mx-btn mx-btn-ghost">OS</button>
-  <button name="btnChkSvxlink" type="submit" class="mx-btn mx-btn-ghost">SVXLink</button>
-  <button name="btnChkDashboard" type="submit" class="mx-btn mx-btn-ghost">Dashboard</button>
+  <button name="btnChkOs" type="submit" class="mx-btn mx-btn-ghost"<?php echo $stillRunning ? ' disabled' : ''; ?>>OS</button>
+  <button name="btnChkSvxlink" type="submit" class="mx-btn mx-btn-ghost"<?php echo $stillRunning ? ' disabled' : ''; ?>>SVXLink</button>
+  <button name="btnChkDashboard" type="submit" class="mx-btn mx-btn-ghost"<?php echo $stillRunning ? ' disabled' : ''; ?>>Dashboard</button>
 
   <div class="mx-section">Upgrade</div>
-  <button name="btnUpdateOs" type="submit" class="mx-btn" onclick="return confirm('Upgrade OS packages now? A kernel/firmware upgrade may need a device restart afterwards to fully take effect.');">OS</button>
-  <button name="btnUpdateSvxlink" type="submit" class="mx-btn" onclick="return confirm('Upgrade SvxLink now? The radio will be unavailable while it rebuilds and restarts.');">SVXLink</button>
-  <button name="btnUpdateDashboard" type="submit" class="mx-btn" onclick="return confirm('Upgrade the dashboard now? It will briefly reload mid-upgrade.');">Dashboard</button>
+  <button name="btnUpdateOs" type="submit" class="mx-btn"<?php echo $stillRunning ? ' disabled' : ''; ?> onclick="return confirm('Upgrade OS packages now? A kernel/firmware upgrade may need a device restart afterwards to fully take effect.');">OS</button>
+  <button name="btnUpdateSvxlink" type="submit" class="mx-btn"<?php echo $stillRunning ? ' disabled' : ''; ?> onclick="return confirm('Upgrade SvxLink now? The radio will be unavailable while it rebuilds and restarts.');">SVXLink</button>
+  <button name="btnUpdateDashboard" type="submit" class="mx-btn"<?php echo $stillRunning ? ' disabled' : ''; ?> onclick="return confirm('Upgrade the dashboard now? It will briefly reload mid-upgrade.');">Dashboard</button>
   <p class="mx-hint" style="margin-top:8px;">Sounds and Config updates from the original SVXLink-Dash-V2 project pointed at an unrelated ham network's own GitHub repo and would have overwritten this node's sound pack / event scripts with theirs -- removed rather than pointed at a real destination. See <a href="/help/">Help</a>.</p>
 
 </form>
