@@ -11,22 +11,9 @@
 # name, and closeFile() is the ONLY place that renames it to the
 # timestamped public "qsorec_<Logic>_<start>_<end>.wav" name, right before
 # handing off to ENCODER_CMD. So the public name never exists while a QSO
-# is actually in progress -- it appears at the very end, already finished.
-#
-# This used to glob for only the public name, on the (wrong) assumption
-# that SvxLink renamed early. That's silent-by-design for normal
-# short/spaced-out traffic (each recording closes and briefly appears
-# under the public name within a second, so polling still catches most of
-# it), but for anything that keeps re-triggering within QSO_TIMEOUT of
-# itself (e.g. bursty digital-voice relay traffic) the recording can stay
-# open under the hidden name for minutes, meaning RX Monitor goes
-# completely silent for the whole thing and then, once it finally closes,
-# dumps the entire backlog as one fast, out-of-time burst instead of
-# playing live. Fixed by tailing the hidden name directly -- it's the
-# SAME file handle SvxLink keeps appending to throughout the recording, so
-# following it works exactly like tailing the public name always has;
-# rename() makes the hidden path disappear the instant the QSO ends, which
-# stream_file()'s existing os.path.exists() check already handles.
+# is actually in progress -- only once it's already finished. We tail the
+# hidden name directly for exactly that reason (see find_current_recording
+# and stream_file below for the two bugs that took to get this right).
 #
 # No local RX and no active reflector talker -> no .wav file -> nothing
 # forwarded -> RX Monitor is silent. That's correct, not a bug.
@@ -52,13 +39,19 @@ def find_current_recording():
     # treat as live audio. Bit us once already: a broken ENCODER_CMD left
     # five real recordings stuck as .wav indefinitely.
     #
-    # Two glob patterns, not one -- "*qsorec_*.wav" alone never matches a
-    # leading dot (Python's glob follows shell semantics: a bare "*" does
-    # not match a hidden file), so the in-progress ".qsorec_<Logic>.wav"
-    # needs its own explicit pattern.
+    # Only the hidden name, deliberately -- per SvxLink's own source
+    # (QsoRecorder.cpp), the public timestamped name is created by
+    # closeFile()'s rename() and ONLY by that, meaning a file under the
+    # public name is -- always, by construction -- already finished, on
+    # its way to ENCODER_CMD. An earlier version of this function also
+    # matched the public name as a "maybe still live" candidate; on rapid
+    # back-to-back recordings (e.g. Parrot echoing several short bursts
+    # seconds apart) that let a just-finished recording get picked back up
+    # and streamed a second time, in full, while it briefly sat at its
+    # public name waiting to be encoded -- heard as "it plays again" right
+    # after content that had already played live moments earlier.
     now = time.time()
-    paths = glob.glob(os.path.join(REC_DIR, "*qsorec_*.wav"))
-    paths += glob.glob(os.path.join(REC_DIR, ".qsorec_*.wav"))
+    paths = glob.glob(os.path.join(REC_DIR, ".qsorec_*.wav"))
     candidates = []
     for p in paths:
         try:
@@ -76,16 +69,32 @@ def find_current_recording():
 
 
 def stream_file(path):
+    # The hidden placeholder name is fixed per logic (".qsorec_<Logic>.wav",
+    # not timestamped), so consecutive rapid-fire recordings -- e.g. Parrot
+    # echoing back several short bursts seconds apart -- reuse the exact
+    # same path. A path-string comparison alone can't tell "still this
+    # recording" from "a brand new one that happens to have the same name",
+    # so it'd either get stuck silently following a stale, already-finished
+    # file descriptor forever (missing every recording after the first) or
+    # -- worse -- resync onto the new file mid-stream and replay/skip
+    # content. Track the inode instead: that's the OS-level ground truth
+    # for "is this the same physical file".
     with open(path, "rb") as f:
+        my_ino = os.fstat(f.fileno()).st_ino
         f.seek(WAV_HEADER_BYTES)
         while True:
             data = f.read(CHUNK_BYTES)
             if data:
                 sock.sendto(data, (UDP_IP, UDP_PORT))
                 continue
-            # Caught up to the writer -- keep following unless this file
-            # has stopped being the current recording (QSO ended).
-            if not os.path.exists(path) or find_current_recording() != path:
+            # Caught up to the writer -- keep following unless this exact
+            # file (by inode) has stopped being the current recording.
+            try:
+                if os.stat(path).st_ino != my_ino:
+                    return  # a new recording has replaced this one
+            except OSError:
+                return  # gone -- renamed away on close
+            if find_current_recording() != path:
                 return
             time.sleep(0.05)
 
