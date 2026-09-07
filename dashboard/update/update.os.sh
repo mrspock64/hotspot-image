@@ -13,7 +13,16 @@ dpkg-query -W -f='${Package}\t${Version}\n' > "$SNAPSHOT_FILE"
 echo "Saved installed-package snapshot: $SNAPSHOT_FILE"
 
 dpkg --configure -a
-apt upgrade -y
+
+# full-upgrade, not plain upgrade: plain upgrade refuses to install or
+# remove any package as a side effect of resolving an upgrade, even a
+# harmless new dependency -- confirmed live, it silently "kept back"
+# rpi-eeprom every run instead of upgrading it. full-upgrade is the
+# standard, recommended way to fully patch a Raspberry Pi OS install; it
+# can in principle remove a package to resolve a conflict, but won't
+# invent anything to install that wasn't already a dependency of something
+# already here.
+apt full-upgrade -y
 
 # Safe to auto-remove orphaned old kernels here specifically -- unlike a
 # GRUB system, the Pi's bootloader has no menu to select an older kernel
