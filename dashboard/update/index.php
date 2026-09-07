@@ -126,9 +126,9 @@ if (is_file('screen.log') && filesize('screen.log') > 0) {
   <button name="btnChkDashboard" type="submit" class="mx-btn mx-btn-ghost">Dashboard</button>
 
   <div class="mx-section">Upgrade</div>
-  <button name="btnUpdateOs" type="submit" class="mx-btn">OS</button>
-  <button name="btnUpdateSvxlink" type="submit" class="mx-btn">SVXLink</button>
-  <button name="btnUpdateDashboard" type="submit" class="mx-btn">Dashboard</button>
+  <button name="btnUpdateOs" type="submit" class="mx-btn" onclick="return confirm('Upgrade OS packages now? A kernel/firmware upgrade may need a device restart afterwards to fully take effect.');">OS</button>
+  <button name="btnUpdateSvxlink" type="submit" class="mx-btn" onclick="return confirm('Upgrade SvxLink now? The radio will be unavailable while it rebuilds and restarts.');">SVXLink</button>
+  <button name="btnUpdateDashboard" type="submit" class="mx-btn" onclick="return confirm('Upgrade the dashboard now? It will briefly reload mid-upgrade.');">Dashboard</button>
   <p class="mx-hint" style="margin-top:8px;">Sounds and Config updates from the original SVXLink-Dash-V2 project pointed at an unrelated ham network's own GitHub repo and would have overwritten this node's sound pack / event scripts with theirs -- removed rather than pointed at a real destination. See <a href="/help/">Help</a>.</p>
 
 </form>
