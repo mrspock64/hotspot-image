@@ -126,6 +126,23 @@ MaxConnectionsPerChild  0
 EOF
 fi
 
+echo "--- Allowing WiFi rescan without a polkit prompt ---"
+# The dashboard's WiFi page triggers "nmcli dev wifi rescan" via PHP/exec,
+# which has no D-Bus session and so no way to satisfy an interactive polkit
+# auth prompt. Confirmed live: org.freedesktop.NetworkManager.wifi.scan is
+# "auth" by default even for root over SSH (no active logind session),
+# so a rescan always failed "not authorized" -- the WiFi page's Scan button
+# just kept re-showing whatever was cached from the last successful scan
+# (which can be empty/stale, or nothing at all right after a reboot).
+cat > /etc/polkit-1/rules.d/50-nm-wifi-scan.rules <<'EOF'
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.wifi.scan") {
+        return polkit.Result.YES;
+    }
+});
+EOF
+systemctl restart polkit
+
 echo "--- Enabling Apache ---"
 systemctl enable apache2
 systemctl restart apache2

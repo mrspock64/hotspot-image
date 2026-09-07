@@ -42,24 +42,43 @@ function mxSavedWifiConnections(): array
     return $names;
 }
 
-// The currently active WiFi connection (if any) -- static IP / ping below
-// act on this automatically instead of asking the user to pick from a
-// dropdown of every saved profile (most of which aren't even connected).
-function mxActiveWifiConnection(): ?array
+// Every currently active connection (WiFi or wired), loopback excluded --
+// used both to show live status at the top of the page and to pick a
+// sensible default for Ping/Show details below, so plugging in a USB
+// Ethernet adapter (which shows up here as its own 802-3-ethernet
+// connection) doesn't leave those actions reporting "not connected".
+function mxActiveConnections(): array
 {
     $lines = [];
     exec('nmcli -t -f NAME,TYPE,DEVICE con show --active 2>&1', $lines);
+    $conns = [];
     foreach ($lines as $line) {
         $parts = explode(':', $line, 3);
-        if (($parts[1] ?? '') === '802-11-wireless') {
-            return ['name' => $parts[0], 'device' => $parts[2] ?? ''];
+        $type = $parts[1] ?? '';
+        if ($type === 'loopback') {
+            continue;
+        }
+        $conns[] = ['name' => $parts[0], 'type' => $type, 'device' => $parts[2] ?? ''];
+    }
+    return $conns;
+}
+
+// Prefer an active WiFi connection for Ping/Details, but fall back to
+// whatever else is active (e.g. wired) rather than reporting "not
+// connected" when the node actually has connectivity another way.
+function mxPreferredActiveConnection(): ?array
+{
+    $active = mxActiveConnections();
+    foreach ($active as $c) {
+        if ($c['type'] === '802-11-wireless') {
+            return $c;
         }
     }
-    return null;
+    return $active[0] ?? null;
 }
 
 if (isset($_POST['btnScan'])) {
-    exec('nmcli dev wifi rescan');
+    exec('nmcli dev wifi rescan 2>&1', $rescanOutput, $rescanCode);
     exec('nmcli dev wifi list 2>&1', $output, $code);
     $message = 'Nearby networks:';
     $ok = $code === 0;
@@ -129,7 +148,7 @@ if (isset($_POST['btnAdd'])) {
 // actually protected) is needless exposure.
 
 if (isset($_POST['btnPingGw'])) {
-    $active = mxActiveWifiConnection();
+    $active = mxPreferredActiveConnection();
     $ipgwStr = '';
     if ($active !== null && $active['device'] !== '') {
         $ipgw = [];
@@ -153,7 +172,7 @@ if (isset($_POST['btnPingInternet'])) {
 }
 
 if (isset($_POST['btnDetails'])) {
-    $active = mxActiveWifiConnection();
+    $active = mxPreferredActiveConnection();
     if ($active === null) {
         $message = 'Not currently connected to a network.';
         $ok = false;
@@ -164,67 +183,27 @@ if (isset($_POST['btnDetails'])) {
     }
 }
 
-if (isset($_POST['btnAuto'])) {
-    $active = mxActiveWifiConnection();
-    if ($active === null) {
-        $message = 'Not currently connected to a network.';
-        $ok = false;
-    } else {
-        exec('nmcli con mod ' . escapeshellarg($active['name']) . ' ipv4.method auto 2>&1', $output, $code);
-        exec('nmcli con up ' . escapeshellarg($active['name']) . ' 2>&1', $output2, $code2);
-        $message = $code === 0 ? "\"{$active['name']}\" set to automatic (DHCP) addressing and reconnected." : "Could not change \"{$active['name']}\".";
-        $ok = $code === 0;
-    }
-}
-
-if (isset($_POST['btnStatic'])) {
-    $active = mxActiveWifiConnection();
-    $myIp = trim($_POST['myIp'] ?? '');
-    $cidr = trim($_POST['cidr'] ?? '');
-    $gw = trim($_POST['gw'] ?? '');
-    $dns = trim($_POST['dns'] ?? '');
-
-    // Validate before anything touches a shell command -- escaping alone
-    // stops injection, but nmcli will happily accept garbage and
-    // misconfigure the interface, which is worse to recover from
-    // remotely than a rejected form.
-    $validInput = $active !== null
-        && filter_var($myIp, FILTER_VALIDATE_IP)
-        && ctype_digit($cidr) && (int)$cidr >= 0 && (int)$cidr <= 32
-        && filter_var($gw, FILTER_VALIDATE_IP);
-    foreach (explode(',', $dns) as $dnsServer) {
-        if (trim($dnsServer) !== '' && !filter_var(trim($dnsServer), FILTER_VALIDATE_IP)) {
-            $validInput = false;
-        }
-    }
-
-    if (!$validInput) {
-        $message = $active === null
-            ? 'Not currently connected to a network.'
-            : 'Invalid IP / CIDR / gateway / DNS value -- nothing was changed.';
-        $ok = false;
-    } else {
-        exec('nmcli con mod ' . escapeshellarg($active['name']) . ' ipv4.addresses ' . escapeshellarg("$myIp/$cidr") . ' 2>&1', $output, $code);
-        exec('nmcli con mod ' . escapeshellarg($active['name']) . ' ipv4.gateway ' . escapeshellarg($gw) . ' 2>&1', $output, $code);
-        exec('nmcli con mod ' . escapeshellarg($active['name']) . ' ipv4.dns ' . escapeshellarg($dns) . ' 2>&1', $output, $code);
-        exec('nmcli con mod ' . escapeshellarg($active['name']) . ' ipv4.method manual 2>&1', $output, $code);
-        exec('nmcli con up ' . escapeshellarg($active['name']) . ' 2>&1', $output2, $code2);
-        $message = "Static IP set on \"{$active['name']}\" and reconnected.";
-        $ok = true;
-    }
-}
-
 $radioStatus = trim((string)@shell_exec('nmcli radio wifi 2>/dev/null'));
 $radioOn = strtolower($radioStatus) === 'enabled';
 $savedWifi = mxSavedWifiConnections();
 $deletableWifi = array_values(array_diff($savedWifi, MX_PROTECTED_CONNECTIONS));
+$activeConns = mxActiveConnections();
+$activeWifi = null;
+$activeWired = [];
+foreach ($activeConns as $c) {
+    if ($c['type'] === '802-11-wireless' && $activeWifi === null) {
+        $activeWifi = $c;
+    } elseif ($c['type'] === '802-3-ethernet') {
+        $activeWired[] = $c;
+    }
+}
 ?>
 
 <?php if ($message !== null): ?>
   <div class="mx-msg <?php echo $ok ? 'mx-msg-ok' : 'mx-msg-err'; ?>"><?php echo htmlspecialchars($message); ?></div>
 <?php endif; ?>
 
-  <p style="font-weight:600; margin-bottom:14px;">WiFi radio:
+  <p style="font-weight:600; margin-bottom:6px;">WiFi radio:
     <?php echo $radioOn
         ? '<span style="color:#15803d;">&#9679; On</span>'
         : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>'; ?>
@@ -232,6 +211,18 @@ $deletableWifi = array_values(array_diff($savedWifi, MX_PROTECTED_CONNECTIONS));
     <form method="post" style="display:inline;"><button name="btnWifiOn" type="submit" class="mx-btn" style="width:auto; padding:3px 10px; font-size:12px; margin-left:8px;">Turn on</button></form>
 <?php endif; ?>
   </p>
+
+  <p style="font-weight:600; margin-bottom:4px;">Active network:
+<?php if ($activeWifi !== null): ?>
+    <span style="color:#15803d;">&#9679; <?php echo htmlspecialchars($activeWifi['name']); ?></span> <span class="mx-hint" style="display:inline;">(WiFi, <?php echo htmlspecialchars($activeWifi['device']); ?>)</span>
+<?php else: ?>
+    <span style="color:var(--mx-text-dim);">&#9675; not connected</span>
+<?php endif; ?>
+  </p>
+<?php foreach ($activeWired as $w): ?>
+  <p style="font-weight:600; margin-bottom:4px;">Wired connection: <span style="color:#15803d;">&#9679; <?php echo htmlspecialchars($w['name']); ?></span> <span class="mx-hint" style="display:inline;">(Ethernet, <?php echo htmlspecialchars($w['device']); ?>)</span></p>
+<?php endforeach; ?>
+  <p class="mx-hint" style="margin-bottom:14px;">A plugged-in USB/LAN adapter shows up here automatically once it has its own connection.</p>
 
 <?php if ($output !== null): ?>
   <textarea readonly rows="8" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px; margin-bottom:14px;"><?php echo htmlspecialchars(implode("\n", $output)); ?></textarea>
@@ -274,20 +265,6 @@ $deletableWifi = array_values(array_diff($savedWifi, MX_PROTECTED_CONNECTIONS));
   <form method="post" style="display:inline;"><button name="btnPingGw" type="submit" class="mx-btn mx-btn-ghost" style="margin-right:8px;">Ping gateway</button></form>
   <form method="post" style="display:inline;"><button name="btnPingInternet" type="submit" class="mx-btn mx-btn-ghost" style="margin-right:8px;">Ping internet</button></form>
   <form method="post" style="display:inline;"><button name="btnDetails" type="submit" class="mx-btn mx-btn-ghost">Show details</button></form>
-
-  <div class="mx-section">Static IP</div>
-  <p class="mx-hint">Applies to the currently active network<?php $active = mxActiveWifiConnection(); echo $active !== null ? ' ("' . htmlspecialchars($active['name']) . '").' : ' -- not currently connected.'; ?></p>
-  <form method="post">
-    <div class="mx-row"><label for="myIp">IP / CIDR</label>
-      <span><input type="text" id="myIp" name="myIp" style="width:150px; display:inline-block;" value="<?php echo htmlspecialchars($myIp ?? ''); ?>"> / <input type="text" name="cidr" style="width:60px; display:inline-block;" value="<?php echo htmlspecialchars($cidr ?? ''); ?>"></span></div>
-    <div class="mx-row"><label for="gw">Gateway</label>
-      <input type="text" id="gw" name="gw" value="<?php echo htmlspecialchars($gw ?? ''); ?>"></div>
-    <div class="mx-row"><label for="dns">DNS</label>
-      <input type="text" id="dns" name="dns" value="<?php echo htmlspecialchars($dns ?? ''); ?>"></div>
-    <p class="mx-hint">CIDR: 24 for a 255.255.255.0 mask. DNS: comma-separated if more than one.</p>
-    <button name="btnAuto" type="submit" class="mx-btn mx-btn-ghost" style="margin-right:8px;">Set automatic (DHCP)</button>
-    <button name="btnStatic" type="submit" class="mx-btn">Set static IP</button>
-  </form>
 
 </div>
 </body>
