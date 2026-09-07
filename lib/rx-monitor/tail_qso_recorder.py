@@ -5,12 +5,28 @@
 # capture-only tap, this also carries reflector-relayed QSOs being sent to
 # the local transmitter, not just this node's own local RX.
 #
-# SvxLink creates a hidden ".qsorec_<Logic>.wav" placeholder (0 bytes) the
-# instant a QSO starts, renames/writes the real "qsorec_<Logic>_<ts>.wav"
-# once actual audio arrives, then on close hands it to ENCODER_CMD (oggenc
-# in this config), which converts it to .ogg and removes the .wav. So: any
-# *.wav file present in REC_DIR is -- by construction -- the one currently
-# being recorded, and there is never more than one at a time.
+# SvxLink writes to a hidden ".qsorec_<Logic>.wav" placeholder for the
+# ENTIRE duration of a recording -- confirmed straight from SvxLink's own
+# source (QsoRecorder.cpp): openFile() always writes to that fixed hidden
+# name, and closeFile() is the ONLY place that renames it to the
+# timestamped public "qsorec_<Logic>_<start>_<end>.wav" name, right before
+# handing off to ENCODER_CMD. So the public name never exists while a QSO
+# is actually in progress -- it appears at the very end, already finished.
+#
+# This used to glob for only the public name, on the (wrong) assumption
+# that SvxLink renamed early. That's silent-by-design for normal
+# short/spaced-out traffic (each recording closes and briefly appears
+# under the public name within a second, so polling still catches most of
+# it), but for anything that keeps re-triggering within QSO_TIMEOUT of
+# itself (e.g. bursty digital-voice relay traffic) the recording can stay
+# open under the hidden name for minutes, meaning RX Monitor goes
+# completely silent for the whole thing and then, once it finally closes,
+# dumps the entire backlog as one fast, out-of-time burst instead of
+# playing live. Fixed by tailing the hidden name directly -- it's the
+# SAME file handle SvxLink keeps appending to throughout the recording, so
+# following it works exactly like tailing the public name always has;
+# rename() makes the hidden path disappear the instant the QSO ends, which
+# stream_file()'s existing os.path.exists() check already handles.
 #
 # No local RX and no active reflector talker -> no .wav file -> nothing
 # forwarded -> RX Monitor is silent. That's correct, not a bug.
@@ -35,11 +51,25 @@ def find_current_recording():
     # (e.g. ENCODER_CMD failed to convert+remove it), not something to
     # treat as live audio. Bit us once already: a broken ENCODER_CMD left
     # five real recordings stuck as .wav indefinitely.
+    #
+    # Two glob patterns, not one -- "*qsorec_*.wav" alone never matches a
+    # leading dot (Python's glob follows shell semantics: a bare "*" does
+    # not match a hidden file), so the in-progress ".qsorec_<Logic>.wav"
+    # needs its own explicit pattern.
     now = time.time()
-    candidates = [
-        p for p in glob.glob(os.path.join(REC_DIR, "*qsorec_*.wav"))
-        if os.path.getsize(p) > WAV_HEADER_BYTES and (now - os.path.getmtime(p)) < 10
-    ]
+    paths = glob.glob(os.path.join(REC_DIR, "*qsorec_*.wav"))
+    paths += glob.glob(os.path.join(REC_DIR, ".qsorec_*.wav"))
+    candidates = []
+    for p in paths:
+        try:
+            if os.path.getsize(p) > WAV_HEADER_BYTES and (now - os.path.getmtime(p)) < 10:
+                candidates.append(p)
+        except OSError:
+            # Renamed/removed between the glob listing and this stat call
+            # (e.g. ENCODER_CMD finished right as we scanned) -- not a
+            # candidate anymore, just skip it rather than crash. This
+            # raced tail_qso_recorder.py into a FileNotFoundError once.
+            continue
     if not candidates:
         return None
     return max(candidates, key=os.path.getmtime)
