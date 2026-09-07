@@ -126,6 +126,10 @@ $hostname = trim((string)@shell_exec('hostname'));
       : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>';
     onCtl.style.display = active ? 'contents' : 'none';
     offCtl.style.display = active ? 'none' : 'contents';
+    // Keeps the "BLE on" pill in the blue header banner (site_header.php,
+    // included on this same page) in sync too -- it's rendered once at
+    // page load and otherwise has no way to know this toggle happened.
+    if (window.mxSetHeaderBadge) window.mxSetHeaderBadge('mx-ble-badge', active);
   }
 
   function poll() {

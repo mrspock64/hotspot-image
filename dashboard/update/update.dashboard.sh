@@ -59,4 +59,13 @@ chown -R www-data:www-data /var/www/html
 echo "--- SVXlink service restart ---"
 sudo service svxlink restart
 
+# The header's "Update available" badge is cached for 6h (see
+# update_check.php) so a page load doesn't hit the network every time --
+# but that means, without this, the badge would keep showing "available"
+# for up to 6h after an update that already applied it, since the cached
+# result predates this run. Clearing it here makes the very next page
+# load recompute fresh (now correctly seeing local == remote) instead of
+# serving stale true from before the update.
+rm -f /var/cache/hotspot-image/update_check.json
+
 echo "###-FINISH-####"
