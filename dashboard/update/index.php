@@ -11,15 +11,12 @@
 
 <?php
 // The check.*.sh/update.*.sh scripts below are invoked by bare filename
-// (e.g. "sh check.os.sh"), and their output was written to a hardcoded
-// /var/www/html/update/screen.log -- both assume PHP's cwd is this exact
-// directory, which isn't guaranteed (e.g. testing this dashboard from
+// (e.g. "sh check.os.sh"), which assumes PHP's cwd is this exact
+// directory -- not guaranteed otherwise (e.g. testing this dashboard from
 // anywhere other than /var/www/html, as we did during development).
-// Fixed the cwd explicitly instead and switched every reference below to
-// a plain relative "screen.log" / "check.os.sh" etc.
 chdir(__DIR__);
 
-// Every check.*.sh/update.*.sh below writes to the same shared screen.log,
+// Every check.*.sh/update.*.sh below writes to the same shared log file,
 // backgrounded with "&" so the page can respond immediately -- meaning
 // nothing stopped two of them running at once (e.g. clicking Check while
 // a previous check was still finishing) from interleaving their output
@@ -36,9 +33,18 @@ chdir(__DIR__);
 // keeps showing the real ongoing job's actual progress -- more useful
 // than a terse rejection anyway, and impossible to interleave wrong.
 define('UPDATER_LOCK_FILE', '/var/cache/hotspot-image/updater.lock');
+// Deliberately NOT under /var/www/html: update.dashboard.sh's own job is
+// to `rm -rf` and replace that entire directory mid-run -- confirmed
+// live, a screen.log living inside it got deleted out from under the
+// still-running script's own open file handle, silently losing every
+// line written after that point (including the "finished" marker), so
+// the page it drives got stuck looking perpetually in-progress. A path
+// outside the directory being replaced survives regardless of which
+// action is running.
+define('UPDATER_SCREEN_LOG', '/var/cache/hotspot-image/updater-screen.log');
 function runUpdaterScript(string $scriptName): void
 {
-    $inner = 'sudo nice -n 19 sh ' . escapeshellarg($scriptName) . ' > screen.log 2>&1';
+    $inner = 'sudo nice -n 19 sh ' . escapeshellarg($scriptName) . ' > ' . escapeshellarg(UPDATER_SCREEN_LOG) . ' 2>&1';
     $cmd = sprintf(
         'flock -n %s sh -c %s > /dev/null 2>&1 &',
         escapeshellarg(UPDATER_LOCK_FILE),
@@ -99,9 +105,9 @@ $screen = [
     "",
     "Please use buttons for appropriate actions.",
 ];
-if (is_file('screen.log') && filesize('screen.log') > 0) {
+if (is_file(UPDATER_SCREEN_LOG) && filesize(UPDATER_SCREEN_LOG) > 0) {
     $screen = [];
-    exec('tail -n 500 screen.log 2>&1', $screen);
+    exec('tail -n 500 ' . escapeshellarg(UPDATER_SCREEN_LOG) . ' 2>&1', $screen);
     if (($screen[count($screen) - 1] ?? '') !== '###-FINISH-####') {
         header('Refresh: 3');
     }
