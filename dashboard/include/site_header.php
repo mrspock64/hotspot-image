@@ -63,7 +63,7 @@ $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_S
 $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
-<div class="mx-banner">
+<div class="mx-banner"<?php echo ($mxQsoRecorderActive && $mxRxMeterStyle === 'analog') ? ' style="min-height:114px;"' : ''; ?>>
   <img src="/images/svxlink.ico" alt="">
   <div>
     <div class="mx-callsign"><?php echo htmlspecialchars($callsign); ?></div>
@@ -73,27 +73,38 @@ $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNE
 <?php if ($mxQsoRecorderActive): ?>
     <div class="mx-rx-meter">
 <?php if ($mxRxMeterStyle === 'analog'): ?>
-      <svg viewBox="0 0 140 90" width="88" height="56" class="mx-rx-analog">
-        <path d="M19.2 42.4 A62 62 0 0 1 120.8 42.4 L70 78 Z" fill="#f4ecd8"/>
-        <path d="M19.2 42.4 A62 62 0 0 1 120.8 42.4" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
-        <path d="M29.0 49.3 A50 50 0 0 1 79.5 28.9" fill="none" stroke="#22c55e" stroke-width="6"/>
-        <path d="M79.5 28.9 A50 50 0 0 1 101.8 39.4" fill="none" stroke="#f59e0b" stroke-width="6"/>
-        <path d="M101.8 39.4 A50 50 0 0 1 111.0 49.3" fill="none" stroke="#ef4444" stroke-width="6"/>
-        <path d="M37.2 55.1 L22.5 44.7" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M48.2 44.5 L38.4 29.4" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M62.4 38.7 L58.9 21.1" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M77.6 38.7 L81.1 21.1" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M91.8 44.5 L101.6 29.4" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M102.8 55.1 L117.5 44.7" stroke="#0f172a" stroke-width="1.5"/>
-        <path d="M38.0 44.9 L29.7 36.3" stroke="#334155" stroke-width="1"/>
-        <path d="M52.8 35.3 L48.3 24.2" stroke="#334155" stroke-width="1"/>
-        <path d="M70.0 32.0 L70.0 20.0" stroke="#334155" stroke-width="1"/>
-        <path d="M87.2 35.3 L91.7 24.2" stroke="#334155" stroke-width="1"/>
-        <path d="M102.0 44.9 L110.3 36.3" stroke="#334155" stroke-width="1"/>
-        <text x="70" y="70" text-anchor="middle" font-size="9" font-weight="700" fill="#0f172a" font-family="Arial, sans-serif">MOD</text>
-        <g id="mx-rx-needle" transform="rotate(-55 70 78)">
-          <line x1="70" y1="78" x2="70" y2="26" stroke="#b91c1c" stroke-width="2"/>
-          <circle cx="70" cy="78" r="4" fill="#1f2937"/>
+      <svg viewBox="-8 -6 236 156" width="150" height="102" class="mx-rx-analog">
+        <rect x="6" y="4" width="208" height="142" rx="10" fill="#f4ecd8" stroke="#0f172a" stroke-width="3"/>
+        <path d="M29.7 75.3 A91 91 0 0 1 190.3 75.3" fill="none" stroke="#0f172a" stroke-width="3"/>
+        <path d="M124.0 28.1 A91 91 0 0 1 190.3 75.3" fill="none" stroke="#dc2626" stroke-width="5"/>
+        <path d="M18.2 69.2 A104 104 0 0 1 201.8 69.2" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+        <path d="M37.6 79.5 L21.7 71.1" stroke="#0f172a" stroke-width="2"/>
+        <path d="M52.7 59.3 L40.2 46.4" stroke="#0f172a" stroke-width="2"/>
+        <path d="M73.3 44.7 L65.3 28.6" stroke="#0f172a" stroke-width="2"/>
+        <path d="M97.4 37.0 L94.6 19.2" stroke="#0f172a" stroke-width="2"/>
+        <path d="M122.6 37.0 L125.4 19.2" stroke="#0f172a" stroke-width="2"/>
+        <path d="M146.7 44.7 L154.7 28.6" stroke="#0f172a" stroke-width="2"/>
+        <path d="M167.3 59.3 L179.8 46.4" stroke="#0f172a" stroke-width="2"/>
+        <path d="M182.4 79.5 L198.3 71.1" stroke="#0f172a" stroke-width="2"/>
+        <path d="M38.0 64.0 L30.0 58.0" stroke="#334155" stroke-width="1.2"/>
+        <path d="M57.8 44.7 L52.0 36.5" stroke="#334155" stroke-width="1.2"/>
+        <path d="M82.6 32.3 L79.6 22.7" stroke="#334155" stroke-width="1.2"/>
+        <path d="M110.0 28.0 L110.0 18.0" stroke="#334155" stroke-width="1.2"/>
+        <path d="M137.4 32.3 L140.4 22.7" stroke="#334155" stroke-width="1.2"/>
+        <path d="M162.2 44.7 L168.0 36.5" stroke="#334155" stroke-width="1.2"/>
+        <path d="M182.0 64.0 L190.0 58.0" stroke="#334155" stroke-width="1.2"/>
+        <text x="11.1" y="70.4" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">S</text>
+        <text x="31.8" y="42.8" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">3</text>
+        <text x="59.9" y="22.8" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">5</text>
+        <text x="92.8" y="12.3" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">7</text>
+        <text x="127.2" y="12.3" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">9</text>
+        <text x="160.1" y="22.8" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+10</text>
+        <text x="188.2" y="42.8" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+30</text>
+        <text x="208.9" y="70.4" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+60</text>
+        <text x="110" y="142" text-anchor="middle" font-size="26" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif"><?php echo htmlspecialchars($callsign); ?></text>
+        <g id="mx-rx-needle" transform="rotate(-62 110 118)">
+          <line x1="110" y1="118" x2="110" y2="40" stroke="#b91c1c" stroke-width="2.5"/>
+          <circle cx="110" cy="118" r="5" fill="#1f2937"/>
         </g>
       </svg>
 <?php else: ?>
@@ -143,11 +154,11 @@ window.mxSetHeaderBadge = function (id, visible) {
         bar.style.background = level > 85 ? '#ef4444' : (level > 60 ? '#f59e0b' : '#22c55e');
       }
       if (needle) {
-        // -55deg (0%) to +55deg (100%) around the pivot at (70,78) -- see
-        // the fixed tick/band geometry drawn above, computed for that
-        // same sweep.
-        var angle = -55 + (level / 100) * 110;
-        needle.setAttribute('transform', 'rotate(' + angle + ' 70 78)');
+        // -62deg (0%, "S") to +62deg (100%, "+60") around the pivot at
+        // (110,118) -- see the fixed tick/band geometry drawn above,
+        // computed for that same sweep.
+        var angle = -62 + (level / 100) * 124;
+        needle.setAttribute('transform', 'rotate(' + angle + ' 110 118)');
       }
     }).catch(function () {});
   }
