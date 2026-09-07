@@ -54,4 +54,9 @@ cd /opt
 rm -R /opt/src
 sudo service svxlink restart
 
+# Same reason as update.dashboard.sh clearing its own cache: without this
+# the header's SvxLink-update badge would keep showing "available" for up
+# to its 6h TTL after an update that already applied it.
+rm -f /var/cache/hotspot-image/svxlink_update_check.json
+
 echo "###-FINISH-####"
