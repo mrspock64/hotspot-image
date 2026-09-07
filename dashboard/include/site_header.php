@@ -49,6 +49,13 @@ $mxSvxlinkVersion = $mxSvxlinkUpdate['installed'];
 // not routine status chrome. Cheap: systemctl is-active is near-instant,
 // no caching needed like the update check's git-fetch.
 $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/dev/null')) === 'active';
+
+// The RX level meter only has anything to show while SvxLink's QSO
+// Recorder is actually recording (QSO Log page toggle) -- same dependency
+// as RX Monitor itself, see lib/rx-monitor/tail_qso_recorder.py. With it
+// off there's nothing to poll, so skip rendering the meter entirely
+// rather than showing a permanently-empty bar.
+$mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1';
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <div class="mx-banner">
@@ -58,10 +65,12 @@ $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2
     <div class="mx-network"><?php echo htmlspecialchars($fmnetwork); ?><?php echo ($fmnetwork !== '' && $mxHeaderFreq !== '') ? ' &middot; ' : ''; ?><?php echo htmlspecialchars($mxHeaderFreq); ?></div>
   </div>
   <div style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+<?php if ($mxQsoRecorderActive): ?>
     <div class="mx-rx-meter">
       <div class="mx-rx-meter-label">RX</div>
       <div class="mx-rx-meter-track"><div id="mx-rx-meter-bar" class="mx-rx-meter-bar"></div></div>
     </div>
+<?php endif; ?>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>
