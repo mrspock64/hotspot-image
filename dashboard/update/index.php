@@ -19,262 +19,103 @@
 // a plain relative "screen.log" / "check.os.sh" etc.
 chdir(__DIR__);
 
-ini_set("allow_url_fopen", 1);
 session_start();
-$isSimplex = false;
-$isRepeater = false;
-$svxConfigFile = '/etc/svxlink/svxlink.conf';
-if (fopen($svxConfigFile,'r')) {$svxconfig = parse_ini_file($svxConfigFile,true,INI_SCANNER_RAW); }
-$logics = explode(",",$svxconfig['GLOBAL']['LOGICS']);
-foreach ($logics as $key) {
-  if ($key == "SimplexLogic") $isSimplex = true;
-  if ($key == "RepeaterLogic") $isRepeater = true; 
-};
-$tgUri = $svxconfig['ReflectorLogic']['TG_URI'];
 
-
-
-
-//if ($_SERVER["REQUEST_METHOD"] == "POST") {
-//  if (empty($_POST["ssid"])) {
-//     echo "Name is required";
-//  } else {
-//    $ssid = $_POST["ssid"]);
-//  }
-//}}
-
-// load the connlist
-$retval = null;
-$conns = null;
-//exec('nmcli  -t -f NAME  con show',$conns,$retval);
-
-// find the gateway
-$ipgw = null;
-$screen = null;
-
-
-$screen[0] = "Welcome to HotSpot Updater.";
-$screen[1] = "";
-$screen[2] = "Please use buttons for appriopriate acctions.";
-$screen[3] = "";
-$screen[4] = "";
-
-
-
-if ($_SESSION['refresh']){
-	$screen =null;
-	$command = "tail -n 500 screen.log |tac 2>&1";
-        exec($command,$screen,$retval);
-
-	$str = $screen[0];
-	if ($str === "###-FINISH-####") {
-		$_SESSION['refresh'] = False;
-	}  else {
-	//else {$_SESSION['refresh'] = False;}
-	header("Refresh: 3");
-	}
-};
-
-
-
-if (isset($_POST['btnChkOs']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.os.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-	
-	$_SESSION['refresh']=True; header("Refresh: 3");
-	//sleep(1);
-	//$command = "tail -n 500 screen.log |tac 2>&1";
-        //exec($command,$screen,$retval);       
-
-	
+// Every check.*.sh/update.*.sh below writes to the same shared screen.log,
+// backgrounded with "&" so the page can respond immediately -- meaning
+// nothing stopped two of them running at once (e.g. clicking Check while
+// a previous check was still finishing) from interleaving their output
+// into the same file. Confirmed live: clicking Check OS then Check
+// SVXLink in quick succession produced a garbled, mixed-up screen.log --
+// not a bug in either script individually. flock -n makes the second
+// click a clean "already running" message instead of silent corruption.
+// On lock failure this deliberately does NOT touch screen.log -- an
+// earlier version wrote a "busy" message there instead, which raced the
+// still-running job's own writes to the exact same file just as badly as
+// the original bug (confirmed live: a garbled screen.log with the busy
+// message overwritten mid-write). Leaving screen.log alone means a
+// rejected click just falls through to the existing polling below, which
+// keeps showing the real ongoing job's actual progress -- more useful
+// than a terse rejection anyway, and impossible to interleave wrong.
+define('UPDATER_LOCK_FILE', '/var/cache/hotspot-image/updater.lock');
+function runUpdaterScript(string $scriptName): void
+{
+    $inner = 'sudo nice -n 19 sh ' . escapeshellarg($scriptName) . ' > screen.log 2>&1';
+    $cmd = sprintf(
+        'flock -n %s sh -c %s > /dev/null 2>&1 &',
+        escapeshellarg(UPDATER_LOCK_FILE),
+        escapeshellarg($inner)
+    );
+    exec($cmd);
 }
 
+$screen = [
+    "Welcome to HotSpot Updater.",
+    "",
+    "Please use buttons for appropriate actions.",
+];
 
-
-if (isset($_POST['btnUpdateOs']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.os.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-	$_SESSION['refresh']=True; header("Refresh: 3");
-
-
-
-};
-
-
-
-if (isset($_POST['btnChkSounds']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.sounds.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-        $_SESSION['refresh']=True; header("Refresh: 3");
-        //sleep(1);
-        //$command = "tail -n 500 screen.log |tac 2>&1";
-        //exec($command,$screen,$retval);
-
-
+// Auto-refresh (every 3s) while the last-triggered action is still
+// running, polling screen.log for the "finished" marker every check.*.sh/
+// update.*.sh script ends with. Top-to-bottom, matching the order the
+// script actually wrote it -- this used to pipe through `tac` to show the
+// newest line first, which read fine for a single-line status but made
+// multi-line output (apt's progress, SvxLink's release notes) look
+// backwards. Auto-scrolled to the bottom via JS instead, so the latest
+// line is still what's visible without needing to scroll.
+if (!empty($_SESSION['refresh'])) {
+    $screen = [];
+    exec('tail -n 500 screen.log 2>&1', $screen);
+    if (($screen[count($screen) - 1] ?? '') === '###-FINISH-####') {
+        $_SESSION['refresh'] = false;
+    } else {
+        header('Refresh: 3');
+    }
 }
 
-
-if (isset($_POST['btnUpdateSounds']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.sounds.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-        $_SESSION['refresh']=True; header("Refresh: 3");
-
-
-
-};
-
-
-if (isset($_POST['btnChkConfig']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh check.config.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-        $_SESSION['refresh']=True; header("Refresh: 3");
-        //sleep(1);
-        //$command = "tail -n 500 screen.log |tac 2>&1";
-        //exec($command,$screen,$retval);
-
-
+$actions = [
+    'btnChkOs'          => 'check.os.sh',
+    'btnUpdateOs'        => 'update.os.sh',
+    'btnChkSvxlink'      => 'check.svxlink.sh',
+    'btnUpdateSvxlink'   => 'update.svxlink.sh',
+    'btnChkDashboard'    => 'check.dashboard.sh',
+    'btnUpdateDashboard' => 'update.dashboard.sh',
+];
+foreach ($actions as $btn => $script) {
+    if (isset($_POST[$btn])) {
+        // update.dashboard.sh alone needs to survive /var/www/html itself
+        // being replaced mid-run (it re-syncs dashboard/ from /opt/
+        // hotspot-image into /var/www/html), so it's copied out to /opt
+        // first and run from there instead of from this directory.
+        if ($btn === 'btnUpdateDashboard') {
+            exec('sudo cp update.dashboard.sh /opt');
+            runUpdaterScript('/opt/update.dashboard.sh');
+        } else {
+            runUpdaterScript($script);
+        }
+        $_SESSION['refresh'] = true;
+        header('Refresh: 3');
+        break;
+    }
 }
-
-
-if (isset($_POST['btnUpdateConfig']))
-    {
-
-        $retval = null;
-        $screen = null;
-        //$sAconn = $_POST['sAconn'];
-        //$password = $_POST['password'];
-        //exec('nmcli dev wifi rescan');
-        $command = "sudo nice -n 19 sh update.config.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-        $_SESSION['refresh']=True; header("Refresh: 3");
-
-
-
-};
-
-
-if (isset($_POST['btnChkDashboard']))
-    {
-
-        $retval = null;
-        $screen = null;
-        
-	$command = "sudo nice -n 19 sh check.dashboard.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-        
-	$_SESSION['refresh']=True; header("Refresh: 3");
-}
-
-
-if (isset($_POST['btnUpdateDashboard']))
-    {
-
-        $retval = null;
-        $screen = null;
-        
-	$command = "sudo cp update.dashboard.sh /opt";
-	exec($command,$screen,$retval);
-	$command = "sudo nice -n 19 sh /opt/update.dashboard.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-        //exec('nmcli dev wifi rescan');
-        //$command3 = "sudo wget ".$tgUri." >> screen.log 2>&1";
-        //exec($command3,$screen,$retval);
-	//if ($retval) {
-	//echo "*";
-	//$command4 = "sudo mv /var/www/html/tgdb.txt /var/www/html/include/tgdb.php >> screen.log 2>&1";
-        //exec($command4,$screen,$retval);
-	//}
-        //$_SESSION['refresh']=True; header("Refresh: 3");
-        $_SESSION['refresh']=True; header("Refresh: 3");
-
-};
-
-if (isset($_POST['btnChkSvxlink']))
-    {
-
-        $retval = null;
-        $screen = null;
-        $command = "sudo nice -n 19 sh check.svxlink.sh > screen.log 2>&1 &"; 
-        exec($command,$screen,$retval);
-        $_SESSION['refresh']=True; header("Refresh: 3");
-}
-
-
-
-
-
-if (isset($_POST['btnUpdateSvxlink']))
-    {
-
-        $retval = null;
-        $screen = null;
-        $command = "sudo nice -n 19 sh update.svxlink.sh > screen.log 2>&1 &";
-        exec($command,$screen,$retval);
-
-        $_SESSION['refresh']=True; header("Refresh: 3");
-
-};
-
 ?>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
 
-  <textarea name="scan" rows="14" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
-			echo implode("\n",$screen); ?></textarea>
+  <textarea id="updater-screen" name="scan" rows="14" style="width:100%; box-sizing:border-box; background:#111; color:#0f0; border:1px solid #000; font-family: 'Courier New', monospace; font-size:11px; padding:8px; border-radius:6px;"><?php
+			echo htmlspecialchars(implode("\n", $screen)); ?></textarea>
+  <script>document.getElementById('updater-screen').scrollTop = 1e9;</script>
 
   <div class="mx-section">Check versions</div>
   <button name="btnChkOs" type="submit" class="mx-btn mx-btn-ghost">OS</button>
-  <button name="btnChkSounds" type="submit" class="mx-btn mx-btn-ghost">Sounds</button>
-  <button name="btnChkConfig" type="submit" class="mx-btn mx-btn-ghost">Config</button>
   <button name="btnChkSvxlink" type="submit" class="mx-btn mx-btn-ghost">SVXLink</button>
   <button name="btnChkDashboard" type="submit" class="mx-btn mx-btn-ghost">Dashboard</button>
 
   <div class="mx-section">Upgrade</div>
   <button name="btnUpdateOs" type="submit" class="mx-btn">OS</button>
-  <button name="btnUpdateSounds" type="submit" class="mx-btn">Sounds</button>
-  <button name="btnUpdateConfig" type="submit" class="mx-btn">Config</button>
   <button name="btnUpdateSvxlink" type="submit" class="mx-btn">SVXLink</button>
   <button name="btnUpdateDashboard" type="submit" class="mx-btn">Dashboard</button>
+  <p class="mx-hint" style="margin-top:8px;">Sounds and Config updates from the original SVXLink-Dash-V2 project pointed at an unrelated ham network's own GitHub repo and would have overwritten this node's sound pack / event scripts with theirs -- removed rather than pointed at a real destination. See <a href="/help/">Help</a>.</p>
 
 </form>
 
