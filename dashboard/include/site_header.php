@@ -58,13 +58,13 @@ $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2
     <div class="mx-network"><?php echo htmlspecialchars($fmnetwork); ?><?php echo ($fmnetwork !== '' && $mxHeaderFreq !== '') ? ' &middot; ' : ''; ?><?php echo htmlspecialchars($mxHeaderFreq); ?></div>
   </div>
   <div style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-    <div style="display:flex; align-items:center; gap:8px;">
+    <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>
       <a id="mx-svxlink-update-badge" href="/update/" style="display:<?php echo $mxSvxlinkUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; SvxLink update</a>
     </div>
 <?php if ($mxDashboardVersion !== '' || $mxSvxlinkVersion): ?>
-    <div style="font-size:10px; color:rgba(255,255,255,0.75); white-space:nowrap;">
+    <div style="font-size:13px; color:#dbe6ff; white-space:nowrap;">
 <?php if ($mxDashboardVersion !== ''): ?>dashboard <?php echo htmlspecialchars($mxDashboardVersion); ?><?php endif; ?>
 <?php if ($mxDashboardVersion !== '' && $mxSvxlinkVersion): ?> &middot; <?php endif; ?>
 <?php if ($mxSvxlinkVersion): ?>svxlink <?php echo htmlspecialchars($mxSvxlinkVersion); ?><?php endif; ?>
