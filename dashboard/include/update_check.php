@@ -35,7 +35,20 @@ function isDashboardUpdateAvailable(): array
     $result = ['available' => false];
     if (is_dir(UPDATE_CHECK_REPO_DIR . '/.git')) {
         $dir = escapeshellarg(UPDATE_CHECK_REPO_DIR);
-        exec("cd $dir && git fetch origin 2>/dev/null", $out, $code);
+        // sudo, not a plain www-data git fetch: the deploy key
+        // (/etc/hotspot-image/deploy_key) is 600 root:root, the correct/
+        // secure mode -- OpenSSH's strict permission check specifically
+        // rejects a key that's readable by any group/other the *reading*
+        // process isn't itself a member of, which ruled out a www-data-
+        // readable group grant as a fix (confirmed live: chmod 640
+        // root:www-data let www-data read it fine, but then check.
+        // dashboard.sh/update.dashboard.sh -- which run as root via sudo,
+        // root's own group being "root", not "www-data" -- started
+        // failing that same strict check instead). www-data already has
+        // passwordless sudo on this node (same model the Update page's
+        // own scripts rely on), so route through that instead of trying
+        // to find one file mode that satisfies two different users.
+        exec("cd $dir && sudo git fetch origin 2>/dev/null", $out, $code);
         if ($code === 0) {
             $local = trim((string)shell_exec("cd $dir && git rev-parse HEAD 2>/dev/null"));
             // --verify -q, not a bare rev-parse: on a checkout whose
