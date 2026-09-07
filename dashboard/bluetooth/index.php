@@ -28,14 +28,17 @@ require_once __DIR__ . '/../include/ble.php';
 // touches its systemd "enabled" state, so it always comes back OFF after a
 // reboot regardless of how it was left -- turn it on only while actually
 // using the app, then off again.
+$pollAfterAction = false;
 if (isset($_POST['btnOn'])) {
     exec('sudo systemctl start hotspot-bluetooth > /dev/null 2>&1 &');
     $message = 'Turning Bluetooth on -- the companion app should find this hotspot within a few seconds.';
+    $pollAfterAction = true;
 }
 
 if (isset($_POST['btnOff'])) {
     exec('sudo systemctl stop hotspot-bluetooth > /dev/null 2>&1 &');
     $message = 'Turning Bluetooth off.';
+    $pollAfterAction = true;
 }
 
 $bleIsInstalled = bleInstalled();
@@ -60,6 +63,7 @@ if ($bleIsInstalled && isset($_POST['btnSaveBonded'])) {
 }
 
 $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/dev/null')) === 'active';
+$hostname = trim((string)@shell_exec('hostname'));
 ?>
 
 <div class="mx-card" style="max-width: 560px;">
@@ -74,9 +78,9 @@ $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/d
 <?php endif; ?>
 
   <p style="font-weight:600; margin-bottom:14px;">Status:
-    <?php echo $isActive
-        ? '<span style="color:#15803d;">&#9679; On</span> — advertising as ' . htmlspecialchars(trim((string)@shell_exec('hostname')))
-        : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>'; ?>
+    <span id="ble-status-label"><?php echo $isActive
+        ? '<span style="color:#15803d;">&#9679; On</span> — advertising as ' . htmlspecialchars($hostname)
+        : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>'; ?></span>
     <?php if ($bleBonded): ?><span style="color:#2563eb;"> &middot; pairing required</span><?php endif; ?>
   </p>
 
@@ -87,11 +91,12 @@ $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/d
 <?php endif; ?>
 
   <form method="post" style="margin-top:14px;">
-<?php if ($isActive): ?>
-    <button name="btnOff" type="submit" class="mx-btn mx-btn-danger" style="width:200px;">Turn off</button>
-<?php else: ?>
-    <button name="btnOn" type="submit" class="mx-btn" style="width:200px;">Turn on</button>
-<?php endif; ?>
+    <div id="ble-off-controls" style="display:<?php echo $isActive ? 'none' : 'contents'; ?>;">
+      <button name="btnOn" type="submit" class="mx-btn" style="width:200px;">Turn on</button>
+    </div>
+    <div id="ble-on-controls" style="display:<?php echo $isActive ? 'contents' : 'none'; ?>;">
+      <button name="btnOff" type="submit" class="mx-btn mx-btn-danger" style="width:200px;">Turn off</button>
+    </div>
   </form>
 
 <?php if ($bleIsInstalled): ?>
@@ -104,5 +109,41 @@ $isActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/d
   </form>
 <?php endif; ?>
 </div>
+<?php if ($pollAfterAction): ?>
+<script>
+(function () {
+  var label = document.getElementById('ble-status-label');
+  var onCtl = document.getElementById('ble-on-controls');
+  var offCtl = document.getElementById('ble-off-controls');
+  var hostname = <?php echo json_encode($hostname); ?>;
+  var attempts = 0;
+  var maxAttempts = 15; // BLE start/stop is usually fast, but the service
+  // waits on hci0 + bluetooth.service in its own ExecStartPre first.
+
+  function render(active) {
+    label.innerHTML = active
+      ? '<span style="color:#15803d;">&#9679; On</span> — advertising as ' + hostname
+      : '<span style="color:var(--mx-text-dim);">&#9675; Off</span>';
+    onCtl.style.display = active ? 'contents' : 'none';
+    offCtl.style.display = active ? 'none' : 'contents';
+  }
+
+  function poll() {
+    attempts++;
+    fetch('status.php', {cache: 'no-store'})
+      .then(function (r) { return r.json(); })
+      .then(function (data) { render(data.active); })
+      .catch(function () {})
+      .finally(function () {
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000);
+        }
+      });
+  }
+
+  setTimeout(poll, 1000);
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>
