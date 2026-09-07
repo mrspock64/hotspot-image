@@ -31,6 +31,49 @@
     border-radius: var(--mx-radius);
     box-shadow: var(--mx-shadow);
     font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    position: relative;
+}
+
+.mx-rx-meter {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.mx-rx-meter-label {
+    font-size: 10px;
+    color: #dbe6ff;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.mx-rx-meter-track {
+    width: 90px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.mx-rx-meter-bar {
+    height: 100%;
+    width: 0%;
+    background: #22c55e;
+    transition: width 0.15s linear, background-color 0.15s linear;
+}
+
+@media (max-width: 560px) {
+    /* Not enough room between the callsign and the badges on a phone
+       screen without overlapping either -- simpler to just hide it than
+       fight for space on the smallest viewports. */
+    .mx-rx-meter {
+        display: none;
+    }
 }
 
 .mx-banner img {

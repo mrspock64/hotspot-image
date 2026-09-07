@@ -17,6 +17,7 @@
 #
 # No local RX and no active reflector talker -> no .wav file -> nothing
 # forwarded -> RX Monitor is silent. That's correct, not a bug.
+import array
 import glob
 import os
 import socket
@@ -29,7 +30,33 @@ WAV_HEADER_BYTES = 44
 CHUNK_BYTES = 1920  # ~20ms of mono 16-bit audio at 48000 Hz
 POLL_INTERVAL = 0.5
 
+# The dashboard header's live RX level meter reads this -- /dev/shm is
+# tmpfs (RAM-backed), deliberately not a real path on the SD card, since
+# this gets rewritten several times a second while a recording is open.
+LEVEL_FILE = "/dev/shm/hotspot_rx_level"
+LEVEL_WRITE_INTERVAL = 0.1
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+
+def write_level(peak_fraction):
+    try:
+        with open(LEVEL_FILE, "w") as f:
+            f.write(str(int(peak_fraction * 100)))
+    except OSError:
+        pass
+
+
+def peak_fraction(data):
+    # 16-bit signed mono PCM -- peak absolute sample value as a 0..1
+    # fraction of full scale. Exact sample rate doesn't matter here (unlike
+    # RX Monitor's own playback, which needed the real 16kHz vs the
+    # assumed 48kHz), only the sample magnitudes do.
+    samples = array.array("h")
+    samples.frombytes(data[: len(data) - (len(data) % 2)])
+    if not samples:
+        return 0.0
+    return min(1.0, max(abs(s) for s in samples) / 32768.0)
 
 
 def find_current_recording():
@@ -82,21 +109,33 @@ def stream_file(path):
     with open(path, "rb") as f:
         my_ino = os.fstat(f.fileno()).st_ino
         f.seek(WAV_HEADER_BYTES)
-        while True:
-            data = f.read(CHUNK_BYTES)
-            if data:
-                sock.sendto(data, (UDP_IP, UDP_PORT))
-                continue
-            # Caught up to the writer -- keep following unless this exact
-            # file (by inode) has stopped being the current recording.
-            try:
-                if os.stat(path).st_ino != my_ino:
-                    return  # a new recording has replaced this one
-            except OSError:
-                return  # gone -- renamed away on close
-            if find_current_recording() != path:
-                return
-            time.sleep(0.05)
+        last_level_write = 0.0
+        try:
+            while True:
+                data = f.read(CHUNK_BYTES)
+                if data:
+                    sock.sendto(data, (UDP_IP, UDP_PORT))
+                    now = time.time()
+                    if now - last_level_write >= LEVEL_WRITE_INTERVAL:
+                        write_level(peak_fraction(data))
+                        last_level_write = now
+                    continue
+                # Caught up to the writer -- keep following unless this
+                # exact file (by inode) has stopped being the current
+                # recording.
+                try:
+                    if os.stat(path).st_ino != my_ino:
+                        return  # a new recording has replaced this one
+                except OSError:
+                    return  # gone -- renamed away on close
+                if find_current_recording() != path:
+                    return
+                time.sleep(0.05)
+        finally:
+            # Drop the meter back to 0 the moment this recording stops,
+            # rather than leaving it stuck at its last value until the
+            # level file goes stale (see rx_level.php's freshness check).
+            write_level(0.0)
 
 
 def main():

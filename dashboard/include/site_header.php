@@ -58,6 +58,10 @@ $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2
     <div class="mx-network"><?php echo htmlspecialchars($fmnetwork); ?><?php echo ($fmnetwork !== '' && $mxHeaderFreq !== '') ? ' &middot; ' : ''; ?><?php echo htmlspecialchars($mxHeaderFreq); ?></div>
   </div>
   <div style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+    <div class="mx-rx-meter">
+      <div class="mx-rx-meter-label">RX</div>
+      <div class="mx-rx-meter-track"><div id="mx-rx-meter-bar" class="mx-rx-meter-bar"></div></div>
+    </div>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>
@@ -81,6 +85,25 @@ window.mxSetHeaderBadge = function (id, visible) {
   var el = document.getElementById(id);
   if (el) el.style.display = visible ? 'inline-flex' : 'none';
 };
+
+// Live RX level meter -- polls rx_level.php (backed by lib/rx-monitor/
+// tail_qso_recorder.py's peak-level sampling of SvxLink's own QSO
+// Recorder stream). Absolute path since this header is included from
+// pages at every depth (/wifi/, /power/, ...), not just the dashboard
+// root.
+(function () {
+  var bar = document.getElementById('mx-rx-meter-bar');
+  if (!bar) return;
+  function poll() {
+    fetch('/include/rx_level.php').then(function (r) { return r.json(); }).then(function (d) {
+      var level = Math.max(0, Math.min(100, d.level || 0));
+      bar.style.width = level + '%';
+      bar.style.background = level > 85 ? '#ef4444' : (level > 60 ? '#f59e0b' : '#22c55e');
+    }).catch(function () {});
+  }
+  poll();
+  setInterval(poll, 300);
+})();
 </script>
 <style>
 @keyframes mx-ble-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
