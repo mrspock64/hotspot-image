@@ -63,7 +63,7 @@ $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_S
 $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
-<div class="mx-banner"<?php echo ($mxQsoRecorderActive && $mxRxMeterStyle === 'analog') ? ' style="min-height:114px;"' : ''; ?>>
+<div class="mx-banner">
   <img src="/images/svxlink.ico" alt="">
   <div>
     <div class="mx-callsign"><?php echo htmlspecialchars($callsign); ?></div>
@@ -73,38 +73,36 @@ $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNE
 <?php if ($mxQsoRecorderActive): ?>
     <div class="mx-rx-meter">
 <?php if ($mxRxMeterStyle === 'analog'): ?>
-      <svg viewBox="-8 -6 236 156" width="150" height="102" class="mx-rx-analog">
-        <rect x="6" y="4" width="208" height="142" rx="10" fill="#f4ecd8" stroke="#0f172a" stroke-width="3"/>
-        <path d="M29.7 75.3 A91 91 0 0 1 190.3 75.3" fill="none" stroke="#0f172a" stroke-width="3"/>
-        <path d="M124.0 28.1 A91 91 0 0 1 190.3 75.3" fill="none" stroke="#dc2626" stroke-width="5"/>
-        <path d="M18.2 69.2 A104 104 0 0 1 201.8 69.2" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
-        <path d="M37.6 79.5 L21.7 71.1" stroke="#0f172a" stroke-width="2"/>
-        <path d="M52.7 59.3 L40.2 46.4" stroke="#0f172a" stroke-width="2"/>
-        <path d="M73.3 44.7 L65.3 28.6" stroke="#0f172a" stroke-width="2"/>
-        <path d="M97.4 37.0 L94.6 19.2" stroke="#0f172a" stroke-width="2"/>
-        <path d="M122.6 37.0 L125.4 19.2" stroke="#0f172a" stroke-width="2"/>
-        <path d="M146.7 44.7 L154.7 28.6" stroke="#0f172a" stroke-width="2"/>
-        <path d="M167.3 59.3 L179.8 46.4" stroke="#0f172a" stroke-width="2"/>
-        <path d="M182.4 79.5 L198.3 71.1" stroke="#0f172a" stroke-width="2"/>
-        <path d="M38.0 64.0 L30.0 58.0" stroke="#334155" stroke-width="1.2"/>
-        <path d="M57.8 44.7 L52.0 36.5" stroke="#334155" stroke-width="1.2"/>
-        <path d="M82.6 32.3 L79.6 22.7" stroke="#334155" stroke-width="1.2"/>
-        <path d="M110.0 28.0 L110.0 18.0" stroke="#334155" stroke-width="1.2"/>
-        <path d="M137.4 32.3 L140.4 22.7" stroke="#334155" stroke-width="1.2"/>
-        <path d="M162.2 44.7 L168.0 36.5" stroke="#334155" stroke-width="1.2"/>
-        <path d="M182.0 64.0 L190.0 58.0" stroke="#334155" stroke-width="1.2"/>
-        <text x="11.1" y="70.4" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">S</text>
-        <text x="31.8" y="42.8" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">3</text>
-        <text x="59.9" y="22.8" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">5</text>
-        <text x="92.8" y="12.3" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">7</text>
-        <text x="127.2" y="12.3" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">9</text>
-        <text x="160.1" y="22.8" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+10</text>
-        <text x="188.2" y="42.8" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+30</text>
-        <text x="208.9" y="70.4" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+60</text>
-        <text x="110" y="142" text-anchor="middle" font-size="26" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif"><?php echo htmlspecialchars($callsign); ?></text>
-        <g id="mx-rx-needle" transform="rotate(-62 110 118)">
-          <line x1="110" y1="118" x2="110" y2="40" stroke="#b91c1c" stroke-width="2.5"/>
-          <circle cx="110" cy="118" r="5" fill="#1f2937"/>
+      <svg viewBox="0 0 400 128" width="228" height="73" class="mx-rx-analog">
+        <rect x="4" y="3" width="392" height="121" rx="8" fill="#f4ecd8" stroke="#0f172a" stroke-width="2.5"/>
+        <path d="M88.9 76.9 A160 160 0 0 1 311.1 76.9" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+        <path d="M217.5 33.0 A160 160 0 0 1 311.1 76.9" fill="none" stroke="#dc2626" stroke-width="5"/>
+        <path d="M95.8 84.1 L81.9 69.7" stroke="#0f172a" stroke-width="2"/>
+        <path d="M121.8 64.0 L111.4 46.9" stroke="#0f172a" stroke-width="2"/>
+        <path d="M151.5 50.1 L145.1 31.1" stroke="#0f172a" stroke-width="2"/>
+        <path d="M183.6 42.9 L181.4 23.0" stroke="#0f172a" stroke-width="2"/>
+        <path d="M216.4 42.9 L218.6 23.0" stroke="#0f172a" stroke-width="2"/>
+        <path d="M248.5 50.1 L254.9 31.1" stroke="#0f172a" stroke-width="2"/>
+        <path d="M278.2 64.0 L288.6 46.9" stroke="#0f172a" stroke-width="2"/>
+        <path d="M304.2 84.1 L318.1 69.7" stroke="#0f172a" stroke-width="2"/>
+        <path d="M102.1 65.4 L96.0 57.5" stroke="#334155" stroke-width="1.2"/>
+        <path d="M132.0 47.2 L127.8 38.1" stroke="#334155" stroke-width="1.2"/>
+        <path d="M165.2 35.8 L163.0 26.1" stroke="#334155" stroke-width="1.2"/>
+        <path d="M200.0 32.0 L200.0 22.0" stroke="#334155" stroke-width="1.2"/>
+        <path d="M234.8 35.8 L237.0 26.1" stroke="#334155" stroke-width="1.2"/>
+        <path d="M268.0 47.2 L272.2 38.1" stroke="#334155" stroke-width="1.2"/>
+        <path d="M297.9 65.4 L304.0 57.5" stroke="#334155" stroke-width="1.2"/>
+        <text x="72.2" y="61.6" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">S</text>
+        <text x="104.1" y="37.0" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">3</text>
+        <text x="140.5" y="19.9" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">5</text>
+        <text x="179.9" y="14.1" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">7</text>
+        <text x="220.1" y="14.1" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">9</text>
+        <text x="259.5" y="19.9" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+10</text>
+        <text x="295.9" y="37.0" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+30</text>
+        <text x="327.8" y="61.6" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif">+60</text>
+        <text x="200" y="112" text-anchor="middle" font-size="24" font-weight="800" fill="#0f172a" font-family="Arial, sans-serif"><?php echo htmlspecialchars($callsign); ?></text>
+        <g id="mx-rx-needle" transform="rotate(-44 200 192)">
+          <line x1="200" y1="192" x2="200" y2="42" stroke="#b91c1c" stroke-width="2.5"/>
         </g>
       </svg>
 <?php else: ?>
@@ -154,11 +152,12 @@ window.mxSetHeaderBadge = function (id, visible) {
         bar.style.background = level > 85 ? '#ef4444' : (level > 60 ? '#f59e0b' : '#22c55e');
       }
       if (needle) {
-        // -62deg (0%, "S") to +62deg (100%, "+60") around the pivot at
-        // (110,118) -- see the fixed tick/band geometry drawn above,
-        // computed for that same sweep.
-        var angle = -62 + (level / 100) * 124;
-        needle.setAttribute('transform', 'rotate(' + angle + ' 110 118)');
+        // -44deg (0%, "S") to +44deg (100%, "+60") around the pivot at
+        // (200,192) -- pivot sits below the visible viewBox on purpose
+        // (cropped, like a real S-meter's yoke), see the fixed tick/band
+        // geometry drawn above, computed for that same sweep.
+        var angle = -44 + (level / 100) * 88;
+        needle.setAttribute('transform', 'rotate(' + angle + ' 200 192)');
       }
     }).catch(function () {});
   }
