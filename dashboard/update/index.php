@@ -19,8 +19,6 @@
 // a plain relative "screen.log" / "check.os.sh" etc.
 chdir(__DIR__);
 
-session_start();
-
 // Every check.*.sh/update.*.sh below writes to the same shared screen.log,
 // backgrounded with "&" so the page can respond immediately -- meaning
 // nothing stopped two of them running at once (e.g. clicking Check while
@@ -49,30 +47,6 @@ function runUpdaterScript(string $scriptName): void
     exec($cmd);
 }
 
-$screen = [
-    "Welcome to HotSpot Updater.",
-    "",
-    "Please use buttons for appropriate actions.",
-];
-
-// Auto-refresh (every 3s) while the last-triggered action is still
-// running, polling screen.log for the "finished" marker every check.*.sh/
-// update.*.sh script ends with. Top-to-bottom, matching the order the
-// script actually wrote it -- this used to pipe through `tac` to show the
-// newest line first, which read fine for a single-line status but made
-// multi-line output (apt's progress, SvxLink's release notes) look
-// backwards. Auto-scrolled to the bottom via JS instead, so the latest
-// line is still what's visible without needing to scroll.
-if (!empty($_SESSION['refresh'])) {
-    $screen = [];
-    exec('tail -n 500 screen.log 2>&1', $screen);
-    if (($screen[count($screen) - 1] ?? '') === '###-FINISH-####') {
-        $_SESSION['refresh'] = false;
-    } else {
-        header('Refresh: 3');
-    }
-}
-
 $actions = [
     'btnChkOs'          => 'check.os.sh',
     'btnUpdateOs'        => 'update.os.sh',
@@ -81,8 +55,18 @@ $actions = [
     'btnChkDashboard'    => 'check.dashboard.sh',
     'btnUpdateDashboard' => 'update.dashboard.sh',
 ];
+$justTriggered = false;
 foreach ($actions as $btn => $script) {
     if (isset($_POST[$btn])) {
+        $justTriggered = true;
+        // Deliberately NOT clearing screen.log here first: it might belong
+        // to a still-running job (if this click is about to lose the flock
+        // race in runUpdaterScript()), and unlinking out from under an
+        // actively-writing process would orphan its output -- this page
+        // would then show the "Welcome" placeholder while that job kept
+        // running, invisibly, on its now-detached file. Each script's own
+        // "> screen.log" redirection truncates it within microseconds of
+        // actually starting, which is a fine enough race window to accept.
         // update.dashboard.sh alone needs to survive /var/www/html itself
         // being replaced mid-run (it re-syncs dashboard/ from /opt/
         // hotspot-image into /var/www/html), so it's copied out to /opt
@@ -93,10 +77,40 @@ foreach ($actions as $btn => $script) {
         } else {
             runUpdaterScript($script);
         }
-        $_SESSION['refresh'] = true;
-        header('Refresh: 3');
         break;
     }
+}
+
+// Shows whatever screen.log actually contains, if anything -- NOT gated on
+// PHP session state (an earlier version was, via $_SESSION['refresh']), so
+// coming back to this page always reflects reality regardless of how long
+// you were away, whether your session cookie survived, or whether you're
+// even the same browser: the background job itself runs completely
+// independent of the browser/session either way. Auto-refreshes (every 3s)
+// for as long as the file doesn't yet end with the "finished" marker every
+// check.*.sh/update.*.sh script ends with. Top-to-bottom, matching the
+// order the script actually wrote it -- this used to pipe through `tac` to
+// show the newest line first, which read fine for a single-line status but
+// made multi-line output (apt's progress, SvxLink's release notes) look
+// backwards. Auto-scrolled to the bottom via JS instead, so the latest
+// line is still what's visible without needing to scroll.
+$screen = [
+    "Welcome to HotSpot Updater.",
+    "",
+    "Please use buttons for appropriate actions.",
+];
+if (is_file('screen.log') && filesize('screen.log') > 0) {
+    $screen = [];
+    exec('tail -n 500 screen.log 2>&1', $screen);
+    if (($screen[count($screen) - 1] ?? '') !== '###-FINISH-####') {
+        header('Refresh: 3');
+    }
+} elseif ($justTriggered) {
+    // screen.log doesn't exist/isn't populated yet -- normal in the
+    // instant right after triggering, before the backgrounded script has
+    // had a chance to write anything. Keep polling regardless, or this
+    // page would show the "Welcome" placeholder and never check again.
+    header('Refresh: 3');
 }
 ?>
 
