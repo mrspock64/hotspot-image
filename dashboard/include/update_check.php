@@ -38,11 +38,21 @@ function isDashboardUpdateAvailable(): array
         exec("cd $dir && git fetch origin 2>/dev/null", $out, $code);
         if ($code === 0) {
             $local = trim((string)shell_exec("cd $dir && git rev-parse HEAD 2>/dev/null"));
-            $remote = trim((string)shell_exec("cd $dir && git rev-parse origin/HEAD 2>/dev/null || cd $dir && git rev-parse origin/main 2>/dev/null"));
-            // rev-parse falls back to echoing an unresolvable ref name
-            // verbatim instead of failing cleanly -- see check.dashboard.sh's
-            // fix for the same gotcha. Reject anything that isn't a real
-            // 40-char SHA before trusting it.
+            // --verify -q, not a bare rev-parse: on a checkout whose
+            // origin/HEAD symbolic ref was never set (confirmed live --
+            // this repo was fetched into after the fact, never actually
+            // `git clone`d against the real remote), a bare `git rev-parse
+            // origin/HEAD` prints the literal string "origin/HEAD" to
+            // STDOUT before failing, and because both sides of a
+            // `cmd1 || cmd2` shell fallback still feed the same capture,
+            // that bogus text got prepended to origin/main's real SHA
+            // instead of being discarded. --verify -q is the
+            // scripting-safe form: silent, empty stdout, clean non-zero
+            // exit on failure -- see check.dashboard.sh's fix for the same
+            // gotcha, hit for real there first. The looksLikeSha check
+            // below was already a safety net for this and still is one,
+            // but shouldn't be the only line of defense.
+            $remote = trim((string)shell_exec("cd $dir && git rev-parse --verify -q origin/HEAD 2>/dev/null || cd $dir && git rev-parse --verify -q origin/main 2>/dev/null"));
             $looksLikeSha = fn($s) => (bool)preg_match('/^[0-9a-f]{40}$/', $s);
             if ($looksLikeSha($local) && $looksLikeSha($remote) && $local !== $remote) {
                 $result['available'] = true;

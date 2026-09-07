@@ -21,15 +21,28 @@ fi
 rm -f fetch_err.log
 
 local_rev=$(git rev-parse HEAD)
-remote_rev=$(git rev-parse origin/HEAD 2>/dev/null || git rev-parse origin/main 2>/dev/null)
+# --verify -q, not a bare rev-parse: a bare `git rev-parse origin/HEAD`
+# both prints "fatal: ambiguous argument..." to stderr AND echoes the
+# literal string "origin/HEAD" to STDOUT before exiting non-zero --
+# confirmed live on a checkout whose origin/HEAD symbolic ref was never
+# set (this repo was never `git clone`d against the real remote, only
+# fetched into after the fact). Worse than it sounds: because both sides
+# of `cmd1 2>/dev/null || cmd2 2>/dev/null` still contribute to the same
+# $(...) capture, a failing-but-still-printing cmd1 gets its bogus output
+# concatenated with cmd2's real one -- remote_rev came out as literally
+# "origin/HEAD\n<real sha>", two lines glued together, which the old
+# equality check below (comparing the whole string to "origin/HEAD")
+# never caught, and it read as a real (garbled) update. `--verify -q`
+# is the scripting-safe form: silent, empty stdout, clean exit code, on
+# failure -- no fallback text to leak into the fallback branch's capture.
+remote_rev=$(git rev-parse --verify -q origin/HEAD 2>/dev/null)
+if [ -z "$remote_rev" ]; then
+  remote_rev=$(git rev-parse --verify -q origin/main 2>/dev/null)
+fi
 
 echo "Local commit:  $local_rev"
 
-# rev-parse falls back to echoing an unresolvable argument verbatim to
-# stdout instead of leaving it empty -- confirmed live, "origin/HEAD" or
-# "origin/main" would otherwise be printed back as if it were a real
-# commit and misread as an actual update below.
-if [ "$remote_rev" = "origin/HEAD" ] || [ "$remote_rev" = "origin/main" ] || [ -z "$remote_rev" ]; then
+if [ -z "$remote_rev" ]; then
   echo "Could not resolve the remote branch after fetching -- is there a"
   echo "'main' branch, and does this checkout's origin/HEAD point at it?"
   echo "Status: CHECK FAILED"
