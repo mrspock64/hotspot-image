@@ -15,8 +15,11 @@
 
   <div class="mx-section" style="margin-top:0;">New in this fork</div>
   <ul style="padding-left:20px; font-size:13px; line-height:1.7;">
-    <li><b>RX Monitor</b> (small speaker button, top right of the Dashboard) — listen live to whatever this node is currently receiving or relaying, right in your browser. See "RX Monitor" below for what it does and doesn't cover.</li>
-    <li><b>QSO Log</b> — records transmissions when switched on, browsable/playable/downloadable, with on/off and disk-limit controls right on the page. Off by default — turn it on here when you actually need it. Each new recording is auto-tagged with the talkgroup and callsign that was talking (when it can be determined), and you can restrict recording to only specific talkgroups.</li>
+    <li><b>RX Monitor</b> (small speaker button, top right of the Dashboard) — listen live, in real time, to whatever this node is currently receiving or relaying, right in your browser. See "RX Monitor" below for what it does and doesn't cover.</li>
+    <li><b>QSO Log</b> — records transmissions when switched on, browsable/playable/downloadable, with on/off, disk-limit, and max-recordings-to-keep controls right on the page. Off by default — turn it on here when you actually need it. Each new recording is auto-tagged with the talkgroup and callsign that was talking (when it can be determined), and you can restrict recording to only specific talkgroups. Clear one recording, the current page, or everything at once.</li>
+    <li><b>Bluetooth</b> — lets the <a href="https://svxlink-hotspot.app" target="_blank" rel="noopener">companion app</a> (iOS/Android) drive this hotspot without SSH. Off by default, with an optional "require pairing" mode; see the Bluetooth row below.</li>
+    <li><b>Power</b> — start/stop/restart SvxLink independently of restarting or powering off the whole device, with the status shown live.</li>
+    <li><b>Updater</b> — safer now: overlapping check/upgrade clicks can no longer corrupt each other's output, upgrade buttons ask for confirmation first, and upgrading the OS snapshots installed package versions and cleans up old kernels automatically.</li>
     <li><b>Talk Group Names</b> — the names shown on the Talk Groups page are now editable, with a one-click import from Setup's monitored talkgroups list.</li>
     <li><b>Buttons</b> — the front-page quick-DTMF buttons (TG4, TG8, ...) are editable instead of requiring an SSH login and a text editor.</li>
     <li><b>Backup / Restore</b> — one download bundles the reflector certificate, node config, buttons, and TG names; restoring is one upload.</li>
@@ -40,10 +43,9 @@
     <tr><td><b>TG Names</b></td><td>Edit the names shown on the Talk Groups page. "Import from monitored talkgroups" pulls the TG numbers straight from Setup so you don't have to retype them.</td></tr>
     <tr><td><b>WiFi</b></td><td>Scan for networks, connect, or manage saved WiFi connections.</td></tr>
     <tr><td><b>Network</b></td><td>Check connectivity (ping), view connection details, or set a static IP.</td></tr>
-    <tr><td><b>EchoLink</b></td><td>Configure the EchoLink module (callsign, password, servers) if you use it.</td></tr>
     <tr><td><b>DTMF</b></td><td>An on-screen keypad — sends DTMF digits to SvxLink the same as pressing them on a radio.</td></tr>
     <tr><td><b>Bluetooth</b></td><td>On/off switch for the BLE service the <a href="https://svxlink-hotspot.app" target="_blank" rel="noopener">companion app</a> connects to, plus a "require pairing" setting. No pairing/password is required to connect by default, so turn it on only while actively using the app nearby -- it always starts back up OFF after a reboot, whatever state you leave it in here. Turning on "Require pairing for Bluetooth commands" instead forces the phone to bond first before it can send anything.</td></tr>
-    <tr><td><b>Update</b></td><td>Check installed versions and trigger updates for the OS, SvxLink, and the dashboard itself.</td></tr>
+    <tr><td><b>Update</b></td><td>Check installed versions and trigger updates for the OS, SvxLink, and the dashboard itself -- each upgrade asks for confirmation first. Upgrading the OS also snapshots exactly which package versions were installed beforehand (in case anything needs comparing afterward) and cleans up old, no-longer-bootable kernel packages automatically. A kernel/firmware upgrade needs a device restart (Power page) afterward to fully take effect.</td></tr>
     <tr><td><b>Backup</b></td><td>Download everything specific to this node (reflector certificate + key, svxlink.conf, node_info.json, custom buttons, TG names) as one zip, or restore from a previous one. Keep it private — it contains the node's private key.</td></tr>
     <tr><td><b>Docs</b></td><td>The full <code>svxlink.conf(5)</code> reference manual, live from this node's own installed SvxLink version — always accurate for whatever's actually running here.</td></tr>
     <tr><td><b>Log</b></td><td>Raw tail of the running SvxLink log file — useful for troubleshooting.</td></tr>
@@ -54,9 +56,11 @@
   <p style="font-size:13px; line-height:1.6;">
   The small speaker button streams live audio from SvxLink's own QSO Recorder, which captures audio
   from receivers, modules, <i>and reflector traffic</i> — so it covers both your own local transmissions
-  and other stations' QSOs being relayed through this node, not just local RX. No open recording right
-  now (nobody transmitting, no active reflector talker on a monitored TG) means no audio — that's
-  expected, not a bug.
+  and other stations' QSOs being relayed through this node, not just local RX. Plays in real time, including
+  for long or bursty traffic (e.g. a linked digital-voice talkgroup keying on and off rapidly) — not delayed
+  or sped up. Announcements (voice ID, time) are never included, by SvxLink's own design; module audio
+  (e.g. Parrot echoing you back) is. No open recording right now (nobody transmitting, no active reflector
+  talker on a monitored TG) means no audio — that's expected, not a bug.
   </p>
 
 </div>
