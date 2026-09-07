@@ -14,4 +14,14 @@ echo "Saved installed-package snapshot: $SNAPSHOT_FILE"
 
 dpkg --configure -a
 apt upgrade -y
+
+# Safe to auto-remove orphaned old kernels here specifically -- unlike a
+# GRUB system, the Pi's bootloader has no menu to select an older kernel
+# at boot time; it always just loads whatever the newest linux-image
+# package's postinst most recently wrote to the fixed /boot/firmware/
+# kernel8.img (and kernel_2712.img). So an old linux-image-*/linux-headers-*
+# package sitting around after an upgrade gives no real rollback path,
+# just wasted disk space -- confirmed via kernel8.img's fixed filename.
+apt autoremove -y
+
 echo "###-FINISH-####"
