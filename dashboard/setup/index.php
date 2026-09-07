@@ -59,6 +59,9 @@ function readCurrent(): array
         'ant_dir'      => $qth['tx']['A']['ant']['dir'] ?? $qth['rx']['A']['ant']['dir'] ?? '',
         'ant_gain'     => $qth['tx']['A']['ant']['gain'] ?? '',
         'ant_type'     => $qth['tx']['A']['ant']['Antenna_type'] ?? '',
+        // Header's RX level meter style -- a custom key SvxLink itself
+        // never reads, same pattern as QsoRecorder's RECORD_ONLY_TGS.
+        'meter_style'  => ($conf['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar',
     ];
 }
 
@@ -89,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['ant_dir']     = trim($in['ant_dir'] ?? '');
     $current['ant_gain']    = trim($in['ant_gain'] ?? '');
     $current['ant_type']    = trim($in['ant_type'] ?? '');
+    $current['meter_style'] = ($in['meter_style'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
 
     // Validation — this writes a live radio's config, so reject anything
     // that would leave svxlink.conf or node_info.json broken rather than
@@ -136,6 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             iniSyncUpdateSection(SVX_CONF, 'Rx1', [
                 'DTMF_MUTING' => $current['dtmf_muting'] ? '1' : '0',
+            ]);
+            iniSyncUpdateSection(SVX_CONF, 'Dashboard', [
+                'RX_METER_STYLE' => $current['meter_style'],
             ]);
             writeNodeInfoJson(NODE_INFO, [
                 'nodeLocation' => $current['location'],
@@ -273,6 +280,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-row"><label for="long_ident">Long ident interval (min)</label>
     <input type="text" id="long_ident" name="long_ident" value="<?php echo htmlspecialchars((string)$current['long_ident']); ?>"></div>
   <div class="mx-hint">0 disables. Minimum spacing between idents is hard-coded to 2 minutes in Logic.tcl regardless of this setting.</div>
+
+  <div class="mx-section">Dashboard</div>
+  <div class="mx-row"><label for="meter_style">Header RX meter</label>
+    <select id="meter_style" name="meter_style" style="padding:6px; border-radius:6px; border:1px solid var(--mx-border);">
+      <option value="bar" <?php echo $current['meter_style'] === 'bar' ? 'selected' : ''; ?>>Bar</option>
+      <option value="analog" <?php echo $current['meter_style'] === 'analog' ? 'selected' : ''; ?>>Analog needle</option>
+    </select>
+  </div>
+  <div class="mx-hint">Only shown while QSO Log recording is on (see <a href="/qsolog/">QSO Log</a>) -- that's what feeds it.</div>
 
   <div class="mx-section">Location</div>
   <div class="mx-row"><label for="location">Location name</label>

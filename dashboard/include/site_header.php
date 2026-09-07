@@ -56,6 +56,11 @@ $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2
 // off there's nothing to poll, so skip rendering the meter entirely
 // rather than showing a permanently-empty bar.
 $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1';
+
+// Bar (default) or analog needle -- purely a display preference, set on
+// the Setup page. A custom key SvxLink itself never reads, same pattern
+// as QsoRecorder's RECORD_ONLY_TGS/KEEP_RECORDINGS.
+$mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <div class="mx-banner">
@@ -67,8 +72,34 @@ $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_S
   <div style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
 <?php if ($mxQsoRecorderActive): ?>
     <div class="mx-rx-meter">
+<?php if ($mxRxMeterStyle === 'analog'): ?>
+      <svg viewBox="0 0 140 90" width="88" height="56" class="mx-rx-analog">
+        <path d="M19.2 42.4 A62 62 0 0 1 120.8 42.4 L70 78 Z" fill="#f4ecd8"/>
+        <path d="M19.2 42.4 A62 62 0 0 1 120.8 42.4" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+        <path d="M29.0 49.3 A50 50 0 0 1 79.5 28.9" fill="none" stroke="#22c55e" stroke-width="6"/>
+        <path d="M79.5 28.9 A50 50 0 0 1 101.8 39.4" fill="none" stroke="#f59e0b" stroke-width="6"/>
+        <path d="M101.8 39.4 A50 50 0 0 1 111.0 49.3" fill="none" stroke="#ef4444" stroke-width="6"/>
+        <path d="M37.2 55.1 L22.5 44.7" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M48.2 44.5 L38.4 29.4" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M62.4 38.7 L58.9 21.1" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M77.6 38.7 L81.1 21.1" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M91.8 44.5 L101.6 29.4" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M102.8 55.1 L117.5 44.7" stroke="#0f172a" stroke-width="1.5"/>
+        <path d="M38.0 44.9 L29.7 36.3" stroke="#334155" stroke-width="1"/>
+        <path d="M52.8 35.3 L48.3 24.2" stroke="#334155" stroke-width="1"/>
+        <path d="M70.0 32.0 L70.0 20.0" stroke="#334155" stroke-width="1"/>
+        <path d="M87.2 35.3 L91.7 24.2" stroke="#334155" stroke-width="1"/>
+        <path d="M102.0 44.9 L110.3 36.3" stroke="#334155" stroke-width="1"/>
+        <text x="70" y="70" text-anchor="middle" font-size="9" font-weight="700" fill="#0f172a" font-family="Arial, sans-serif">MOD</text>
+        <g id="mx-rx-needle" transform="rotate(-55 70 78)">
+          <line x1="70" y1="78" x2="70" y2="26" stroke="#b91c1c" stroke-width="2"/>
+          <circle cx="70" cy="78" r="4" fill="#1f2937"/>
+        </g>
+      </svg>
+<?php else: ?>
       <div class="mx-rx-meter-label">RX</div>
       <div class="mx-rx-meter-track"><div id="mx-rx-meter-bar" class="mx-rx-meter-bar"></div></div>
+<?php endif; ?>
     </div>
 <?php endif; ?>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
@@ -102,12 +133,22 @@ window.mxSetHeaderBadge = function (id, visible) {
 // root.
 (function () {
   var bar = document.getElementById('mx-rx-meter-bar');
-  if (!bar) return;
+  var needle = document.getElementById('mx-rx-needle');
+  if (!bar && !needle) return;
   function poll() {
     fetch('/include/rx_level.php').then(function (r) { return r.json(); }).then(function (d) {
       var level = Math.max(0, Math.min(100, d.level || 0));
-      bar.style.width = level + '%';
-      bar.style.background = level > 85 ? '#ef4444' : (level > 60 ? '#f59e0b' : '#22c55e');
+      if (bar) {
+        bar.style.width = level + '%';
+        bar.style.background = level > 85 ? '#ef4444' : (level > 60 ? '#f59e0b' : '#22c55e');
+      }
+      if (needle) {
+        // -55deg (0%) to +55deg (100%) around the pivot at (70,78) -- see
+        // the fixed tick/band geometry drawn above, computed for that
+        // same sweep.
+        var angle = -55 + (level / 100) * 110;
+        needle.setAttribute('transform', 'rotate(' + angle + ' 70 78)');
+      }
     }).catch(function () {});
   }
   poll();
