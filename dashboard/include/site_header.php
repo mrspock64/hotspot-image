@@ -61,6 +61,12 @@ $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_S
 // the Setup page. A custom key SvxLink itself never reads, same pattern
 // as QsoRecorder's RECORD_ONLY_TGS/KEEP_RECORDINGS.
 $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
+
+// lib/load-monitor/monitor.sh drops this file the moment load/iowait/
+// memory have stayed in the danger zone for ~2 minutes straight, and
+// removes it again the moment things recover -- so its mere presence is
+// the "currently overloaded" signal, no need to parse its contents here.
+$mxLoadWarning = is_file('/var/cache/hotspot-image/load_warning');
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <!-- Loaded here (not just on the Dashboard page) so the RX Monitor button
@@ -116,6 +122,7 @@ $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNE
     </div>
 <?php endif; ?>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
+      <a id="mx-load-badge" href="/qsolog/" title="Load, I/O-wait, or free memory has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-pause on the QSO Log page." style="display:<?php echo $mxLoadWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High load</a>
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>
       <a id="mx-svxlink-update-badge" href="/update/" style="display:<?php echo $mxSvxlinkUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; SvxLink update</a>

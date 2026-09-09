@@ -1,0 +1,12 @@
+[Unit]
+Description=hotspot-image load monitor -- watches load/iowait/memory, warns and optionally auto-pauses QSO recording under sustained overload
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/load-monitor/monitor.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

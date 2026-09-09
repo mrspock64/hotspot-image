@@ -33,6 +33,16 @@ function getDashboardBackupMaxKeep(): int
     return (ctype_digit((string)$value) && (int)$value > 0) ? (int)$value : DASHBOARD_BACKUP_MAX_KEEP_DEFAULT;
 }
 
+// lib/load-monitor/monitor.sh reads this same key directly (bash) to
+// decide whether to auto-pause the QSO Recorder under sustained
+// overload -- off by default, toggled on the QSO Log page. This getter
+// is just for the QSO Log page itself to show the current state.
+function getLoadMonitorAutoPause(): bool
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    return ($conf['Dashboard']['LOAD_MONITOR_AUTO_PAUSE_QSO'] ?? '0') === '1';
+}
+
 function pruneOldBackups(string $filePath): void
 {
     $maxKeep = getConfigBackupMaxKeep();

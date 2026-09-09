@@ -56,8 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_load_monitor'])) {
+    iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'Dashboard', [
+        'LOAD_MONITOR_AUTO_PAUSE_QSO' => isset($_POST['load_monitor_auto_pause']) ? '1' : '0',
+    ]);
+    $message = 'Saved.';
+}
+
 $settings = getQsoRecorderSettings();
 $recordings = listQsoRecordings();
+$loadMonitorAutoPause = getLoadMonitorAutoPause();
 $tgDb = loadTgDb();
 ksort($tgDb, SORT_NUMERIC);
 
@@ -139,6 +147,15 @@ function formatBytes(int $bytes): string
     <p class="mx-hint" style="margin:4px 0 12px;">Recordings whose talkgroup can't be determined (local-only transmissions) are always kept, regardless of this filter. Applies to the next recording immediately -- no restart needed.</p>
 
     <button type="submit" name="save_settings" class="mx-btn">Save</button>
+  </form>
+
+  <form method="post" style="padding:14px; background:var(--mx-bg); border-radius:8px; margin-bottom:16px;">
+    <label style="font-size:13px; font-weight:normal;">
+      <input type="checkbox" name="load_monitor_auto_pause" <?php echo $loadMonitorAutoPause ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
+      Automatically pause recording under sustained high load
+    </label>
+    <p class="mx-hint" style="margin:6px 0 8px;">Recording itself has a real, measured CPU cost on this hardware -- if load/I-O-wait/memory stay in the danger zone for ~2 minutes straight, this recorder is what gets paused first (confirmed live: doing this by hand stopped the same overload from causing real audio dropouts). Off by default -- it only ever turns recording off, never back on, and only takes effect if it's on to begin with.</p>
+    <button type="submit" name="save_load_monitor" class="mx-btn mx-btn-ghost">Save</button>
   </form>
 
 <?php if ($recordings['inProgress']): ?>
