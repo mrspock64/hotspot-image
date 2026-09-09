@@ -11,6 +11,7 @@
 <?php
 
 require_once __DIR__ . '/../include/perf_mode.php';
+require_once __DIR__ . '/../include/inisync.php';
 
 // Each command runs backgrounded ("&") so PHP can respond with a status
 // message immediately, rather than the page hanging until svxlink has
@@ -64,9 +65,32 @@ if (isset($_POST['btnPerfMode'])) {
     }
 }
 
+if (isset($_POST['save_temp_protect'])) {
+    $tempThreshold = trim($_POST['temp_threshold'] ?? '');
+    if (!ctype_digit($tempThreshold) || (int)$tempThreshold < 40 || (int)$tempThreshold > 85) {
+        $message = 'Temperature threshold must be a number between 40 and 85 (°C).';
+        $messageOk = false;
+    } else {
+        iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'Dashboard', [
+            'LOAD_MONITOR_TEMP_THRESHOLD_C' => $tempThreshold,
+            'LOAD_MONITOR_AUTO_STOP_SVXLINK' => isset($_POST['temp_auto_stop']) ? '1' : '0',
+        ]);
+        $message = 'Saved.';
+    }
+}
+
 $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')) === 'active';
 $perfMode = getPerfMode();
 $isZero2W = isPiZero2W();
+$tempThreshold = getLoadMonitorTempThreshold();
+$tempAutoStop = getLoadMonitorAutoStopSvxlink();
+$currentTempC = null;
+if (is_readable('/sys/class/thermal/thermal_zone0/temp')) {
+    $raw = trim((string)@file_get_contents('/sys/class/thermal/thermal_zone0/temp'));
+    if (is_numeric($raw)) {
+        $currentTempC = (int)round(((float)$raw) / 1000);
+    }
+}
 
 ?>
 
@@ -118,6 +142,25 @@ $isZero2W = isPiZero2W();
       <button name="btnPerfMode" type="submit" class="mx-btn" style="width:260px;">Clean up (switch to Turbo)</button>
     </form>
 <?php endif; ?>
+
+    <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
+
+    <p style="text-align:center; font-weight:600; margin:0 0 4px;">Temperature:
+      <span style="color:<?php echo ($currentTempC !== null && $currentTempC >= $tempThreshold) ? '#dc2626' : '#15803d'; ?>;"><?php echo $currentTempC !== null ? htmlspecialchars((string)$currentTempC) . '&deg;C' : 'unknown'; ?></span>
+    </p>
+    <form method="post" style="margin:0; width:260px;">
+      <div style="display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:6px;">
+        <label for="temp_threshold" style="font-size:13px;">Stop SvxLink above</label>
+        <input type="text" id="temp_threshold" name="temp_threshold" value="<?php echo htmlspecialchars((string)$tempThreshold); ?>" style="width:50px; margin:0; text-align:center;">
+        <span style="font-size:13px;">&deg;C</span>
+      </div>
+      <label style="font-size:13px; font-weight:normal; display:block; text-align:center; margin-bottom:6px;">
+        <input type="checkbox" name="temp_auto_stop" <?php echo $tempAutoStop ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
+        Automatically stop SvxLink if it stays that hot
+      </label>
+      <p class="mx-hint" style="text-align:center; margin:0 0 8px;">Checked every ~30s by the load monitor; needs ~2 minutes sustained above the threshold before acting (a brief spike isn't enough). Off by default -- it only ever stops the service, never restarts it, and only takes effect if it's on to begin with. Pi firmware itself throttles at 80&deg;C.</p>
+      <button type="submit" name="save_temp_protect" class="mx-btn mx-btn-ghost" style="width:260px;">Save</button>
+    </form>
 
     <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
 

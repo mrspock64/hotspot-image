@@ -67,6 +67,12 @@ $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNE
 // removes it again the moment things recover -- so its mere presence is
 // the "currently overloaded" signal, no need to parse its contents here.
 $mxLoadWarning = is_file('/var/cache/hotspot-image/load_warning');
+
+// Same pattern, separate signal -- sustained high temperature (Power
+// page's own "Stop SvxLink above" setting), independent of the load
+// badge above since it's a different kind of danger with a different
+// (more severe, opt-in) automatic response.
+$mxTempWarning = is_file('/var/cache/hotspot-image/temp_warning');
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
 <!-- Loaded here (not just on the Dashboard page) so the RX Monitor button
@@ -122,6 +128,7 @@ $mxLoadWarning = is_file('/var/cache/hotspot-image/load_warning');
     </div>
 <?php endif; ?>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
+      <a id="mx-temp-badge" href="/power/" title="CPU temperature has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-stop on the Power page." style="display:<?php echo $mxTempWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High temp</a>
       <a id="mx-load-badge" href="/qsolog/" title="Load, I/O-wait, or free memory has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-pause on the QSO Log page." style="display:<?php echo $mxLoadWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High load</a>
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>

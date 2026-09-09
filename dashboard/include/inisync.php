@@ -43,6 +43,27 @@ function getLoadMonitorAutoPause(): bool
     return ($conf['Dashboard']['LOAD_MONITOR_AUTO_PAUSE_QSO'] ?? '0') === '1';
 }
 
+const LOAD_MONITOR_TEMP_THRESHOLD_DEFAULT_C = 75;
+
+// Mirrors monitor.sh's own TEMP_THRESHOLD_DEFAULT_C/get_temp_threshold --
+// the Power page reads these two for its "High temperature protection"
+// section. LOAD_MONITOR_AUTO_STOP_SVXLINK off by default: unlike pausing
+// QSO recording, this takes the radio itself offline, so it's opt-in and
+// never re-enabled automatically -- same reasoning as the QSO auto-pause,
+// just a more severe action reserved for actual thermal danger.
+function getLoadMonitorTempThreshold(): int
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    $value = $conf['Dashboard']['LOAD_MONITOR_TEMP_THRESHOLD_C'] ?? '';
+    return (ctype_digit((string)$value) && (int)$value > 0) ? (int)$value : LOAD_MONITOR_TEMP_THRESHOLD_DEFAULT_C;
+}
+
+function getLoadMonitorAutoStopSvxlink(): bool
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    return ($conf['Dashboard']['LOAD_MONITOR_AUTO_STOP_SVXLINK'] ?? '0') === '1';
+}
+
 function pruneOldBackups(string $filePath): void
 {
     $maxKeep = getConfigBackupMaxKeep();

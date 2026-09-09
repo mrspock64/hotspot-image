@@ -20,10 +20,22 @@
 # rather than reimplementing its two-step "rewrite config + live DTMF"
 # logic here. Never re-enables it automatically: that's a decision this
 # script deliberately leaves to the sysop.
+#
+# Separately watches CPU temperature -- relevant now that Turbo mode
+# (dashboard/include/perf_mode.php) runs this hardware at full clock/core
+# count inside RF.Guru's own plastic hotspot case, which traps heat more
+# than the open-air testing that confirmed Turbo was safe. Same pattern:
+# always logged with its own STATE_FILE_TEMP badge, optionally (LOAD_
+# MONITOR_AUTO_STOP_SVXLINK=1, off by default, toggle on the Power page)
+# stops the svxlink service itself once sustained -- a more severe
+# response than pausing QSO recording, reserved for actual thermal
+# danger rather than the load/iowait/memory pattern above. Never
+# restarts it automatically either.
 set -u
 
 SVX_CONF=/etc/svxlink/svxlink.conf
 STATE_FILE=/var/cache/hotspot-image/load_warning
+STATE_FILE_TEMP=/var/cache/hotspot-image/temp_warning
 CHECK_INTERVAL=30
 SUSTAINED_CHECKS=4   # 4 * ~30s = ~2 minutes of sustained overload before acting
 # Confirmed live 2026-09-09: the real incident was iowait, not load1 --
@@ -36,10 +48,18 @@ SUSTAINED_CHECKS=4   # 4 * ~30s = ~2 minutes of sustained overload before acting
 LOAD_THRESHOLD=3.5
 IOWAIT_THRESHOLD=30
 MEM_AVAILABLE_THRESHOLD_MB=40
+# Pi firmware soft-throttles at 80°C, hard-throttles/underclocks at 85°C
+# -- this default (75°C) leaves real margin below either, configurable
+# on the Power page. Confirmed live 2026-09-10: 51.5°C after 22 minutes
+# in the real case at full Turbo clock, so this is nowhere close under
+# normal conditions -- it's a genuine safety net, not a routine trigger.
+TEMP_THRESHOLD_DEFAULT_C=75
+TEMP_SUSTAINED_CHECKS=4
 
 mkdir -p "$(dirname "$STATE_FILE")"
 
 overload_count=0
+temp_overload_count=0
 
 # %iowait since boot isn't useful on its own -- sample /proc/stat twice,
 # a second apart, and diff the "iowait" jiffies field against total
@@ -79,36 +99,96 @@ pause_qso_recorder() {
     ' 2>&1
 }
 
+# Millidegrees in sysfs -- same source dashboard/include/perf_mode.php's
+# sibling tools (and the health.php this project doesn't use but shares
+# a node with) already read. 0 if unreadable, which never exceeds any
+# sane threshold -- fails safe (no action) rather than fails loud.
+read_temp_c() {
+    if [ -r /sys/class/thermal/thermal_zone0/temp ]; then
+        awk '{print int($1 / 1000)}' /sys/class/thermal/thermal_zone0/temp
+    else
+        echo 0
+    fi
+}
+
+get_temp_threshold() {
+    local v
+    v=$(grep -E '^[ \t]*LOAD_MONITOR_TEMP_THRESHOLD_C[ \t]*=' "$SVX_CONF" 2>/dev/null \
+        | tail -n1 | cut -d'=' -f2 | tr -d '[:space:]')
+    case "$v" in
+        ''|*[!0-9]*) echo "$TEMP_THRESHOLD_DEFAULT_C" ;;
+        *) echo "$v" ;;
+    esac
+}
+
+auto_stop_svxlink_enabled() {
+    grep -E '^[ \t]*LOAD_MONITOR_AUTO_STOP_SVXLINK[ \t]*=' "$SVX_CONF" 2>/dev/null \
+        | tail -n1 | cut -d'=' -f2 | tr -d '[:space:]' | grep -q '^1$'
+}
+
+stop_svxlink() {
+    sudo service svxlink stop 2>&1
+}
+
 while true; do
     load1=$(awk '{print $1}' /proc/loadavg)
     iowait=$(read_iowait)
     mem_available_mb=$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)
+    temp_c=$(read_temp_c)
+    temp_threshold=$(get_temp_threshold)
 
     over_load=$(awk -v l="$load1" -v t="$LOAD_THRESHOLD" 'BEGIN{print (l > t) ? 1 : 0}')
     over_iowait=0
     [ "$iowait" -gt "$IOWAIT_THRESHOLD" ] && over_iowait=1
     over_mem=0
     [ "$mem_available_mb" -lt "$MEM_AVAILABLE_THRESHOLD_MB" ] && over_mem=1
+    over_temp=0
+    [ "$temp_c" -gt "$temp_threshold" ] && over_temp=1
 
     if [ "$over_load" = 1 ] || [ "$over_iowait" = 1 ] || [ "$over_mem" = 1 ]; then
         overload_count=$((overload_count + 1))
-        echo "$(date '+%Y-%m-%d %H:%M:%S') overload check ${overload_count}/${SUSTAINED_CHECKS} -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') overload check ${overload_count}/${SUSTAINED_CHECKS} -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
     else
         if [ "$overload_count" -gt 0 ]; then
-            echo "$(date '+%Y-%m-%d %H:%M:%S') load back to normal -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') load back to normal -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
         fi
         overload_count=0
         rm -f "$STATE_FILE"
     fi
 
     if [ "$overload_count" -ge "$SUSTAINED_CHECKS" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED OVERLOAD -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED OVERLOAD -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
         echo "sustained overload since $(date '+%Y-%m-%d %H:%M:%S')" > "$STATE_FILE"
 
         if auto_pause_enabled && qso_recorder_active; then
             echo "$(date '+%Y-%m-%d %H:%M:%S') LOAD_MONITOR_AUTO_PAUSE_QSO is on -- pausing QSO Recorder"
             result=$(pause_qso_recorder)
             echo "$(date '+%Y-%m-%d %H:%M:%S') pause_qso_recorder: $result"
+        fi
+    fi
+
+    if [ "$over_temp" = 1 ]; then
+        temp_overload_count=$((temp_overload_count + 1))
+        echo "$(date '+%Y-%m-%d %H:%M:%S') temp check ${temp_overload_count}/${TEMP_SUSTAINED_CHECKS} -- temp=${temp_c}C (threshold ${temp_threshold}C)"
+    else
+        if [ "$temp_overload_count" -gt 0 ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') temp back to normal -- temp=${temp_c}C"
+        fi
+        temp_overload_count=0
+        rm -f "$STATE_FILE_TEMP"
+    fi
+
+    if [ "$temp_overload_count" -ge "$TEMP_SUSTAINED_CHECKS" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED HIGH TEMPERATURE -- temp=${temp_c}C (threshold ${temp_threshold}C)"
+        echo "sustained high temperature since $(date '+%Y-%m-%d %H:%M:%S')" > "$STATE_FILE_TEMP"
+
+        if auto_stop_svxlink_enabled; then
+            svxlink_status=$(systemctl is-active svxlink 2>/dev/null || true)
+            if [ "$svxlink_status" = "active" ]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') LOAD_MONITOR_AUTO_STOP_SVXLINK is on -- stopping svxlink"
+                result=$(stop_svxlink)
+                echo "$(date '+%Y-%m-%d %H:%M:%S') stop_svxlink: $result"
+            fi
         fi
     fi
 
