@@ -10,6 +10,8 @@
 
 <?php
 
+require_once __DIR__ . '/../include/perf_mode.php';
+
 // Each command runs backgrounded ("&") so PHP can respond with a status
 // message immediately, rather than the page hanging until svxlink has
 // fully restarted/stopped (or, for Restart Device/Power OFF, never
@@ -49,7 +51,19 @@ if (isset($_POST['btnPower'])) {
     $message = "Powering off now. The device will go offline in a few seconds -- you'll need physical access to turn it back on.";
 }
 
+if (isset($_POST['btnPerfMode'])) {
+    $requestedMode = $_POST['perf_mode'] ?? '';
+    try {
+        setPerfMode($requestedMode);
+        $modeLabel = $requestedMode === 'turbo' ? 'Turbo' : 'Guru';
+        $message = "$modeLabel mode set -- restart the device below for it to take effect.";
+    } catch (Throwable $e) {
+        $message = 'Failed to change performance mode: ' . $e->getMessage();
+    }
+}
+
 $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')) === 'active';
+$perfMode = getPerfMode();
 
 ?>
 
@@ -80,6 +94,17 @@ $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')
         <button name="btnSvxlinkStart" type="submit" class="mx-btn" style="width:260px;">Start SVXlink Service</button>
       </form>
     </div>
+
+    <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
+
+    <p style="text-align:center; font-weight:600; margin:0 0 4px;">Performance mode:
+      <span style="color:<?php echo $perfMode === 'turbo' ? '#15803d' : 'var(--mx-text-dim)'; ?>;"><?php echo $perfMode === 'turbo' ? 'Turbo &#9889;' : 'Guru (throttled)'; ?></span>
+    </p>
+    <form method="post" style="margin:0 0 4px;">
+      <input type="hidden" name="perf_mode" value="<?php echo $perfMode === 'turbo' ? 'guru' : 'turbo'; ?>">
+      <button name="btnPerfMode" type="submit" class="mx-btn mx-btn-ghost" style="width:260px;">Switch to <?php echo $perfMode === 'turbo' ? 'Guru mode' : 'Turbo mode'; ?></button>
+    </form>
+    <p class="mx-hint" style="width:260px; text-align:center; margin:0 0 10px;">Turbo: all 4 real cores, full clock speed -- confirmed live, no thermal throttling either way. Guru: RF.Guru's stock "Temperature Tuning" (2 cores, ~30% slower, undervolted). Needs a restart below to take effect.</p>
 
     <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
 
