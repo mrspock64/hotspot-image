@@ -6,12 +6,37 @@ define('HOTSPOT_SCRIPT', '/usr/sbin/hotspot');
 // on purpose, that's what the Backup page's "Previous versions" list
 // shows. But nothing ever removed an old one: a single Setup-page save
 // alone calls iniSyncUpdateSection() four times (once per svxlink.conf
-// section it touches), so the list only ever grew. 50 kept per file,
-// oldest deleted first (FIFO).
-const CONFIG_BACKUP_MAX_KEEP = 50;
+// section it touches), so the list only ever grew. Kept per file, oldest
+// deleted first (FIFO) -- how many is configurable from the Backup page
+// (CONFIG_BACKUP_MAX_KEEP in svxlink.conf's own [Dashboard] section, a
+// key SvxLink itself never reads, same pattern as QsoRecorder's custom
+// keys), this is just the fallback if that's unset/invalid.
+const CONFIG_BACKUP_MAX_KEEP_DEFAULT = 50;
+
+// update.dashboard.sh's own full-directory backups of /var/www/html (see
+// dashboard/backup/lib.php's pruneDashboardBackups()) share the same
+// "configurable, defaults to 50" idea via this sibling key -- read here
+// too so the Backup page settings form has one place to fetch both from.
+const DASHBOARD_BACKUP_MAX_KEEP_DEFAULT = 50;
+
+function getConfigBackupMaxKeep(): int
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    $value = $conf['Dashboard']['CONFIG_BACKUP_MAX_KEEP'] ?? '';
+    return (ctype_digit((string)$value) && (int)$value > 0) ? (int)$value : CONFIG_BACKUP_MAX_KEEP_DEFAULT;
+}
+
+function getDashboardBackupMaxKeep(): int
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    $value = $conf['Dashboard']['DASHBOARD_BACKUP_MAX_KEEP'] ?? '';
+    return (ctype_digit((string)$value) && (int)$value > 0) ? (int)$value : DASHBOARD_BACKUP_MAX_KEEP_DEFAULT;
+}
 
 function pruneOldBackups(string $filePath): void
 {
+    $maxKeep = getConfigBackupMaxKeep();
+
     // Only touch backups matching our own "Ymd-His" naming exactly (same
     // pattern listConfigBackups() filters to for display) -- a plain
     // ".bak-*" glob also catches one-off backups other scripts have left
@@ -25,13 +50,13 @@ function pruneOldBackups(string $filePath): void
             $backups[] = $backup;
         }
     }
-    if (count($backups) <= CONFIG_BACKUP_MAX_KEEP) {
+    if (count($backups) <= $maxKeep) {
         return;
     }
     // The matched suffix is a fixed-width "Ymd-His" string, so plain
     // lexicographic sort() is chronological order here.
     sort($backups);
-    foreach (array_slice($backups, 0, count($backups) - CONFIG_BACKUP_MAX_KEEP) as $old) {
+    foreach (array_slice($backups, 0, count($backups) - $maxKeep) as $old) {
         @unlink($old);
     }
 }

@@ -51,6 +51,26 @@ if [ -d /var/www/html ]; then
   echo "Backed up existing /var/www/html to $BACKUP_DIR"
 fi
 
+# Configurable from the Backup page (DASHBOARD_BACKUP_MAX_KEEP in
+# svxlink.conf's [Dashboard] section, a key SvxLink itself never reads) --
+# without a cap, one full /var/www/html copy per update run just
+# accumulates forever. FIFO: directory names embed a "Ymd_His" timestamp,
+# so plain `sort` is chronological order. This runs via `sh` (see
+# dashboard/update/index.php's runUpdaterScript()), not bash, so no
+# arrays/mapfile -- `wc -l`/`head -n`/a read loop instead.
+dashboard_backup_max_keep=$(grep -E '^[ \t]*DASHBOARD_BACKUP_MAX_KEEP[ \t]*=' /etc/svxlink/svxlink.conf 2>/dev/null | tail -n1 | cut -d'=' -f2 | tr -d '[:space:]')
+case "$dashboard_backup_max_keep" in
+  ''|*[!0-9]*) dashboard_backup_max_keep=50 ;;
+esac
+backup_count=$(ls -1d /var/backups/hotspot-image/www-html-* 2>/dev/null | wc -l)
+if [ "$backup_count" -gt "$dashboard_backup_max_keep" ]; then
+  excess=$((backup_count - dashboard_backup_max_keep))
+  ls -1d /var/backups/hotspot-image/www-html-* 2>/dev/null | sort | head -n "$excess" | while IFS= read -r old_backup; do
+    rm -rf "$old_backup"
+  done
+  echo "Pruned $excess old dashboard backup(s) beyond the ${dashboard_backup_max_keep}-deep limit."
+fi
+
 echo "--- Re-syncing dashboard/ into /var/www/html ---"
 rm -rf /var/www/html
 cp -r "$REPO_DIR/dashboard" /var/www/html

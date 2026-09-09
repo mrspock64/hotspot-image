@@ -26,6 +26,61 @@ const OPTIONAL_BACKUP_FILES = [
     'dashboard_tgdb.json' => '/etc/svxlink/dashboard_tgdb.json',
 ];
 
+// update.dashboard.sh's own backups -- a full copy of /var/www/html taken
+// before every dashboard update, kept entirely separate from the
+// svxlink.conf/node_info.json .bak-* files this page otherwise manages.
+// Not surfaced as a per-file "Previous versions" list like those (there's
+// only one thing being backed up here), just a retention cap.
+const DASHBOARD_BACKUP_DIR = '/var/backups/hotspot-image';
+
+/** Deletes the oldest www-html-* backups beyond $maxKeep (FIFO). Directory
+ * names embed a "Ymd_His" timestamp, so a plain sort() is chronological
+ * order. Recent ones are www-data-owned (update.dashboard.sh's own
+ * pruning, run as root, chowns the fresh copy -- see install-dashboard.sh),
+ * but older ones predating this project's chown step are still owned by
+ * svxlink (RF.Guru's stock image) or root -- confirmed live, a plain
+ * unlink() as www-data failed partway through one with "Permission
+ * denied" on files it didn't own even though it owned the directory
+ * itself. sudo (www-data has passwordless sudo, same as every other
+ * privileged file op in this dashboard) sidesteps needing to know which
+ * case a given backup is. */
+function pruneDashboardBackups(int $maxKeep): void
+{
+    $backups = glob(DASHBOARD_BACKUP_DIR . '/www-html-*', GLOB_ONLYDIR) ?: [];
+    if (count($backups) <= $maxKeep) {
+        return;
+    }
+    sort($backups);
+    foreach (array_slice($backups, 0, count($backups) - $maxKeep) as $old) {
+        exec('sudo rm -rf ' . escapeshellarg($old) . ' 2>&1');
+    }
+}
+
+/** How many www-html-* directory backups currently exist. */
+function countDashboardBackups(): int
+{
+    return count(glob(DASHBOARD_BACKUP_DIR . '/www-html-*', GLOB_ONLYDIR) ?: []);
+}
+
+/**
+ * Persists both retention caps to svxlink.conf's [Dashboard] section and
+ * applies the dashboard-backup one immediately (pruneOldBackups() already
+ * applies the config-backup one on its own the next time something
+ * writes svxlink.conf/node_info.json -- but that could be a while, and
+ * lowering this cap should visibly trim the list right away rather than
+ * waiting).
+ */
+function saveBackupRetentionSettings(int $configMaxKeep, int $dashboardMaxKeep): void
+{
+    iniSyncUpdateSection(SVX_CONF_FILE, 'Dashboard', [
+        'CONFIG_BACKUP_MAX_KEEP' => (string)$configMaxKeep,
+        'DASHBOARD_BACKUP_MAX_KEEP' => (string)$dashboardMaxKeep,
+    ]);
+    pruneOldBackups(SVX_CONF_FILE);
+    pruneOldBackups(NODE_INFO_FILE_PATH);
+    pruneDashboardBackups($dashboardMaxKeep);
+}
+
 /**
  * Build the backup zip into a temp file and return its path. Caller is
  * responsible for streaming it out and deleting it afterwards -- this never

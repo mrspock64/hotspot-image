@@ -24,6 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['restore_backup_path']
         $errors[] = $e->getMessage();
     }
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_retention'])) {
+    $configMaxKeep = trim($_POST['config_max_keep'] ?? '');
+    $dashboardMaxKeep = trim($_POST['dashboard_max_keep'] ?? '');
+    if (!ctype_digit($configMaxKeep) || (int)$configMaxKeep < 1) {
+        $errors[] = 'Config backups to keep must be a number, at least 1.';
+    } elseif (!ctype_digit($dashboardMaxKeep) || (int)$dashboardMaxKeep < 1) {
+        $errors[] = 'Dashboard-update backups to keep must be a number, at least 1.';
+    } else {
+        saveBackupRetentionSettings((int)$configMaxKeep, (int)$dashboardMaxKeep);
+        $log = ['Retention settings saved.'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -76,12 +89,30 @@ Restart SvxLink from the <a href="/power/">Power</a> page for changes to take ef
   </div>
 </div>
 
-<div class="mx-section">Previous versions</div>
+<div class="mx-section">Retention</div>
 <p class="hint">
 Every save from the <a href="/setup/">Setup</a> page (and every restore above) automatically
-keeps a timestamped copy of what it replaced. Nothing new to configure — this just lists them.
-Kept up to 50 per file (svxlink.conf, node_info.json), oldest deleted first once that fills up.
+keeps a timestamped copy of what it replaced -- oldest deleted first (FIFO) once the limit below
+is reached. Separately, every "Update Dashboard" run (<a href="/update/">Update</a> page) keeps a
+full copy of the previous dashboard, same FIFO rule.
 </p>
+<form method="post" style="margin-bottom:16px;">
+  <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <label for="config_max_keep" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Config backups to keep (per file)</label>
+      <input type="text" id="config_max_keep" name="config_max_keep" value="<?php echo htmlspecialchars((string)getConfigBackupMaxKeep()); ?>" style="width:80px; margin:0;">
+      <p class="hint" style="margin:4px 0 0;"><?php echo count(array_filter(listConfigBackups(), fn($b) => $b['file'] === SVX_CONF_FILE)); ?> svxlink.conf, <?php echo count(array_filter(listConfigBackups(), fn($b) => $b['file'] === NODE_INFO_FILE_PATH)); ?> node_info.json right now.</p>
+    </div>
+    <div>
+      <label for="dashboard_max_keep" style="font-weight:600; font-size:12.5px; display:block; margin-bottom:4px;">Dashboard-update backups to keep</label>
+      <input type="text" id="dashboard_max_keep" name="dashboard_max_keep" value="<?php echo htmlspecialchars((string)getDashboardBackupMaxKeep()); ?>" style="width:80px; margin:0;">
+      <p class="hint" style="margin:4px 0 0;"><?php echo countDashboardBackups(); ?> right now.</p>
+    </div>
+    <button name="save_retention" type="submit" class="mx-btn">Save</button>
+  </div>
+</form>
+
+<div class="mx-section">Previous versions</div>
 <?php $backups = listConfigBackups(); ?>
 <?php if (empty($backups)): ?>
   <p class="hint">No automatic backups yet — they appear here after the first Setup save.</p>
