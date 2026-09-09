@@ -39,7 +39,8 @@ else { $callsign="NOCALL";
 <?php include_once "include/browserdetect.php"; ?>
     <script type="text/javascript" src="scripts/jquery.min.js"></script>
     <script type="text/javascript" src="scripts/functions.js"></script>
-    <script type="text/javascript" src="scripts/pcm-player.min.js"></script>
+    <!-- pcm-player.min.js is now loaded globally by include/site_header.php,
+         since the RX Monitor button lives in the nav bar on every page. -->
     <script type="text/javascript">
       $.ajaxSetup({ cache: false });
     </script>
@@ -53,18 +54,6 @@ else { $callsign="NOCALL";
 <center>
 <fieldset style="box-shadow:5px 5px 20px #999; background-color:#f1f1f1; width:0px;margin-top:15px;margin-left:0px;margin-right:5px;font-size:13px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
 <div class="container">
-
-<div class="content"><center>
-<div style="margin-top:0px;">
-</div></center>
-</div>
-<?php
-if (isProcessRunning('node')) {
-echo '<div style="max-width:900px;margin:0 auto;text-align:right;padding:2px 4px 0 0;">'
-   . '<button onclick="playAudioToggle(8080, this)" style="background:#2A6594;color:#fff;border:none;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">'
-   . '<img src="images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor</button></div>';
-}
-?>
 <?php
 if (MENUBUTTON=="TOP") {
 include_once __DIR__."/include/buttons.php"; 

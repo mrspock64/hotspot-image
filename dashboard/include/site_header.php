@@ -63,6 +63,10 @@ $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_S
 $mxRxMeterStyle = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['Dashboard']['RX_METER_STYLE'] ?? 'bar') === 'analog' ? 'analog' : 'bar';
 ?>
 <link href="/css/modern.css" type="text/css" rel="stylesheet" />
+<!-- Loaded here (not just on the Dashboard page) so the RX Monitor button
+     in the nav bar below works from any page -- playAudioToggle() lives
+     in this file. -->
+<script src="/scripts/pcm-player.min.js"></script>
 <div class="mx-banner">
   <img src="/images/svxlink.ico" alt="">
   <div>

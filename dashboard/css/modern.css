@@ -134,6 +134,18 @@
     color: #fff;
 }
 
+.mx-rxmon-btn {
+    background: #2A6594;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
 /* "Admin" dropdown -- native <details>/<summary>, so it works on click (not
    just hover) with no JS, and is keyboard/screen-reader accessible. */
 .mx-dropdown {

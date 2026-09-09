@@ -1,6 +1,11 @@
 <?php
 // modern.css is loaded by site_header.php, which includes this file --
 // not linked again here to avoid a duplicate <link> on every page.
+// isProcessRunning() (below, gating the RX Monitor button) lives in
+// tools.php -- not every page that includes this file happens to have
+// already loaded it (only index.php/tg.php/node.php do), so pull it in
+// here rather than assuming.
+require_once __DIR__ . '/tools.php';
 $mxCurrent = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
 if ($mxCurrent === '' || $mxCurrent === 'index.php') { $mxCurrent = 'index.php'; }
 function mxFileOf(string $href): string
@@ -63,6 +68,11 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
     <a href="/" onclick="event.target.port=4200">Shell</a>
   </div>
 </details>
+<?php if (isProcessRunning('node')): ?>
+  <button onclick="playAudioToggle(8080, this)" class="mx-rxmon-btn" style="margin-left:auto;">
+    <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor
+  </button>
+<?php endif; ?>
 </nav>
 <script>
 document.addEventListener('click', function (e) {
