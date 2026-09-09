@@ -1,6 +1,41 @@
 <?php
 define('HOTSPOT_SCRIPT', '/usr/sbin/hotspot');
 
+// Every config write here (and every restore in dashboard/backup/lib.php)
+// leaves a timestamped .bak-* copy behind before touching the live file --
+// on purpose, that's what the Backup page's "Previous versions" list
+// shows. But nothing ever removed an old one: a single Setup-page save
+// alone calls iniSyncUpdateSection() four times (once per svxlink.conf
+// section it touches), so the list only ever grew. 50 kept per file,
+// oldest deleted first (FIFO).
+const CONFIG_BACKUP_MAX_KEEP = 50;
+
+function pruneOldBackups(string $filePath): void
+{
+    // Only touch backups matching our own "Ymd-His" naming exactly (same
+    // pattern listConfigBackups() filters to for display) -- a plain
+    // ".bak-*" glob also catches one-off backups other scripts have left
+    // over the years with their own naming (".bak-qsorec-...",
+    // ".bak-restorefix-...", an older "_HHMMSS" underscore format from
+    // before this convention settled), which don't sort chronologically
+    // against these and aren't safe to assume are prunable at all.
+    $backups = [];
+    foreach (glob($filePath . '.bak-*') ?: [] as $backup) {
+        if (preg_match('/\.bak-\d{8}-\d{6}$/', $backup)) {
+            $backups[] = $backup;
+        }
+    }
+    if (count($backups) <= CONFIG_BACKUP_MAX_KEEP) {
+        return;
+    }
+    // The matched suffix is a fixed-width "Ymd-His" string, so plain
+    // lexicographic sort() is chronological order here.
+    sort($backups);
+    foreach (array_slice($backups, 0, count($backups) - CONFIG_BACKUP_MAX_KEEP) as $old) {
+        @unlink($old);
+    }
+}
+
 /**
  * Retune the physical SA818 radio module. svxlink.conf/node_info.json have
  * no concept of "operating frequency" at all -- SvxLink only cares about
@@ -88,6 +123,7 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
 
     // This edits a live radio's config -- always leave a way back.
     @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
+    pruneOldBackups($filePath);
 
     $sectionHeader = "[$section]";
     $sectionStart = null;
@@ -265,6 +301,7 @@ function writeNodeInfoJson(string $filePath, array $opts): void
 
     if (is_readable($filePath)) {
         @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
+        pruneOldBackups($filePath);
     }
     file_put_contents($filePath, $json . "\n");
 }

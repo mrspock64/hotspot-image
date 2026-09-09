@@ -80,6 +80,7 @@ Restart SvxLink from the <a href="/power/">Power</a> page for changes to take ef
 <p class="hint">
 Every save from the <a href="/setup/">Setup</a> page (and every restore above) automatically
 keeps a timestamped copy of what it replaced. Nothing new to configure — this just lists them.
+Kept up to 50 per file (svxlink.conf, node_info.json), oldest deleted first once that fills up.
 </p>
 <?php $backups = listConfigBackups(); ?>
 <?php if (empty($backups)): ?>

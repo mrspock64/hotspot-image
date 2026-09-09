@@ -8,6 +8,8 @@
  * filesystem or every dashboard setting.
  */
 
+require_once __DIR__ . '/../include/inisync.php';
+
 define('PKI_DIR', '/var/lib/svxlink/pki');
 define('SVX_CONF_FILE', '/etc/svxlink/svxlink.conf');
 define('NODE_INFO_FILE_PATH', '/etc/svxlink/node_info.json');
@@ -117,6 +119,7 @@ function restoreFromZip(string $zipPath): array
 
     if ($hasConf && is_file("$stagingDir/svxlink.conf")) {
         @copy(SVX_CONF_FILE, SVX_CONF_FILE . '.bak-' . date('Ymd-His'));
+        pruneOldBackups(SVX_CONF_FILE);
         exec('sudo cp ' . escapeshellarg("$stagingDir/svxlink.conf") . ' ' . escapeshellarg(SVX_CONF_FILE) . ' 2>&1', $o3, $c3);
         $log[] = $c3 === 0 ? 'Restored svxlink.conf (previous version backed up).' : 'FAILED to restore svxlink.conf: ' . implode(' ', $o3);
     }
@@ -126,6 +129,7 @@ function restoreFromZip(string $zipPath): array
             $log[] = 'Skipped node_info.json: the file in the backup is not valid JSON.';
         } else {
             @copy(NODE_INFO_FILE_PATH, NODE_INFO_FILE_PATH . '.bak-' . date('Ymd-His'));
+            pruneOldBackups(NODE_INFO_FILE_PATH);
             exec('sudo cp ' . escapeshellarg("$stagingDir/node_info.json") . ' ' . escapeshellarg(NODE_INFO_FILE_PATH) . ' 2>&1', $o4, $c4);
             $log[] = $c4 === 0 ? 'Restored node_info.json (previous version backed up).' : 'FAILED to restore node_info.json: ' . implode(' ', $o4);
         }
@@ -211,6 +215,7 @@ function restoreConfigBackup(string $backupPath): string
     // Back up whatever's live right now before overwriting it, same as
     // every other write path here — restoring a backup is itself an edit.
     @copy($target, $target . '.bak-' . date('Ymd-His'));
+    pruneOldBackups($target);
     if (!copy($backupPath, $target)) {
         throw new RuntimeException("Failed to copy $backupPath over $target.");
     }
