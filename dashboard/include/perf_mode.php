@@ -31,6 +31,23 @@ const PERF_GURU_CONFIG_LINES = [
 const PERF_GURU_CMDLINE_SETTING = 'maxcpus=2';
 
 /**
+ * Guru mode is Pi-Zero-2W-specific -- confirmed straight from RF.Guru's
+ * own upstream hotspot-options (they patched this in after us; the copy
+ * installed on svxlinkuhf still predates the fix): the mini-UART on Pi 4
+ * and Pi 5 is clocked off core_freq, so pinning it to 150MHz breaks SA818
+ * radio comms outright, and the undervolt + maxcpus=2 crippling makes no
+ * sense on more powerful boards anyway. Their own script now detects the
+ * model and skips/auto-cleans on anything that isn't a Zero 2W -- this
+ * mirrors that check so our own toggle can't offer Guru mode somewhere
+ * it would break the radio (e.g. after moving this SD card to a Pi 3+).
+ */
+function isPiZero2W(): bool
+{
+    $model = trim((string)@file_get_contents('/proc/device-tree/model'), "\0 \t\n\r");
+    return str_contains($model, 'Pi Zero 2');
+}
+
+/**
  * 'guru' if every one of PERF_GURU_CONFIG_LINES is present in config.txt,
  * 'turbo' otherwise -- a partial/mixed state (someone hand-edited only
  * some of them) reads as 'turbo' since "assume throttled" is the wrong
@@ -55,6 +72,9 @@ function setPerfMode(string $mode): void
 {
     if (!in_array($mode, ['guru', 'turbo'], true)) {
         throw new InvalidArgumentException("Unknown performance mode: $mode");
+    }
+    if ($mode === 'guru' && !isPiZero2W()) {
+        throw new RuntimeException('Guru mode is Pi Zero 2 W-specific -- it breaks SA818 radio comms on other boards (mini-UART timing). Refusing on this hardware.');
     }
 
     $configContent = @file_get_contents(PERF_CONFIG_TXT);

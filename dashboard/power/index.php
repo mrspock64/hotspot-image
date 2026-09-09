@@ -21,6 +21,7 @@ require_once __DIR__ . '/../include/perf_mode.php';
 // happened -- not the eventual result a few seconds later. The JS below
 // polls status.php to catch up once it has.
 $message = null;
+$messageOk = true;
 $pollAfterAction = false;
 
 if (isset($_POST['btnSvxlinkStart'])) {
@@ -59,11 +60,13 @@ if (isset($_POST['btnPerfMode'])) {
         $message = "$modeLabel mode set -- restart the device below for it to take effect.";
     } catch (Throwable $e) {
         $message = 'Failed to change performance mode: ' . $e->getMessage();
+        $messageOk = false;
     }
 }
 
 $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')) === 'active';
 $perfMode = getPerfMode();
+$isZero2W = isPiZero2W();
 
 ?>
 
@@ -71,7 +74,7 @@ $perfMode = getPerfMode();
   <h1 style="text-align: center;">Power</h1>
 
 <?php if ($message): ?>
-  <p class="mx-msg mx-msg-ok"><?php echo htmlspecialchars($message); ?></p>
+  <p class="mx-msg <?php echo $messageOk ? 'mx-msg-ok' : 'mx-msg-err'; ?>"><?php echo htmlspecialchars($message); ?></p>
 <?php endif; ?>
 
   <p id="svx-status" style="text-align:center; font-weight:600; margin: 0 0 4px;">SvxLink:
@@ -95,6 +98,7 @@ $perfMode = getPerfMode();
       </form>
     </div>
 
+<?php if ($isZero2W): ?>
     <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
 
     <p style="text-align:center; font-weight:600; margin:0 0 4px;">Performance mode:
@@ -104,7 +108,16 @@ $perfMode = getPerfMode();
       <input type="hidden" name="perf_mode" value="<?php echo $perfMode === 'turbo' ? 'guru' : 'turbo'; ?>">
       <button name="btnPerfMode" type="submit" class="mx-btn mx-btn-ghost" style="width:260px;">Switch to <?php echo $perfMode === 'turbo' ? 'Guru mode' : 'Turbo mode'; ?></button>
     </form>
-    <p class="mx-hint" style="width:260px; text-align:center; margin:0 0 10px;">Turbo: all 4 real cores, full clock speed -- confirmed live, no thermal throttling either way. Guru: RF.Guru's stock "Temperature Tuning" (2 cores, ~30% slower, undervolted). Needs a restart below to take effect.</p>
+    <p class="mx-hint" style="width:260px; text-align:center; margin:0 0 10px;">Turbo: all 4 real cores, full clock speed -- confirmed live, no thermal throttling either way in open air (this option exists specifically for RF.Guru's own plastic case, which traps heat more). Guru: RF.Guru's stock "Temperature Tuning" (2 cores, ~30% slower, undervolted). Needs a restart below to take effect.</p>
+<?php elseif ($perfMode === 'guru'): ?>
+    <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
+
+    <p class="mx-msg mx-msg-err" style="width:260px; box-sizing:border-box;">This SD card has RF.Guru's "Guru mode" throttling left over from a Pi Zero 2 W, but this board isn't one -- those settings break SA818 radio comms on other boards (mini-UART timing). Clean it up below.</p>
+    <form method="post" style="margin:0 0 10px;">
+      <input type="hidden" name="perf_mode" value="turbo">
+      <button name="btnPerfMode" type="submit" class="mx-btn" style="width:260px;">Clean up (switch to Turbo)</button>
+    </form>
+<?php endif; ?>
 
     <div style="width:260px; border-top:1px solid var(--mx-border, #e5e7eb); margin:6px 0;"></div>
 
