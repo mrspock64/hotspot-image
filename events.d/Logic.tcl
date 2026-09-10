@@ -15,7 +15,19 @@
 # this file must stay a full copy of stock content with our own additions
 # merged in-place -- never a from-scratch subset.
 #
-# hotspot-image additions, all confined to dtmf_cmd_received below:
+# The "stock content" snapshot above (a Sept 1 RF.Guru image backup) has
+# since been found to be behind real upstream sm0svx/svxlink -- confirmed
+# live on svxlinkmobile (2026-09-10): a genuine current-upstream proc,
+# siglev_updated, was missing here entirely and errored on every squelch
+# open. build-svxlink.sh clones `maint` branch HEAD fresh on every install,
+# so this file's actual drift target keeps moving -- treat any snapshot
+# used to build/verify this file as a point-in-time reference, not a fixed
+# spec, and re-check proc-for-proc against github.com/sm0svx/svxlink's
+# actual current src/svxlink/svxlink/Logic.tcl (not a cached copy) if
+# something here throws "invalid command name" again.
+#
+# hotspot-image additions, all confined to dtmf_cmd_received below (plus
+# siglev_updated, a straight upstream no-op restoration, further down):
 #   - D911: re-implemented with error handling (was already present upstream
 #     in a simpler form; RF.Guru's own hotspot feature, kept)
 #   - D912/D913: RF.Guru's own (kept as-is, unchanged from stock)
@@ -441,6 +453,23 @@ proc squelch_open {rx_id is_open} {
   variable sql_rx_id;
   #puts "The squelch is $is_open on RX $rx_id";
   set sql_rx_id $rx_id;
+}
+
+
+#
+# Executed when the signal level is updated for the receiver
+#   rx_id   - The ID of the RX that the signal level was updated on
+#   siglev  - Signal level, ideally 0-100 but may be outside that range
+#
+# Missing from this file until 2026-09-10 -- confirmed live on svxlinkmobile
+# as a real, reproducible Tcl error ("invalid command name
+# SimplexLogic::siglev_updated") every time the squelch opened, since the
+# stock content this file was originally rebuilt from (a backup found on
+# svxlinkuhf, itself an older RF.Guru image snapshot) predates this proc's
+# addition to real upstream SvxLink. Confirmed present, as a no-op, in
+# sm0svx/svxlink's current maint-branch Logic.tcl.
+#
+proc siglev_updated {rx_id siglev} {
 }
 
 
