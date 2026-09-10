@@ -18,9 +18,17 @@
 # transmitter -- a plain capture tap only ever sees this node's own local
 # RX, which turned out to be a real gap once tested against a live QSO.
 #
-#  - QSO_RECORDER=8:QsoRecorder is enabled in [SimplexLogic] (RF.Guru's
-#    stock config already ships a fully configured [QsoRecorder] section,
-#    just commented out).
+#  - QSO_RECORDER=8:QsoRecorder is enabled in [SimplexLogic]. This project
+#    originally assumed RF.Guru's stock config always ships a fully
+#    configured [QsoRecorder] section with this just commented out --
+#    confirmed live (svxlinkmobile, 2026-09-10) that isn't reliable: this
+#    exact node's [QsoRecorder] section existed (REC_DIR etc.) but had
+#    neither QSO_RECORDER= (active, commented, or otherwise) in
+#    [SimplexLogic] nor ENCODER_CMD in [QsoRecorder] at all -- meaning the
+#    dashboard's QSO Log toggle showed "on" (DEFAULT_ACTIVE=1) the whole
+#    time while nothing was actually wired into the audio path to record.
+#    Both are now added outright if genuinely missing, not just toggled
+#    on if merely commented out.
 #  - tail_qso_recorder.py watches REC_DIR for the currently-open recording
 #    (SvxLink writes exactly one *.wav at a time while a QSO is active;
 #    finished recordings get converted to *.mp3 by ENCODER_CMD and the wav
@@ -90,9 +98,35 @@ else
     RESTART_NEEDED=1
   elif grep -q '^QSO_RECORDER=' "$SVX_CONF"; then
     echo "QSO_RECORDER already enabled -- leaving it as-is."
+  elif grep -q '^\[SimplexLogic\]$' "$SVX_CONF"; then
+    # Found live on svxlinkmobile (2026-09-10): this node's stock config
+    # had a real [QsoRecorder] section (REC_DIR etc.) but no QSO_RECORDER=
+    # line in [SimplexLogic] at all, not even commented -- RF.Guru's own
+    # image apparently isn't consistent about shipping this the same way
+    # on every hardware variant, contrary to this script's original
+    # assumption. The dashboard's QSO Log page happily showed "on"
+    # (DEFAULT_ACTIVE=1 in [QsoRecorder]) the whole time -- since nothing
+    # actually hooks the recorder into the audio path without this line,
+    # it silently recorded nothing at all. Safe to add outright: REC_DIR
+    # already being present (checked above) is the actual precondition
+    # that matters, not whether the line existed in some form already.
+    sed -i '/^\[SimplexLogic\]$/a QSO_RECORDER=8:QsoRecorder' "$SVX_CONF"
+    echo "Added QSO_RECORDER=8:QsoRecorder to [SimplexLogic] (was missing entirely)."
+    RESTART_NEEDED=1
   else
-    echo "No QSO_RECORDER= line found (commented or otherwise) in" \
-         "[SimplexLogic] -- not adding one automatically." >&2
+    echo "No [SimplexLogic] section found in $SVX_CONF -- not adding" \
+         "QSO_RECORDER= automatically." >&2
+  fi
+
+  # Same story as QSO_RECORDER= above: RF.Guru's stock config doesn't
+  # always ship ENCODER_CMD either. Without it, SvxLink records fine but
+  # never converts/tags the finished .wav -- QSO Log/RX Monitor would
+  # still see the audio, but recordings would pile up as raw, unnamed
+  # .wav files forever, and RECORD_ONLY_TGS would silently not apply.
+  if ! grep -q '^ENCODER_CMD=' "$SVX_CONF"; then
+    sed -i '/^\[QsoRecorder\]$/a ENCODER_CMD=/usr/bin/python3 /opt/rx-monitor/tag_and_encode.py \\"%f\\"' "$SVX_CONF"
+    echo "Added ENCODER_CMD to [QsoRecorder] (was missing entirely)."
+    RESTART_NEEDED=1
   fi
 
   # Per-QSO files (not one giant recording) and a sane disk cap. Only added
