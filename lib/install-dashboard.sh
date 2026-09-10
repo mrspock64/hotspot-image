@@ -39,6 +39,14 @@ else
   echo "         auth against a private repo), but 'origin' is still"
   echo "         pointed at the real URL so it's ready the moment it does."
   cp -r "$SCRIPT_DIR" "$REPO_DIR"
+  # $SCRIPT_DIR is very likely itself a git checkout -- it's however the
+  # person running setup.sh got this repo onto the device in the first
+  # place (e.g. `git clone https://TOKEN@github.com/...`). Copying that
+  # .git along would both make the next line fail ("remote origin
+  # already exists") and, worse, leave any embedded clone credentials
+  # sitting in a directory this script is about to chown to www-data.
+  # Always start clean here regardless of what the source directory is.
+  rm -rf "$REPO_DIR/.git"
   git -C "$REPO_DIR" init -q
   git -C "$REPO_DIR" remote add origin "$REAL_REPO_URL"
   git -C "$REPO_DIR" add -A
