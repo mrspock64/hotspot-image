@@ -71,9 +71,15 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
   </div>
 </details>
 <?php if (isProcessRunning('node')): ?>
+<?php if ($mxQsoRecorderActive ?? false): ?>
   <button onclick="playAudioToggle(8080, this)" class="mx-rxmon-btn" style="margin-left:auto;">
     <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor
   </button>
+<?php else: ?>
+  <a href="/qsolog/" class="mx-rxmon-btn" style="margin-left:auto; opacity:0.6; text-decoration:none;" title="RX Monitor needs QSO Recorder turned on first -- click to go to the QSO Log page and turn it on.">
+    <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor (off)
+  </a>
+<?php endif; ?>
 <?php endif; ?>
 </nav>
 <script>
