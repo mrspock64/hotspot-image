@@ -2,5 +2,6 @@
   "node",
   "signal",
   "rxmonitor",
+  "autoupdate",
   "qsolog"
 ]
