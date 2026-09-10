@@ -18,7 +18,8 @@ apt-get install -y \
   libgpiod-dev gpiod libgcrypt20-dev libspeex-dev libasound2-dev \
   alsa-utils libjsoncpp-dev libopus-dev rtl-sdr libcurl4-openssl-dev \
   libogg-dev librtlsdr-dev groff doxygen graphviz python3-serial toilet \
-  sox bc avahi-daemon avahi-utils jq
+  sox bc avahi-daemon avahi-utils jq \
+  espeak-ng
 
 echo "--- Building SvxLink (stock, sm0svx/svxlink maint branch) ---"
 BUILD_DIR="$(mktemp -d)"

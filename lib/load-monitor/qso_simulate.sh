@@ -32,8 +32,16 @@ EXCHANGES="${1:-12}"
 MIN_PAUSE="${2:-3}"
 MAX_PAUSE="${3:-8}"
 
-DTMF_CMD='D911#'
-DTMF_SETTLE_S=8   # observed real duration of the D911# announcement
+# D920# plays the dashboard's saved custom message (Radio Test page) if
+# one has been generated; D911# (IP readout) is the fallback when none
+# has been saved yet -- see events.d/Logic.tcl and dashboard/include/
+# tts_message.php.
+if [ -f /etc/svxlink/radiotest_message.wav ]; then
+    DTMF_CMD='D920#'
+else
+    DTMF_CMD='D911#'
+fi
+DTMF_SETTLE_S=8   # observed real duration of these announcements
 
 PID_FILE=/var/cache/hotspot-image/qso_sim.pid
 LOCK_FILE=/var/cache/hotspot-image/qso_sim.lock
@@ -81,7 +89,7 @@ log "###-START-###"
 
 start_temp=$(read_temp_c)
 peak_temp=$start_temp
-log "Starting QSO simulation: $EXCHANGES exchanges via SvxLink's own D911# (IP announce) command, pause ${MIN_PAUSE}-${MAX_PAUSE}s"
+log "Starting QSO simulation: $EXCHANGES exchanges via SvxLink's own $DTMF_CMD command, pause ${MIN_PAUSE}-${MAX_PAUSE}s"
 log "Start temp: ${start_temp}C"
 
 for i in $(seq 1 "$EXCHANGES"); do
@@ -94,6 +102,13 @@ for i in $(seq 1 "$EXCHANGES"); do
     temp_before=$(read_temp_c)
     log "Exchange $i/$EXCHANGES: sending $DTMF_CMD (temp ${temp_before}C)"
 
+    # RF.Guru's own DTMF relay occasionally drops leading digits -- same
+    # known race documented for TG select (dashboard/include/buttons.php)
+    # and confirmed live for this command too. A resend a moment later
+    # reliably lands; a double-play if both happen to land is a minor
+    # annoyance, not a wrong second effect.
+    /usr/sbin/hotspot_dtmf "$DTMF_CMD" >> "$LOG_FILE" 2>&1
+    sleep 0.3
     /usr/sbin/hotspot_dtmf "$DTMF_CMD" >> "$LOG_FILE" 2>&1
     sleep "$DTMF_SETTLE_S"
 

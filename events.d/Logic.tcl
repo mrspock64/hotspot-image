@@ -58,6 +58,33 @@ proc dtmf_cmd_received {cmd} {
     return 1
   }
 
+  # D920#: plays a whole, pre-generated audio file rather than stitching
+  # together SvxLink's own per-word/per-digit sound library like D911#
+  # does above -- SvxLink has no free-text speech of its own, so this is
+  # how the dashboard's Radio Test page gets to transmit arbitrary custom
+  # content (see dashboard/include/tts_message.php, which generates this
+  # file via espeak-ng). Silently does nothing if the file doesn't exist
+  # yet -- no custom message has been saved.
+  if {$cmd == "D920"} {
+    if {[file exists "/etc/svxlink/radiotest_message.wav"]} {
+      playFile "/etc/svxlink/radiotest_message.wav"
+    }
+    return 1
+  }
+
+  # D921#: same mechanism, a second independent message slot reserved for
+  # automated alerts (e.g. lib/load-monitor/monitor.sh transmitting a
+  # spoken warning on sustained high temperature/load) -- not wired up to
+  # trigger automatically yet, that's a separate, deliberate decision to
+  # make later. For now this just lets the alert message be generated and
+  # test-played manually like D920#'s custom message.
+  if {$cmd == "D921"} {
+    if {[file exists "/etc/svxlink/alert_message.wav"]} {
+      playFile "/etc/svxlink/alert_message.wav"
+    }
+    return 1
+  }
+
   return 0
 }
 
