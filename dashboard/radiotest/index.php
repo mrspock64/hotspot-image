@@ -27,37 +27,27 @@ $error = null;
 $message = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnStart']) && !qsoSimRunning()) {
-    // Sane bounds -- this keys a real transmitter, so the form fields are
-    // clamped server-side too, not just via the <input min/max> below.
     $exchanges = max(1, min(60, (int)($_POST['exchanges'] ?? 12)));
-    $minTx = max(1, min(60, (int)($_POST['min_tx'] ?? 5)));
-    $maxTx = max($minTx, min(60, (int)($_POST['max_tx'] ?? 20)));
-    $minPause = max(1, min(30, (int)($_POST['min_pause'] ?? 2)));
-    $maxPause = max($minPause, min(30, (int)($_POST['max_pause'] ?? 5)));
-    $keepSvxlink = isset($_POST['keep_svxlink']) ? 1 : 0;
+    $minPause = max(1, min(30, (int)($_POST['min_pause'] ?? 3)));
+    $maxPause = max($minPause, min(30, (int)($_POST['max_pause'] ?? 8)));
 
     @unlink(QSO_SIM_RESULT_FILE);
     $cmd = sprintf(
-        'sudo %s %d %d %d %d %d %d > %s 2>&1 &',
+        'sudo %s %d %d %d > %s 2>&1 &',
         escapeshellarg(QSO_SIM_SCRIPT),
         $exchanges,
-        $minTx,
-        $maxTx,
         $minPause,
         $maxPause,
-        $keepSvxlink,
         escapeshellarg('/dev/null')
     );
     exec($cmd);
-    $message = $keepSvxlink
-        ? 'QSO simulation started -- SvxLink stays running for this test (combined-load mode).'
-        : 'QSO simulation started -- svxlink will go offline for the duration and come back automatically when it finishes (or if you abort it).';
+    $message = 'QSO simulation started -- SvxLink stays running throughout, nothing to wait for it to come back.';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnAbort']) && qsoSimRunning()) {
     $pid = trim((string)@file_get_contents(QSO_SIM_PID_FILE));
     exec('sudo kill ' . escapeshellarg($pid) . ' 2>&1');
-    $message = 'Aborting -- svxlink restarts automatically as soon as the current transmission stops.';
+    $message = 'Stopping after the current transmission finishes (a few seconds) -- nothing to forcibly kill, SvxLink was never touched.';
 }
 
 $running = qsoSimRunning();
@@ -69,10 +59,12 @@ $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')
 <div class="mx-card" style="max-width: 600px;">
   <h1>Radio Test</h1>
   <p class="mx-sub">
-    Simulates a real QSO's transmit pattern -- variable-length transmissions with pauses, played through
-    the actual radio (same GPIO PTT line and audio path SvxLink itself uses) -- to measure how much the
-    radio module's own PA heats the case, separate from CPU/SoC heat. Requires a real antenna or dummy
-    load connected -- sustained transmission into an unloaded output can damage the radio module.
+    Simulates a real QSO's rhythm -- repeated transmissions with pauses -- by triggering SvxLink's own
+    built-in D911# command (announces the node's IP address) through the same DTMF relay every dashboard
+    button already uses. SvxLink stays running and owns the whole PTT/audio cycle throughout, the same way
+    it does for any real transmission -- nothing here holds GPIO or the audio device directly. Requires a
+    real antenna or dummy load connected -- sustained transmission into an unloaded output can damage the
+    radio module.
   </p>
 
 <?php if ($message): ?>
@@ -81,10 +73,10 @@ $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')
 
 <?php if ($running): ?>
   <div class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">
-    &#9203; Simulation running -- SvxLink is currently <?php echo $svxActive ? 'still running (combined-load mode)' : 'offline until it finishes'; ?>.
+    &#9203; Simulation running -- SvxLink stays up throughout, check the reflector portal to see it live.
   </div>
   <form method="post" style="margin-bottom:16px;">
-    <button name="btnAbort" type="submit" class="mx-btn mx-btn-danger" onclick="return confirm('Abort the test now? SvxLink restarts automatically once the current transmission stops.');">Abort test</button>
+    <button name="btnAbort" type="submit" class="mx-btn mx-btn-danger" onclick="return confirm('Stop the test after the current transmission finishes?');">Stop test</button>
   </form>
 <?php else: ?>
   <p style="font-weight:600; margin-bottom:14px;">SvxLink:
@@ -96,16 +88,9 @@ $svxActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')
   <form method="post">
     <div class="mx-row"><label for="exchanges">Number of exchanges</label>
       <input type="text" id="exchanges" name="exchanges" value="12" style="width:80px;"></div>
-    <div class="mx-row"><label for="min_tx">TX length (sec)</label>
-      <span><input type="text" id="min_tx" name="min_tx" value="5" style="width:60px; display:inline-block;"> to <input type="text" name="max_tx" value="20" style="width:60px; display:inline-block;"></span></div>
     <div class="mx-row"><label for="min_pause">Pause between (sec)</label>
-      <span><input type="text" id="min_pause" name="min_pause" value="2" style="width:60px; display:inline-block;"> to <input type="text" name="max_pause" value="5" style="width:60px; display:inline-block;"></span></div>
-    <p class="mx-hint">12 exchanges of 5-20s with 2-5s pauses runs roughly 4-6 minutes total.</p>
-    <label style="font-size:13px; font-weight:normal; display:block; margin-bottom:8px;">
-      <input type="checkbox" name="keep_svxlink" style="width:auto; vertical-align:middle;">
-      Keep SvxLink running during the test
-    </label>
-    <p class="mx-hint">Off (default): SvxLink stops for the test and restarts automatically -- isolates the radio module's own heat. On: SvxLink keeps running so this measures combined real-world load instead -- but both then reach for the same PTT line and audio device, so if a real transmission lands at the same moment, expect possible audio glitches or PTT flicker (not hardware damage).</p>
+      <span><input type="text" id="min_pause" name="min_pause" value="3" style="width:60px; display:inline-block;"> to <input type="text" name="max_pause" value="8" style="width:60px; display:inline-block;"></span></div>
+    <p class="mx-hint">Each exchange is one D911# announcement (~7-8s, fixed content) plus the pause above. 12 exchanges with 3-8s pauses runs roughly 3-4 minutes total.</p>
     <button name="btnStart" type="submit" class="mx-btn mx-btn-danger" onclick="return confirm('Start the QSO simulation? This transmits real RF for several minutes -- make sure a real antenna or dummy load is connected.');">Start test</button>
   </form>
 <?php endif; ?>
