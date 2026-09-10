@@ -57,7 +57,17 @@ $lines = tailLines(LOG_FILE, TAIL_LINES);
 
 $selectedTg = null;
 $lastTalkerEvent = null; // ['type' => 'start'|'stop', 'tg' => int, 'call' => string, 'at' => int]
-$nodesOnline = 0;
+// A set of node names (map used as a set -- PHP has no native Set), not a
+// plain +1/-1 counter. Confirmed live: a naive counter went to 0 (or
+// negative, silently clamped) whenever the tailed window's first "Node
+// left" for some node had no matching earlier "Node joined" in view --
+// completely plausible for a node that joined before TAIL_LINES' start,
+// and it happened on the very first deploy. A set can't go negative and,
+// more importantly, its size only reflects nodes actually seen joining
+// without a later leave in this window -- still not a true total (a node
+// that joined before the window and never left is invisible either way),
+// but no longer produces a nonsensical result when the window is messy.
+$onlineNodes = [];
 
 foreach ($lines as $line) {
     if (preg_match('/^(.+?): ReflectorLogic: Selecting TG #(\d+)/', $line, $m)) {
@@ -72,10 +82,10 @@ foreach ($lines as $line) {
         if ($at !== null) {
             $lastTalkerEvent = ['type' => 'stop', 'tg' => (int)$m[2], 'call' => $m[3], 'at' => $at];
         }
-    } elseif (str_contains($line, 'ReflectorLogic: Node joined:')) {
-        $nodesOnline++;
-    } elseif (str_contains($line, 'ReflectorLogic: Node left:')) {
-        $nodesOnline--;
+    } elseif (preg_match('/ReflectorLogic: Node joined: (\S+)/', $line, $m)) {
+        $onlineNodes[$m[1]] = true;
+    } elseif (preg_match('/ReflectorLogic: Node left: (\S+)/', $line, $m)) {
+        unset($onlineNodes[$m[1]]);
     }
 }
 
@@ -95,5 +105,5 @@ echo json_encode([
     // Only a rough count over the tailed window, not a true total (a
     // node that joined before TAIL_LINES' start is never counted) -- good
     // enough as "roughly how busy is the reflector", not authoritative.
-    'nodes_online_approx' => max(0, $nodesOnline),
+    'nodes_online_approx' => count($onlineNodes),
 ]);
