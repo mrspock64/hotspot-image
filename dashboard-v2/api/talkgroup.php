@@ -19,6 +19,21 @@
 // no attempt to "clean up" or collapse it back to a static TG.
 header('Content-Type: application/json');
 
+// SvxLink's log timestamps are plain localtime() with no timezone in the
+// string -- confirmed live: this node's PHP defaults to UTC (php -i:
+// date.timezone => UTC) while its actual system timezone is Europe/
+// Brussels (currently UTC+2, /etc/timezone), so parsing the log's naive
+// "Thu Sep 10 23:37:48 2026" with strtotime() under PHP's default UTC
+// silently read it as 2 hours later than it really was -- every recent
+// event's computed age came out negative, clamped by max(0, ...) below
+// to a permanent, wrong "0s ago". Set PHP's timezone to match the
+// system's before parsing anything, so strtotime() agrees with
+// localtime()'s own idea of "now".
+$systemTz = trim((string)@file_get_contents('/etc/timezone'));
+if ($systemTz !== '' && in_array($systemTz, timezone_identifiers_list(), true)) {
+    date_default_timezone_set($systemTz);
+}
+
 const LOG_FILE = '/var/log/svxlink';
 const TAIL_LINES = 3000;
 
