@@ -19,6 +19,64 @@ const CONFIG_BACKUP_MAX_KEEP_DEFAULT = 50;
 // too so the Backup page settings form has one place to fetch both from.
 const DASHBOARD_BACKUP_MAX_KEEP_DEFAULT = 50;
 
+/**
+ * /etc/svxlink/svxlink.conf and node_info.json are root-owned (644) on a
+ * normally-permissioned RF.Guru node -- www-data can read them but not
+ * write, including creating a new file alongside them for a backup. This
+ * whole file used to write with plain file_put_contents()/copy()/unlink(),
+ * which only ever worked because svxlinkuhf's svxlink.conf happened to be
+ * (unusually) 777 www-data-owned already -- every save silently did
+ * nothing while still reporting success on a normally-permissioned node.
+ * Confirmed live on svxlinkmobile, 2026-09-10 (Backup page's retention
+ * settings, but the same bug hit every iniSyncUpdateSection()/
+ * writeNodeInfoJson() caller: Setup, Power, QSO Log, Backup, ...).
+ *
+ * These three helpers route every actual filesystem change through sudo
+ * (www-data has passwordless NOPASSWD ALL, same as the hotspot/lek shell
+ * users) instead. sudoWriteFile throws on failure so a broken write is a
+ * visible error instead of a silent no-op; the backup/prune helpers stay
+ * best-effort (a failed backup shouldn't block an otherwise-working save)
+ * but at least attempt the operation now instead of being guaranteed to
+ * fail via a bare unprivileged call.
+ */
+function sudoWriteFile(string $filePath, string $content): void
+{
+    $tmp = tempnam(sys_get_temp_dir(), 'inisync-');
+    file_put_contents($tmp, $content);
+    exec('sudo cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg($filePath) . ' 2>&1', $out, $code);
+    @unlink($tmp);
+    if ($code !== 0) {
+        throw new RuntimeException("Failed to write $filePath: " . implode(' ', $out));
+    }
+}
+
+function sudoBackupFile(string $filePath): void
+{
+    $backupPath = $filePath . '.bak-' . date('Ymd-His');
+    exec('sudo cp ' . escapeshellarg($filePath) . ' ' . escapeshellarg($backupPath) . ' 2>&1', $out, $code);
+    if ($code === 0) {
+        exec('sudo chmod 644 ' . escapeshellarg($backupPath) . ' 2>&1');
+    }
+}
+
+function sudoDeleteFile(string $filePath): void
+{
+    exec('sudo rm -f ' . escapeshellarg($filePath) . ' 2>&1');
+}
+
+// Unlike sudoBackupFile() (best-effort, a failed backup shouldn't block an
+// otherwise-working save), this throws -- used where the copy itself IS
+// the operation the caller asked for (e.g. restoring a chosen backup),
+// so a silent no-op there would mean "Restore" reporting success while
+// actually restoring nothing.
+function sudoCopyFile(string $src, string $dst): void
+{
+    exec('sudo cp ' . escapeshellarg($src) . ' ' . escapeshellarg($dst) . ' 2>&1', $out, $code);
+    if ($code !== 0) {
+        throw new RuntimeException("Failed to copy $src to $dst: " . implode(' ', $out));
+    }
+}
+
 function getConfigBackupMaxKeep(): int
 {
     $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
@@ -94,7 +152,7 @@ function pruneOldBackups(string $filePath): void
     // lexicographic sort() is chronological order here.
     sort($backups);
     foreach (array_slice($backups, 0, count($backups) - $maxKeep) as $old) {
-        @unlink($old);
+        sudoDeleteFile($old);
     }
 }
 
@@ -184,7 +242,7 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
     }
 
     // This edits a live radio's config -- always leave a way back.
-    @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
+    sudoBackupFile($filePath);
     pruneOldBackups($filePath);
 
     $sectionHeader = "[$section]";
@@ -211,7 +269,7 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
         foreach ($keyValues as $k => $v) {
             $lines[] = "$k=$v";
         }
-        file_put_contents($filePath, implode("\n", $lines) . "\n");
+        sudoWriteFile($filePath, implode("\n", $lines) . "\n");
         return;
     }
 
@@ -242,7 +300,7 @@ function iniSyncUpdateSection(string $filePath, string $section, array $keyValue
         array_splice($lines, $sectionEnd, 0, $insertLines);
     }
 
-    file_put_contents($filePath, implode("\n", $lines) . "\n");
+    sudoWriteFile($filePath, implode("\n", $lines) . "\n");
 }
 
 /**
@@ -362,8 +420,8 @@ function writeNodeInfoJson(string $filePath, array $opts): void
     }
 
     if (is_readable($filePath)) {
-        @copy($filePath, $filePath . '.bak-' . date('Ymd-His'));
+        sudoBackupFile($filePath);
         pruneOldBackups($filePath);
     }
-    file_put_contents($filePath, $json . "\n");
+    sudoWriteFile($filePath, $json . "\n");
 }
