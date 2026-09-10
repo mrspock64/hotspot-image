@@ -2,7 +2,7 @@
   "id": "qsolog",
   "title": "QSO log",
   "element": "qsolog-panel",
-  "script": "modules/qsolog/panel.js",
-  "api": "api/qsolog.php",
+  "script": "/modules/qsolog/panel.js",
+  "api": "/api/qsolog.php",
   "refresh_ms": 15000
 }

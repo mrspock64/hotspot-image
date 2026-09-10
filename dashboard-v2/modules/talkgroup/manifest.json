@@ -2,7 +2,7 @@
   "id": "talkgroup",
   "title": "Talkgroup",
   "element": "talkgroup-panel",
-  "script": "modules/talkgroup/panel.js",
-  "api": "api/talkgroup.php",
+  "script": "/modules/talkgroup/panel.js",
+  "api": "/api/talkgroup.php",
   "refresh_ms": 10000
 }

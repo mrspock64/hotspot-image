@@ -1,17 +1,32 @@
-// Layout settings page. Fetches api/layout.php's effective layout
-// (already merged with each module's title, and back-filled with any
-// module on disk that isn't in a saved/default layout yet -- see that
-// file's own comment), renders one draggable card per module inside
-// three column boxes. Dragging a card within a column reorders it;
-// dragging it into a different column changes which column it belongs
-// to. The `layout` array is only the source of truth for the initial
-// render and for Save -- while dragging, the DOM itself is the live
-// state (classic "insert before the closest element" pattern), then
-// dragend reads the DOM back into `layout`.
+// Layout settings page. `page` comes from ?page=<id> in the URL
+// (defaulting to "dashboard"), so one settings page serves every page's
+// module layout -- must stay in sync with js/pages-nav.js's page list.
+// Fetches api/layout.php's effective layout for that page (already
+// merged with each module's title, and back-filled with any module on
+// disk that isn't in a saved/default layout yet -- see that file's own
+// comment), renders one draggable card per module inside three column
+// boxes. Dragging a card within a column reorders it; dragging it into a
+// different column changes which column it belongs to. The `layout`
+// array is only the source of truth for the initial render and for
+// Save -- while dragging, the DOM itself is the live state (classic
+// "insert before the closest element" pattern), then dragend reads the
+// DOM back into `layout`.
+const PAGE_META = {
+  dashboard: { label: 'Dashboard', href: '/' },
+  qsolog: { label: 'QSO Log', href: '/qsolog/' },
+};
+
+const page = new URLSearchParams(window.location.search).get('page') || 'dashboard';
+const pageMeta = PAGE_META[page] || PAGE_META.dashboard;
+
+document.getElementById('page-sub').textContent = 'dashboard-v2 preview · ' + pageMeta.label + ' · which modules, where';
+document.getElementById('panel-title').textContent = pageMeta.label + ' modules';
+document.getElementById('back-link').href = pageMeta.href;
+
 let layout = [];
 
 async function load() {
-  const res = await fetch('../api/layout.php', { cache: 'no-store' }).then((r) => r.json());
+  const res = await fetch('/api/layout.php?page=' + encodeURIComponent(page), { cache: 'no-store' }).then((r) => r.json());
   layout = res.layout;
   document.getElementById('source-tag').innerHTML = res.using_saved
     ? '<span class="dot ok"></span>saved layout'
@@ -109,7 +124,7 @@ async function save() {
   msg.textContent = 'Saving…';
   try {
     const payload = layout.map(({ id, col, enabled }) => ({ id, col, enabled }));
-    const res = await fetch('../api/layout.php', {
+    const res = await fetch('/api/layout.php?page=' + encodeURIComponent(page), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -127,8 +142,8 @@ async function save() {
 
 async function resetToDefault() {
   const msg = document.getElementById('save-msg');
-  const shipped = await fetch('../layout.json', { cache: 'no-store' }).then((r) => r.json());
-  const res = await fetch('../api/layout.php', { cache: 'no-store' }).then((r) => r.json());
+  const shipped = await fetch('/pages/' + encodeURIComponent(page) + '/layout.json', { cache: 'no-store' }).then((r) => r.json());
+  const res = await fetch('/api/layout.php?page=' + encodeURIComponent(page), { cache: 'no-store' }).then((r) => r.json());
   // Fold in any module the shipped default doesn't know about yet, same
   // back-fill api/layout.php does server-side, so resetting never hides a
   // newer module added after this default was written.

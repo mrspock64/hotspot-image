@@ -2,7 +2,7 @@
   "id": "signal",
   "title": "WiFi link quality",
   "element": "signal-panel",
-  "script": "modules/signal/panel.js",
-  "api": "api/signal.php",
+  "script": "/modules/signal/panel.js",
+  "api": "/api/signal.php",
   "refresh_ms": 15000
 }

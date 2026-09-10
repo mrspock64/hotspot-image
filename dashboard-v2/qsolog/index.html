@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hotspot Console (dashboard-v2 preview)</title>
+<title>QSO Log -- Hotspot Console (dashboard-v2 preview)</title>
 <link rel="stylesheet" href="/css/tokens.css">
 </head>
 <body>
@@ -12,24 +12,22 @@
     <div class="brand">
       <div class="brand-mark">HS</div>
       <div class="brand-text">
-        <span class="title">Hotspot Console</span>
+        <span class="title">QSO Log</span>
         <span class="sub">dashboard-v2 preview &middot; branch: dashboard-v2, not production</span>
       </div>
     </div>
     <div class="topbar-spacer"></div>
     <nav class="pages-nav" id="pages-nav"></nav>
-    <a class="settings-link" href="/settings/?page=dashboard" title="Layout settings">&#9881;</a>
+    <a class="settings-link" href="/settings/?page=qsolog" title="Layout settings">&#9881;</a>
     <div class="clock-block">
       <div class="clock"><span class="zone">UTC</span><span id="clock-utc">--:--:--</span></div>
       <div class="clock-local">local <span id="clock-local">--:--:--</span></div>
     </div>
   </div>
-  <div class="grid" id="module-grid" data-page="dashboard"></div>
+  <div class="grid" id="module-grid" data-page="qsolog"></div>
   <div class="footer-note">Module-based preview -- see <b>docs/dashboard-v2-brief.md</b>. Production dashboard is untouched, still served on :80.</div>
 </div>
 <script>
-// Real client clock, not decorative -- two real zones (UTC, browser-local),
-// updated every second. No server round-trip needed for this one.
 (function () {
   function pad(n) { return String(n).padStart(2, '0'); }
   function tick() {

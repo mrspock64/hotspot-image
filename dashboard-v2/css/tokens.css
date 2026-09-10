@@ -101,6 +101,16 @@ a{ color: inherit; }
   margin-right:4px;
 }
 .settings-link:hover{ color:var(--copper); border-color:var(--copper-dim); }
+
+/* ---------- pages nav ---------- */
+.pages-nav{ display:flex; gap:8px; flex-wrap:wrap; }
+.pages-nav a{
+  font-family: var(--disp); font-weight:600; font-size:12px; letter-spacing:0.6px; text-transform:uppercase;
+  padding:9px 16px; border-radius:8px; border:1px solid var(--border); color:var(--text-dim);
+  background:var(--surface-2); text-decoration:none;
+}
+.pages-nav a:hover{ color:var(--text); border-color:var(--copper-dim); }
+.pages-nav a.active{ color:var(--text); border-color:var(--copper); background: rgba(255,157,77,0.08); }
 .clock-block{ text-align:right; z-index:1; }
 .clock-block .clock{
   font-family: var(--mono); font-weight:600; font-size:22px; color: var(--text); letter-spacing:1px;

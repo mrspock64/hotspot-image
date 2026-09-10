@@ -2,7 +2,7 @@
   "id": "frequency",
   "title": "Frequency",
   "element": "frequency-panel",
-  "script": "modules/frequency/panel.js",
-  "api": "api/frequency.php",
+  "script": "/modules/frequency/panel.js",
+  "api": "/api/frequency.php",
   "refresh_ms": 30000
 }

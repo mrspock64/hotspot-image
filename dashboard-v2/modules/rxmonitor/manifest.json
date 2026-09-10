@@ -2,8 +2,8 @@
   "id": "rxmonitor",
   "title": "RX monitor",
   "element": "rxmonitor-panel",
-  "script": "modules/rxmonitor/panel.js",
-  "api": "api/rxmonitor.php",
+  "script": "/modules/rxmonitor/panel.js",
+  "api": "/api/rxmonitor.php",
   "refresh_ms": 5000,
   "ws_port": 8080
 }

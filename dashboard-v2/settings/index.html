@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hotspot Console -- Layout settings</title>
-<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="/css/tokens.css">
 <style>
   .settings-panel{ max-width: 960px; margin: 0 auto; }
   .drag-cols{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; padding:16px; }
@@ -53,16 +53,16 @@
       <div class="brand-mark">HS</div>
       <div class="brand-text">
         <span class="title">Layout settings</span>
-        <span class="sub">dashboard-v2 preview &middot; which modules, where</span>
+        <span class="sub" id="page-sub">dashboard-v2 preview &middot; which modules, where</span>
       </div>
     </div>
     <div class="topbar-spacer"></div>
-    <a class="back" href="../">&larr; back to console</a>
+    <a class="back" id="back-link" href="/">&larr; back to console</a>
   </div>
 
   <div class="panel settings-panel">
     <div class="panel-head">
-      <div class="panel-title">Modules</div>
+      <div class="panel-title" id="panel-title">Modules</div>
       <span id="source-tag" class="status-chip" style="padding:3px 9px;"></span>
     </div>
     <p class="settings-hint">Drag a card to reorder it or move it to another column. Uncheck to turn a module off without removing it.</p>
@@ -81,6 +81,6 @@
   </div>
   <p class="footer-note">Turning a module off or moving it here never touches its own files -- see <b>docs/dashboard-v2-brief.md</b>. Saved to /var/cache/hotspot-image, not to the git checkout.</p>
 </div>
-<script src="settings.js"></script>
+<script src="/settings/settings.js"></script>
 </body>
 </html>

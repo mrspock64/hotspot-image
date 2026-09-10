@@ -2,7 +2,7 @@
   "id": "autoupdate",
   "title": "Auto-update",
   "element": "autoupdate-panel",
-  "script": "modules/autoupdate/panel.js",
-  "api": "api/autoupdate.php",
+  "script": "/modules/autoupdate/panel.js",
+  "api": "/api/autoupdate.php",
   "refresh_ms": 60000
 }

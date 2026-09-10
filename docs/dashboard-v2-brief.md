@@ -16,17 +16,29 @@ Varje panel (Signal, Node, QSO Log, Vitals, RX Monitor, …) ska vara ett själv
 
 Huvuddashboarden blir bara en lista: "visa dessa moduler". Att lägga till en ny modul senare (t.ex. reflektor-info) ska vara att lägga till tre nya filer, inte att ändra huvudsidan.
 
-**Flytta/stänga av moduler:** `dashboard-v2/layout.json` är den enda platsen som bestämmer vilka moduler som visas, i vilken kolumn (1/2/3), och i vilken ordning inom kolumnen (ordningen i arrayen = ordningen på skärmen):
+**Flytta/stänga av moduler:** varje **sida** (Dashboard, QSO Log, …) har sin egen `dashboard-v2/pages/<sida>/layout.json` — den bestämmer vilka moduler som visas på just den sidan, i vilken kolumn (1/2/3), och i vilken ordning inom kolumnen (ordningen i arrayen = ordningen på skärmen):
 
 ```json
 { "id": "frequency", "col": 1, "enabled": true }
 ```
 
-- **Flytta en modul**: ändra `col` (1/2/3) eller flytta raden till en annan plats i arrayen.
-- **Stänga av/på en modul**: sätt `enabled` till `false`/`true` — modulens filer rörs aldrig, den bara laddas inte.
-- En moduls egen `manifest.json` vet aldrig var den bor — bara vad den heter/behöver (API-endpoint, refresh-intervall, extra inställningar). Det håller modulerna genuint flyttbara.
+- **Flytta en modul**: ändra `col` (1/2/3) eller flytta raden till en annan plats i arrayen — eller dra kortet i `/settings/?page=<sida>`.
+- **Stänga av/på en modul**: sätt `enabled` till `false`/`true` (eller kryssa ur i inställningssidan) — modulens filer rörs aldrig, den bara laddas inte.
+- En moduls egen `manifest.json` vet aldrig var den bor — bara vad den heter/behöver (API-endpoint, refresh-intervall, extra inställningar). Det håller modulerna genuint flyttbara **mellan sidor också**, inte bara inom en sida.
 
-Ingen inställningssida/drag-and-drop-UI för det här än — man redigerar `layout.json` för hand. En enkel adminvy för det (kryssrutor + ordning) är ett naturligt nästa steg, inte gjort ännu.
+**Inställningssida med drag-and-drop finns:** `/settings/?page=dashboard` (eller `?page=qsolog` osv.) — dra kort mellan kolumner, kryssa av/på, spara. Sparas till `/var/cache/hotspot-image/dashboard-v2-layout[-<sida>].json` (aldrig till git-checkouten, se `api/layout.php`:s egen kommentar för varför).
+
+### Flera sidor
+
+`dashboard-v2/js/pages-nav.js` har listan över sidor (delas av alla sidors topbar). Att lägga till en ny sida:
+
+1. Skapa `dashboard-v2/<sida>/index.html` (kopiera `qsolog/index.html`, byt titel/`data-page`).
+2. Skapa `dashboard-v2/pages/<sida>/layout.json` (standardval av moduler för den sidan).
+3. Lägg till sidan i `js/pages-nav.js`:s `DASHBOARD_V2_PAGES`-lista och i `settings/settings.js`:s `PAGE_META`.
+
+Alla sökvägar i manifests/HTML är **rot-absoluta** (`/api/...`, `/modules/...`, `/css/...`) med flit — en sida en katalognivå ner (t.ex. `/qsolog/`) skulle annars få relativa sökvägar att peka fel.
+
+**Byggda sidor hittills:** Dashboard (`/`), QSO Log (`/qsolog/`) — bara `qsolog`-modulen på den senare, ett litet första bevis på att flersidesmönstret funkar innan de svårare, skrivande sidorna (Setup/WiFi/Power/Backup) tas an.
 
 ## Första riktiga modulen
 
@@ -34,13 +46,9 @@ Signal/WiFi-kortet — verklig data från `/proc/net/wireless` på svxlinkuhf (d
 
 ## Byggda moduler hittills
 
-Frequency, Node/Vitals, WiFi Signal, RX Monitor, Auto-update, QSO Log — alla live på svxlinkuhf:8081 med riktig data.
+Frequency, Talkgroup, Node/Vitals, WiFi Signal, RX Monitor, Auto-update, QSO Log — alla live på svxlinkuhf:8081 med riktig data.
 
-## Backlog — Talkgroup/reflector-info (INTE byggd än)
-
-Medvetet uteskjuten, inte bortglömd. Frequency-modulen (`dashboard-v2/api/frequency.php`) visar callsign/frekvens/nätverk men **ingen live "vilken talkgroup är aktiv just nu"** — den datan finns inte exponerad nånstans i kodbasen idag. `tg.php`:s Monitor/Activate-knappar är envägs-DTMF-triggers (se `events.d/Logic.tcl`), ingen readback av vad SvxLink/reflektorn faktiskt har länkat just nu.
-
-För att bygga den här modulen på riktigt behövs först en riktig källa till reflektor-/TG-state — utred om SvxLink Reflector exponerar ett status-API, eller om det måste läsas ur loggar/en statusfil. Tills dess: inget att fejka här.
+Talkgroup-modulens datakälla (`dashboard-v2/api/talkgroup.php`): `/var/log/svxlink` loggar redan `Selecting TG #<n>` och `Talker start/stop on TG #<n>: <call>` verbatim — samma rad `lib/rx-monitor/tag_and_encode.py` redan tailar. Ingen ny backend-daemon behövdes. OBS tidszonsfälla löst där: SvxLink:s loggtider är `localtime()` utan tidszon i strängen — PHP måste sättas till samma tidszon som `/etc/timezone` innan `strtotime()`, annars blir allt "0s ago" om PHP:s standard (ofta UTC) skiljer sig från systemets faktiska zon.
 
 ## Viktiga ramar
 
