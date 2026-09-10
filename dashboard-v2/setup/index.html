@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup -- Hotspot Console (dashboard-v2 preview)</title>
+<link rel="stylesheet" href="/css/tokens.css">
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">HS</div>
+      <div class="brand-text">
+        <span class="title">Setup</span>
+        <span class="sub">dashboard-v2 preview &middot; branch: dashboard-v2, not production &middot; read-only</span>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <nav class="pages-nav" id="pages-nav"></nav>
+    <a class="settings-link" href="/settings/?page=setup" title="Layout settings">&#9881;</a>
+    <div class="clock-block">
+      <div class="clock"><span class="zone">UTC</span><span id="clock-utc">--:--:--</span></div>
+      <div class="clock-local">local <span id="clock-local">--:--:--</span></div>
+    </div>
+  </div>
+  <div class="grid" id="module-grid" data-page="setup"></div>
+  <div class="footer-note">Module-based preview -- see <b>docs/dashboard-v2-brief.md</b>. Production dashboard is untouched, still served on :80.</div>
+</div>
+<script>
+(function () {
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function tick() {
+    const now = new Date();
+    const utc = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ':' + pad(now.getUTCSeconds());
+    const local = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    document.getElementById('clock-utc').textContent = utc;
+    document.getElementById('clock-local').textContent = local;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+<script src="/js/pages-nav.js"></script>
+<script src="/js/shell.js"></script>
+</body>
+</html>

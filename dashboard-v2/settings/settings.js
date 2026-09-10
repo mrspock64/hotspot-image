@@ -15,6 +15,7 @@ const PAGE_META = {
   dashboard: { href: '/' },
   qsolog: { href: '/qsolog/' },
   rxmonitor: { href: '/rxmonitor/' },
+  setup: { href: '/setup/' },
 };
 
 const page = new URLSearchParams(window.location.search).get('page') || 'dashboard';

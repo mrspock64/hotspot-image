@@ -38,7 +38,15 @@ Huvuddashboarden blir bara en lista: "visa dessa moduler". Att lägga till en ny
 
 Alla sökvägar i manifests/HTML är **rot-absoluta** (`/api/...`, `/modules/...`, `/css/...`) med flit — en sida en katalognivå ner (t.ex. `/qsolog/`) skulle annars få relativa sökvägar att peka fel.
 
-**Byggda sidor hittills:** Dashboard (`/`), QSO Log (`/qsolog/`), RX Monitor (`/rxmonitor/`) — var och en med bara sin egen modul, beviset på att flersidesmönstret funkar innan de svårare, skrivande sidorna (Setup/WiFi/Power/Backup) tas an.
+**Byggda sidor hittills:** Dashboard (`/`), QSO Log (`/qsolog/`), RX Monitor (`/rxmonitor/`), Setup (`/setup/`, **read-only** — se nedan).
+
+### Setup-sidan är medvetet read-only
+
+Till skillnad från övriga sidor **skriver** produktionens Setup-sida till `svxlink.conf`/`node_info.json`. `dashboard-v2/api/setup.php` visar bara nuvarande värden (callsign, reflektor, frekvens, plats, m.m.) — ingen spara-knapp, ingen skrivning. Länkar till den riktiga Setup-sidan (`http://<host>/setup/`, port 80) för faktisk redigering.
+
+Läslogiken är **duplicerad** från `dashboard/setup/index.php`:s `readCurrent()`, inte `require()`:ad — den funktionen ligger inline i en sida (blandad med sidans egen POST-hantering och HTML), inte i en separat `dashboard/include/*.php`-fil som `qso_recorder.php`/`inisync.php`. Håll den i synk för hand om produktionens `readCurrent()` ändras.
+
+Ett riktigt läs+skriv-Setup (återanvänder produktionens egen `iniSyncUpdateSection()`-skrivväg) är nästa steg **om/när** det efterfrågas — egen, försiktigare verifiering då (en skarp sparning mot `svxlink.conf` måste testas live innan det kallas klart).
 
 ## Första riktiga modulen
 

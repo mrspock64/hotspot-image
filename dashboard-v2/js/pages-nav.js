@@ -10,6 +10,7 @@ const DASHBOARD_V2_PAGES = [
   { href: '/', id: 'dashboard' },
   { href: '/qsolog/', id: 'qsolog' },
   { href: '/rxmonitor/', id: 'rxmonitor' },
+  { href: '/setup/', id: 'setup' },
 ];
 
 (async function () {

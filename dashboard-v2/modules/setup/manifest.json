@@ -1,0 +1,8 @@
+{
+  "id": "setup",
+  "title": "Setup",
+  "element": "setup-panel",
+  "script": "/modules/setup/panel.js",
+  "api": "/api/setup.php",
+  "refresh_ms": 30000
+}
