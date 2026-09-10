@@ -46,7 +46,10 @@ git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git ~/hotspot-im
 cd ~/hotspot-image
 
 # 3. Run the installer -- takes a while (SvxLink is built from source), and
-#    does not ask any interactive questions
+#    does not ask any interactive questions. Stops SvxLink first (it stays
+#    stopped until you restart it from the Power page at the end) -- a
+#    live svxlink competing for CPU with the from-source build otherwise
+#    caused visible slowdowns on a Pi Zero 2 W
 sudo bash setup.sh
 
 # 4. Reboot once it finishes, so every config.txt change takes effect cleanly
