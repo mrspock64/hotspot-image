@@ -4,6 +4,5 @@
   "element": "node-panel",
   "script": "modules/node/panel.js",
   "api": "api/node.php",
-  "refresh_ms": 15000,
-  "col": 1
+  "refresh_ms": 15000
 }

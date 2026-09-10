@@ -16,6 +16,18 @@ Varje panel (Signal, Node, QSO Log, Vitals, RX Monitor, …) ska vara ett själv
 
 Huvuddashboarden blir bara en lista: "visa dessa moduler". Att lägga till en ny modul senare (t.ex. reflektor-info) ska vara att lägga till tre nya filer, inte att ändra huvudsidan.
 
+**Flytta/stänga av moduler:** `dashboard-v2/layout.json` är den enda platsen som bestämmer vilka moduler som visas, i vilken kolumn (1/2/3), och i vilken ordning inom kolumnen (ordningen i arrayen = ordningen på skärmen):
+
+```json
+{ "id": "frequency", "col": 1, "enabled": true }
+```
+
+- **Flytta en modul**: ändra `col` (1/2/3) eller flytta raden till en annan plats i arrayen.
+- **Stänga av/på en modul**: sätt `enabled` till `false`/`true` — modulens filer rörs aldrig, den bara laddas inte.
+- En moduls egen `manifest.json` vet aldrig var den bor — bara vad den heter/behöver (API-endpoint, refresh-intervall, extra inställningar). Det håller modulerna genuint flyttbara.
+
+Ingen inställningssida/drag-and-drop-UI för det här än — man redigerar `layout.json` för hand. En enkel adminvy för det (kryssrutor + ordning) är ett naturligt nästa steg, inte gjort ännu.
+
 ## Första riktiga modulen
 
 Signal/WiFi-kortet — verklig data från `/proc/net/wireless` på svxlinkuhf (dBm, paketförlust). Det här är redan bevisad, verklig data: svxlinkuhf:s WiFi gick från -82dBm till -74dBm genom att flytta noden fysiskt (löste QSO-uppspelningens svarsträghet, se `dashboard/qsolog/play.php`:s Range-stöd-commit samma dag). Använd riktiga siffror, inte fejkdata.

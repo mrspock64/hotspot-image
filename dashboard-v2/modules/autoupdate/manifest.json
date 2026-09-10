@@ -3,7 +3,6 @@
   "title": "Auto-update",
   "element": "autoupdate-panel",
   "script": "modules/autoupdate/panel.js",
-  "col": 1,
   "api": "api/autoupdate.php",
   "refresh_ms": 60000
 }

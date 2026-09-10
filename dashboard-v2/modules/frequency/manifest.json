@@ -3,7 +3,6 @@
   "title": "Frequency",
   "element": "frequency-panel",
   "script": "modules/frequency/panel.js",
-  "col": 1,
   "api": "api/frequency.php",
   "refresh_ms": 30000
 }

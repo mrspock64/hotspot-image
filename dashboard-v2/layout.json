@@ -1,0 +1,8 @@
+[
+  { "id": "frequency", "col": 1, "enabled": true },
+  { "id": "node", "col": 1, "enabled": true },
+  { "id": "autoupdate", "col": 1, "enabled": true },
+  { "id": "signal", "col": 2, "enabled": true },
+  { "id": "rxmonitor", "col": 2, "enabled": true },
+  { "id": "qsolog", "col": 3, "enabled": true }
+]
