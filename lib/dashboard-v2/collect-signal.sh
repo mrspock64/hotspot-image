@@ -95,6 +95,9 @@ out = {
     "quality_max": 70,  # driver's own scale (wext), not derived
     "loss_pct": loss_pct,
     "loss_probes": len(loss_ring),
+    "loss_ring": loss_ring,  # must round-trip -- without this, next run's
+                              # state.get("loss_ring", []) always sees an
+                              # empty list and the ring never grows past 1
     "history": history,
     "updated_at": now_iso,
 }
