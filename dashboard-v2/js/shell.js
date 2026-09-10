@@ -28,8 +28,16 @@
       const manifest = await fetch('modules/' + id + '/manifest.json', { cache: 'no-store' }).then((r) => r.json());
       await loadScript(manifest.script);
       const el = document.createElement(manifest.element);
-      el.setAttribute('api', manifest.api);
-      el.setAttribute('refresh-ms', String(manifest.refresh_ms));
+      // api/refresh_ms/col/element/script/id are the shell's own known
+      // fields; anything else in a manifest (e.g. rxmonitor's ws_port)
+      // passes straight through as a kebab-case attribute, so a module
+      // needing an extra setting doesn't require touching this file.
+      const known = new Set(['id', 'title', 'element', 'script', 'col']);
+      for (const [key, value] of Object.entries(manifest)) {
+        if (!known.has(key)) {
+          el.setAttribute(key.replace(/_/g, '-'), String(value));
+        }
+      }
       const col = cols[manifest.col] || cols[1];
       col.appendChild(el);
     } catch (e) {
