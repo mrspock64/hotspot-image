@@ -100,7 +100,15 @@ for i in $(seq 1 "$EXCHANGES"); do
     temp_before=$(read_temp_c)
     log "Exchange $i/$EXCHANGES: TX ${tx_len}s (temp ${temp_before}C)"
 
-    gpioset -l "$PTT_CHIP" "$PTT_LINE"=1 &
+    # --mode=signal is required -- gpioset's DEFAULT mode is "exit" (set
+    # values and exit immediately), and per its own man page the line
+    # then reverts to inactive the instant the process exits (the last
+    # file descriptor referencing it closes). Confirmed live: without
+    # this flag, PTT was asserted for well under a second each time --
+    # short enough that nothing audible ever actually went out, which is
+    # exactly the bug this fixes. signal mode holds the line until the
+    # process receives SIGTERM/SIGINT, matching the kill below.
+    gpioset -l --mode=signal "$PTT_CHIP" "$PTT_LINE"=1 &
     PTT_PID=$!
     sleep 0.9   # TX_DELAY, matching svxlink.conf's own [Tx1] TX_DELAY
 
