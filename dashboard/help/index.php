@@ -22,7 +22,13 @@
     <li><b>Updater</b> — safer now: overlapping check/upgrade clicks can no longer corrupt each other's output, upgrade buttons ask for confirmation first, and upgrading the OS snapshots installed package versions and cleans up old kernels automatically.</li>
     <li><b>Talk Group Names</b> — the names shown on the Talk Groups page are now editable, with a one-click import from Setup's monitored talkgroups list.</li>
     <li><b>Buttons</b> — the front-page quick-DTMF buttons (TG4, TG8, ...) are editable instead of requiring an SSH login and a text editor.</li>
-    <li><b>Backup / Restore</b> — one download bundles the reflector certificate, node config, buttons, and TG names; restoring is one upload.</li>
+    <li><b>Backup / Restore</b> — one download bundles the reflector certificate, node config, buttons, and TG names; restoring is one upload. How many old backups to keep (both config and dashboard-update snapshots) is configurable on the Backup page itself.</li>
+    <li><b>Header RX level meter</b> — a live bar or analog needle next to the RX Monitor button showing signal level in real time while QSO Recorder is active; pick which style on the <a href="/setup/">Setup</a> page.</li>
+    <li><b>Load &amp; temperature watchdog</b> — a background service watches load/I-O-wait/memory and CPU temperature, with header badges ("High load" / "High temp") if either goes sustained. Optional auto-responses (all off by default): pause QSO Recorder under load, stop SvxLink or transmit a spoken alert (D921#) under heat. See "Load &amp; temperature watchdog" below.</li>
+    <li><b>Guru / Turbo performance mode</b> — a toggle on the <a href="/power/">Power</a> page between RF.Guru's own stock "Temperature Tuning" (2 cores, underclocked) and Turbo (all 4 real cores, full clock) — confirmed live to run noticeably faster with no thermal issue in open air. Guarded to Pi Zero 2 W hardware only; never offered or appliable on other boards.</li>
+    <li><b>Radio Test</b> — simulates a real QSO's rhythm (repeated transmissions with pauses) to exercise the radio module itself, e.g. to check whether it's the actual source of thermal throttling rather than just the SoC. Uses SvxLink's own DTMF-command mechanism, the same one every dashboard button already relies on, so it safely coexists with real reflector traffic instead of taking the node offline to test it.</li>
+    <li><b>Sound Library</b> — save named messages (from text-to-speech, or a real uploaded recording — any common audio format) and pick which one is active for the Custom (D920#) and Alert (D921#) DTMF commands. See "Sound Library" below.</li>
+    <li><b>Voice language</b> — which SvxLink sound-clip pack (language) is used for stock announcements — manual/periodic identification, time, digit readouts — is now a dropdown on the <a href="/setup/">Setup</a> page instead of an svxlink.conf edit.</li>
     <li>A long list of security fixes (command injection, an unauthenticated file-edit vulnerability, and more) and a visual overhaul — see the <a href="https://github.com/mrspock64/hotspot-image" target="_blank" rel="noopener">GitHub repo</a> for the full history.</li>
   </ul>
 
@@ -33,7 +39,7 @@
     <tr><td><b>Talk Groups</b></td><td>One row per talkgroup. <b>M</b> = Monitor (listen to that TG without switching to it — you'll hear it but stay on your current one). <b>A</b> = Activate (switch to it). Names are edited on the <a href="/tgnames/">TG Names</a> page.</td></tr>
     <tr><td><b>Buttons</b></td><td>The quick-DTMF buttons shown at the top of Dashboard/Talk Groups. Add, remove, or relabel them here; each just sends a DTMF string when clicked.</td></tr>
     <tr><td><b>QSO Log</b></td><td>Records transmissions (receivers, modules, and reflector traffic all included) once switched on -- off by default. Play or download any recording, turn logging on/off, set the disk-space limit, how long a gap between transmissions counts as a new recording, and a max number of recordings to keep (0 = no limit, oldest deleted first once exceeded). Recordings show the talkgroup and callsign when known (recordings made before this feature existed show "--"); optionally restrict recording to only chosen talkgroups -- a banner warns if that filter is left on. Delete one recording, everything on the current page, or all of them at once. The list paginates once there are many recordings.</td></tr>
-    <tr><td><b>Power</b></td><td>Start, stop, or restart the SvxLink service, or restart/power off the whole device. Shows only the button that makes sense for SvxLink's current state.</td></tr>
+    <tr><td><b>Power</b></td><td>Start, stop, or restart the SvxLink service, or restart/power off the whole device. Shows only the button that makes sense for SvxLink's current state. Also has the Guru/Turbo performance mode switch and the temperature-protection settings (threshold, auto-stop SvxLink, auto-transmit alert) — see "Load &amp; temperature watchdog" below.</td></tr>
   </table>
 
   <div class="mx-section">Admin menu</div>
@@ -44,12 +50,36 @@
     <tr><td><b>WiFi</b></td><td>Scan for networks, connect or manage saved WiFi connections, and check connectivity (ping). Shows which network (WiFi or wired) is currently active.</td></tr>
     <tr><td><b>DTMF</b></td><td>An on-screen keypad — sends DTMF digits to SvxLink the same as pressing them on a radio.</td></tr>
     <tr><td><b>Bluetooth</b></td><td>On/off switch for the BLE service the <a href="https://svxlink-hotspot.app" target="_blank" rel="noopener">companion app</a> connects to, plus a "require pairing" setting. No pairing/password is required to connect by default, so turn it on only while actively using the app nearby -- it always starts back up OFF after a reboot, whatever state you leave it in here. Turning on "Require pairing for Bluetooth commands" instead forces the phone to bond first before it can send anything.</td></tr>
+    <tr><td><b>Radio Test</b></td><td>Simulates a real QSO -- repeated transmissions with pauses over a configurable number of exchanges -- by triggering SvxLink's own D920#/D911# commands, the same DTMF relay every dashboard button uses. Requires a real antenna or dummy load; tracks start/peak/end temperature. Test-play whatever's currently set for the Custom (D920#) or Alert (D921#) slot; manage what those actually say on the <a href="/soundlib/">Sound Library</a> page.</td></tr>
+    <tr><td><b>Sound Library</b></td><td>Create named messages -- either generated from text via text-to-speech, or a real uploaded recording (any common format, e.g. an m4a voice memo from a phone) -- and pick which one is active for the D920# (Custom) and D921# (Alert) commands. Keeps every saved message with its name, source, and length, instead of one unnamed overwrite-on-save slot.</td></tr>
     <tr><td><b>Update</b></td><td>Check installed versions and trigger updates for the OS, SvxLink, and the dashboard itself -- each upgrade asks for confirmation first. Upgrading the OS also snapshots exactly which package versions were installed beforehand (in case anything needs comparing afterward) and cleans up old, no-longer-bootable kernel packages automatically. A kernel/firmware upgrade needs a device restart (Power page) afterward to fully take effect.</td></tr>
     <tr><td><b>Backup</b></td><td>Download everything specific to this node (reflector certificate + key, svxlink.conf, node_info.json, custom buttons, TG names) as one zip, or restore from a previous one. Keep it private — it contains the node's private key.</td></tr>
     <tr><td><b>Docs</b></td><td>The full <code>svxlink.conf(5)</code> reference manual, live from this node's own installed SvxLink version — always accurate for whatever's actually running here.</td></tr>
     <tr><td><b>Log</b></td><td>Raw tail of the running SvxLink log file — useful for troubleshooting.</td></tr>
     <tr><td><b>Shell</b></td><td>Opens a web terminal on port 4200, if one is running on this node.</td></tr>
   </table>
+
+  <div class="mx-section">Load &amp; temperature watchdog</div>
+  <p style="font-size:13px; line-height:1.6;">
+  A background service checks load average, I/O wait, available memory, and CPU temperature every ~30
+  seconds. Two independent things it watches for, each needing roughly 2 minutes <i>sustained</i> before
+  acting (a brief spike is never enough):
+  </p>
+  <ul style="padding-left:20px; font-size:13px; line-height:1.7;">
+    <li><b>Overload</b> (load/I-O-wait/memory) — shows a "High load" badge in the header, linking to
+    <a href="/qsolog/">QSO Log</a>. Optionally (off by default, toggle there) pauses the QSO Recorder,
+    since it's a real CPU cost on this hardware independent of whether it's actually recording anything.</li>
+    <li><b>High temperature</b> — shows a "High temp" badge, linking to <a href="/power/">Power</a>, where
+    the threshold (default 75°C) is set. Two independent optional responses, both off by default:
+    automatically stop SvxLink, and/or transmit the Sound Library's Alert (D921#) message <i>once</i> per
+    warning — not repeatedly, since retransmitting while already overheating would itself keep the radio's
+    PA warm during the exact condition being warned about. The alert fires before any auto-stop, so it
+    still goes out if both are enabled.</li>
+  </ul>
+  <p style="font-size:13px; line-height:1.6;">
+  Neither response ever re-enables/restarts anything automatically — turning things back on is always a
+  deliberate, manual decision.
+  </p>
 
   <div class="mx-section">RX Monitor — what it does and doesn't cover</div>
   <p style="font-size:13px; line-height:1.6;">
