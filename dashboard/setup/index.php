@@ -14,6 +14,25 @@ require_once __DIR__ . '/../include/inisync.php';
 
 define('SVX_CONF', '/etc/svxlink/svxlink.conf');
 define('NODE_INFO', '/etc/svxlink/node_info.json');
+define('SOUNDS_BASE_DIR', '/usr/share/svxlink/sounds');
+
+// Friendly labels for the language packs this project knows about --
+// falls back to the raw directory name for anything else installed by
+// hand. Only languages with a sound pack actually present on disk are
+// offered; picking one that isn't installed would leave SvxLink unable
+// to find any clips at all.
+const LANGUAGE_LABELS = [
+    'en_US' => 'English (US)',
+    'sv_SE'  => 'Svenska',
+];
+
+function getAvailableLanguages(): array
+{
+    $dirs = @glob(SOUNDS_BASE_DIR . '/*', GLOB_ONLYDIR) ?: [];
+    $codes = array_map('basename', $dirs);
+    sort($codes);
+    return $codes;
+}
 
 function readCurrent(): array
 {
@@ -38,6 +57,7 @@ function readCurrent(): array
         'ctcss_to_tg'  => $conf['SimplexLogic']['CTCSS_TO_TG'] ?? '',
         'short_ident'  => $conf['SimplexLogic']['SHORT_IDENT_INTERVAL'] ?? '15',
         'long_ident'   => $conf['SimplexLogic']['LONG_IDENT_INTERVAL'] ?? '60',
+        'language'     => $conf['SimplexLogic']['DEFAULT_LANG'] ?? 'en_US',
         'location'     => $nodeInfo['nodeLocation'] ?? '',
         'hidden'       => (bool)($nodeInfo['hidden'] ?? false),
         'sysop'        => $nodeInfo['sysop'] ?? '',
@@ -78,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current['ctcss_to_tg'] = trim($in['ctcss_to_tg'] ?? '');
     $current['short_ident'] = trim($in['short_ident'] ?? '15');
     $current['long_ident']  = trim($in['long_ident'] ?? '60');
+    $current['language']    = trim($in['language'] ?? 'en_US');
     $current['hidden']      = isset($in['hidden']);
     $current['dtmf_muting'] = isset($in['dtmf_muting']);
     $current['lat']         = trim($in['lat'] ?? '');
@@ -124,6 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($current['ctcss_to_tg'] !== '' && !preg_match('/^[0-9.:,\s]*$/', $current['ctcss_to_tg'])) {
         $errors[] = 'CTCSS-to-TG mapping: expected <tone>:<talkgroup>,... e.g. "88.5:0,82.5:240".';
     }
+    if (!in_array($current['language'], getAvailableLanguages(), true)) {
+        $errors[] = 'Selected voice language has no sound pack installed on this node.';
+    }
 
     if (empty($errors)) {
         try {
@@ -137,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'CTCSS_TO_TG'           => $current['ctcss_to_tg'],
                 'SHORT_IDENT_INTERVAL'  => $current['short_ident'],
                 'LONG_IDENT_INTERVAL'   => $current['long_ident'],
+                'DEFAULT_LANG'          => $current['language'],
             ]);
             iniSyncUpdateSection(SVX_CONF, 'Rx1', [
                 'DTMF_MUTING' => $current['dtmf_muting'] ? '1' : '0',
@@ -275,6 +300,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="mx-hint">None of this feeds SvxLink itself — it's only shown on the SvxReflector portal. Leave blank to omit.</div>
 
   <div class="mx-section">Identification timing</div>
+  <div class="mx-row"><label for="language">Voice language</label>
+    <select id="language" name="language" style="padding:6px; border-radius:6px; border:1px solid var(--mx-border);">
+<?php foreach (getAvailableLanguages() as $code): ?>
+      <option value="<?php echo htmlspecialchars($code); ?>" <?php echo $current['language'] === $code ? 'selected' : ''; ?>><?php echo htmlspecialchars(LANGUAGE_LABELS[$code] ?? $code); ?></option>
+<?php endforeach; ?>
+    </select>
+  </div>
+  <div class="mx-hint">Controls every stock SvxLink announcement — manual/periodic identification, time, digit readouts. Only languages with a sound pack actually installed on this node are listed; D911#/D920#/D921# (Radio Test page) are unaffected.</div>
   <div class="mx-row"><label for="short_ident">Short ident interval (min)</label>
     <input type="text" id="short_ident" name="short_ident" value="<?php echo htmlspecialchars((string)$current['short_ident']); ?>"></div>
   <div class="mx-row"><label for="long_ident">Long ident interval (min)</label>
