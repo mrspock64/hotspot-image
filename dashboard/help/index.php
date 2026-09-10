@@ -52,7 +52,7 @@
     <tr><td><b>Bluetooth</b></td><td>On/off switch for the BLE service the <a href="https://svxlink-hotspot.app" target="_blank" rel="noopener">companion app</a> (RF.Guru's own Analog-HotSPOT-App, linked from that portal) connects to, plus a "require pairing" setting. No pairing/password is required to connect by default, so turn it on only while actively using the app nearby -- it always starts back up OFF after a reboot, whatever state you leave it in here. Turning on "Require pairing for Bluetooth commands" instead forces the phone to bond first before it can send anything.</td></tr>
     <tr><td><b>Radio Test</b></td><td>Simulates a real QSO -- repeated transmissions with pauses over a configurable number of exchanges -- by triggering SvxLink's own D920#/D911# commands, the same DTMF relay every dashboard button uses. Requires a real antenna or dummy load; tracks start/peak/end temperature. Test-play whatever's currently set for the Custom (D920#) or Alert (D921#) slot; manage what those actually say on the <a href="/soundlib/">Sound Library</a> page.</td></tr>
     <tr><td><b>Sound Library</b></td><td>Create named messages -- either generated from text via text-to-speech, or a real uploaded recording (any common format, e.g. an m4a voice memo from a phone) -- and pick which one is active for the D920# (Custom) and D921# (Alert) commands. Keeps every saved message with its name, source, and length, instead of one unnamed overwrite-on-save slot.</td></tr>
-    <tr><td><b>Update</b></td><td>Check installed versions and trigger updates for the OS, SvxLink, and the dashboard itself -- each upgrade asks for confirmation first. Upgrading the OS also snapshots exactly which package versions were installed beforehand (in case anything needs comparing afterward) and cleans up old, no-longer-bootable kernel packages automatically. A kernel/firmware upgrade needs a device restart (Power page) afterward to fully take effect.</td></tr>
+    <tr><td><b>Update</b></td><td>Check installed versions and trigger updates for the OS, SvxLink, and the dashboard itself -- each upgrade asks for confirmation first. The log updates live while an action runs (no need to keep reloading). Upgrading the OS also snapshots exactly which package versions were installed beforehand (in case anything needs comparing afterward) and cleans up old, no-longer-bootable kernel packages automatically. A kernel/firmware upgrade needs a device restart (Power page) afterward to fully take effect. The header's "Dashboard update" badge only re-checks every 6 hours to avoid hitting GitHub on every page load -- click Check/Update here directly if you don't want to wait for it.</td></tr>
     <tr><td><b>Backup</b></td><td>Download everything specific to this node (reflector certificate + key, svxlink.conf, node_info.json, custom buttons, TG names) as one zip, or restore from a previous one. Keep it private — it contains the node's private key.</td></tr>
     <tr><td><b>Docs</b></td><td>The full <code>svxlink.conf(5)</code> reference manual, live from this node's own installed SvxLink version — always accurate for whatever's actually running here.</td></tr>
     <tr><td><b>Log</b></td><td>Raw tail of the running SvxLink log file — useful for troubleshooting.</td></tr>
@@ -90,6 +90,13 @@
   or sped up. Announcements (voice ID, time) are never included, by SvxLink's own design; module audio
   (e.g. Parrot echoing you back) is. No open recording right now (nobody transmitting, no active reflector
   talker on a monitored TG) means no audio — that's expected, not a bug.
+  </p>
+  <p style="font-size:13px; line-height:1.6;">
+  Needs QSO Recorder switched on (<a href="/qsolog/">QSO Log</a> page, off by default) — the button shows
+  as dimmed "RX Monitor (off)" and links there instead if it isn't. Since the player itself lives in page
+  JavaScript, clicking a link elsewhere in the dashboard stops it (a full page load tears it down along
+  with everything else on the old page) — it remembers it was playing and automatically starts again on
+  the new page after a second or two, so you don't need to re-click it on every page.
   </p>
 
 </div>
