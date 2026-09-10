@@ -128,6 +128,17 @@ function getLoadMonitorAutoAlertTx(): bool
     return ($conf['Dashboard']['LOAD_MONITOR_AUTO_ALERT_TX'] ?? '0') === '1';
 }
 
+// On by default (unlike every other LOAD_MONITOR_*/opt-in toggle in this
+// file) -- lib/install-dashboard-autoupdate.sh sets this explicitly to
+// "1" on install, but the getter also defaults to enabled if the key is
+// somehow missing entirely, since "off unless a key exists" would be the
+// wrong failure mode for something meant to be on by default.
+function getAutoUpdateDashboard(): bool
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    return ($conf['Dashboard']['AUTO_UPDATE_DASHBOARD'] ?? '1') !== '0';
+}
+
 function pruneOldBackups(string $filePath): void
 {
     $maxKeep = getConfigBackupMaxKeep();

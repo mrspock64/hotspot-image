@@ -53,6 +53,15 @@ function runUpdaterScript(string $scriptName): void
     exec($cmd);
 }
 
+require_once __DIR__ . '/../include/inisync.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_autoupdate'])) {
+    iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'Dashboard', [
+        'AUTO_UPDATE_DASHBOARD' => isset($_POST['auto_update_dashboard']) ? '1' : '0',
+    ]);
+}
+$autoUpdateDashboard = getAutoUpdateDashboard();
+
 $actions = [
     'btnChkOs'          => 'check.os.sh',
     'btnUpdateOs'        => 'update.os.sh',
@@ -148,6 +157,14 @@ if (is_file(UPDATER_SCREEN_LOG) && filesize(UPDATER_SCREEN_LOG) > 0) {
   <button name="btnUpdateSvxlink" type="submit" class="mx-btn"<?php echo $stillRunning ? ' disabled' : ''; ?> onclick="return confirm('Upgrade SvxLink now? The radio will be unavailable while it rebuilds and restarts.');">SVXLink</button>
   <button name="btnUpdateDashboard" type="submit" class="mx-btn"<?php echo $stillRunning ? ' disabled' : ''; ?> onclick="return confirm('Upgrade the dashboard now? It will briefly reload mid-upgrade.');">Dashboard</button>
   <p class="mx-hint" style="margin-top:8px;">Sounds and Config updates from the original SVXLink-Dash-V2 project pointed at an unrelated ham network's own GitHub repo and would have overwritten this node's sound pack / event scripts with theirs -- removed rather than pointed at a real destination. See <a href="/help/">Help</a>.</p>
+
+  <div class="mx-section">Auto-update</div>
+  <label style="font-size:13px; font-weight:normal; display:block; margin-bottom:6px;">
+    <input type="checkbox" name="auto_update_dashboard" <?php echo $autoUpdateDashboard ? 'checked' : ''; ?>>
+    Automatically apply a new dashboard version, hourly
+  </label>
+  <p class="mx-hint" style="margin:0 0 8px;">On by default. Checks GitHub roughly once an hour (plus up to 5 minutes' random delay) and applies a new commit the same way "Update Dashboard" above does -- backup, re-sync, restart SvxLink. Deliberately scoped to the dashboard only, never OS or SvxLink -- those stay manual/opt-in, they're far more invasive (a kernel upgrade needing a reboot, an SvxLink rebuild taking the better part of an hour).</p>
+  <button type="submit" name="save_autoupdate" class="mx-btn mx-btn-ghost">Save</button>
 
 </form>
 

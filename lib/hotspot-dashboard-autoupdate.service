@@ -1,0 +1,8 @@
+[Unit]
+Description=hotspot-image dashboard auto-updater (checks GitHub, applies a new commit if one exists)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/dashboard-autoupdate.sh

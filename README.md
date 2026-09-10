@@ -14,7 +14,7 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 - **QSO Log** — record transmissions on demand, browsable/playable/downloadable, with on/off, disk-limit, and max-recordings-to-keep controls in the dashboard itself (off by default — a per-node decision to opt into, not something this project turns on for you); each recording auto-tagged with talkgroup/callsign when known
 - **Bluetooth companion-app support** — lets [svxlink-hotspot.app](https://svxlink-hotspot.app) (iOS/Android) drive the node without SSH, off by default with an optional "require pairing" mode
 - **Power page** — start/stop/restart SvxLink independently of restarting/powering off the whole device, with live status
-- **Updater** — checks/upgrades for the OS, SvxLink, and this dashboard itself from the browser, each upgrade confirmed first; upgrading the OS snapshots installed package versions beforehand and cleans up old kernels automatically
+- **Updater** — checks/upgrades for the OS, SvxLink, and this dashboard itself from the browser, each upgrade confirmed first; upgrading the OS snapshots installed package versions beforehand and cleans up old kernels automatically. The dashboard itself also auto-updates hourly by default (toggle off on the Update page) — scoped to the dashboard only, never OS or SvxLink, which stay manual/opt-in
 - **Editable Buttons and Talk Group names** — no more SSH + text editor to relabel the quick-DTMF buttons or the Talk Groups table
 - **One-click Backup/Restore** — reflector certificate, node config, buttons, and TG names bundled into a single downloadable zip, with configurable retention on old backups
 - **Load & temperature watchdog** — background service watching load/I-O-wait/memory/swap and CPU temperature, with header badges and optional (off by default) auto-responses: pause QSO Recorder under load, stop SvxLink or transmit a spoken alert under sustained heat
@@ -96,10 +96,11 @@ Doesn't ask interactive questions (unlike RF.Guru's own `hotspot-config`) — ca
 4. Builds stock SvxLink from source and installs our own `Logic.tcl` (never RF.Guru's) — a full copy of stock content with hotspot-image's D911#/D920#/D921# additions merged in, not a from-scratch subset (RF.Guru's image has no real events.d/local override layer — `local` is a symlink to `events.d` itself)
 5. Installs a Swedish sound-clip pack (`sv_SE`, real human voice) for stock SvxLink announcements alongside the English one RF.Guru ships — selectable afterwards on the Setup page
 6. Installs the dashboard fork
-7. Installs the watchdog
-8. Installs the load/I-O-wait/memory/swap/temperature monitor, with two built-in (callsign-free) temperature-alert voice clips (Swedish + English) ready to use
-9. Sets up RX Monitor (live audio streaming) and enables SvxLink's built-in QSO Recorder
-10. Bluetooth companion-app support — skipped automatically if already installed; self-gating, so it's safe to re-run even if the OS needs an `apt upgrade` + reboot first
+7. Installs the hourly dashboard auto-updater (on by default — toggle off on the Update page)
+8. Installs the watchdog
+9. Installs the load/I-O-wait/memory/swap/temperature monitor, with two built-in (callsign-free) temperature-alert voice clips (Swedish + English) ready to use
+10. Sets up RX Monitor (live audio streaming) and enables SvxLink's built-in QSO Recorder
+11. Bluetooth companion-app support — skipped automatically if already installed; self-gating, so it's safe to re-run even if the OS needs an `apt upgrade` + reboot first
 
 See "Getting started" above for what to do next once it finishes.
 
