@@ -23,6 +23,43 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 - **Selectable voice language** — which SvxLink sound-clip pack is used for stock announcements is a Setup-page dropdown instead of an svxlink.conf edit
 - **A modernized dashboard UI** on top of all of the above, without touching the underlying page logic more than the security/correctness fixes required
 
+## Getting started (step by step)
+
+**Before you start, you need:**
+
+1. An RF.Guru Analog-HotSPOT-SVXLink node already booted on RF.Guru's own stock image, reachable over SSH (e.g. `ssh hotspot@<yourhostname>.local`)
+2. That node already taken through RF.Guru's own `hotspot-config` (or equivalent) far enough that `/etc/svxlink/svxlink.conf` exists and you have a reflector certificate signed by your reflector network's admin — this project can't automate that registration step, see "What this is — and isn't" below
+3. This repo is currently **private**, so cloning it needs a token. On github.com: **Settings → Developer settings → Personal access tokens → Generate new token** (a fine-grained token scoped to just this repo, read-only, is enough)
+
+**Then, on the node itself:**
+
+```bash
+# 1. SSH into the node
+ssh hotspot@<yourhostname>.local
+
+# 2. Clone this repo -- paste your token in place of YOUR_TOKEN
+#    (git will remember it for this clone; no need to type it again)
+git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git /opt/hotspot-image
+cd /opt/hotspot-image
+
+# 3. Run the installer -- takes a while (SvxLink is built from source), and
+#    does not ask any interactive questions
+sudo bash setup.sh
+
+# 4. Reboot once it finishes, so every config.txt change takes effect cleanly
+sudo reboot
+```
+
+**After the reboot:**
+
+1. Open `http://<yourhostname>.local/` in a browser
+2. If you're not already on your real WiFi network, join it from the **WiFi** page
+3. Go to the **Setup** page and fill in callsign, reflector domain/email, radio frequency, and location
+4. Restart SvxLink from the **Power** page for the Setup changes to take effect
+5. The dashboard's own **Help** page (`/help/`) explains what every other page does
+
+That's it — no interactive prompts, no manual config-file editing required for a normal install.
+
 ## What this is — and isn't
 
 **This upgrades an existing RF.Guru node.** It is not a from-scratch Raspberry Pi OS installer. `setup.sh` relies on files RF.Guru's own image already provides and this project has never needed to generate itself:
@@ -38,15 +75,9 @@ A true blank-Pi installer (generating `svxlink.conf`/`asound.conf`/`node_info.js
 
 This exact path is what **svxlinkuhf** (the project's test node) went through — verified live on real hardware, not just reviewed.
 
-## Running it
+## What `setup.sh` actually does
 
-```bash
-sudo bash setup.sh
-```
-
-Doesn't ask interactive questions (unlike RF.Guru's own `hotspot-config`) — callsign, reflector, radio frequency, and location are all configured afterwards from the dashboard's **Setup** page once the device is reachable on the network.
-
-What it does, in order:
+Doesn't ask interactive questions (unlike RF.Guru's own `hotspot-config`) — callsign, reflector, radio frequency, and location are all configured afterwards from the dashboard's **Setup** page once the device is reachable on the network. In order:
 
 1. Base packages (avahi, NetworkManager)
 2. Persistent crash logging (RF.Guru's stock image only logs to memory — a crash mid-investigation otherwise leaves zero forensic trail)
@@ -59,13 +90,7 @@ What it does, in order:
 9. Sets up RX Monitor (live audio streaming) and enables SvxLink's built-in QSO Recorder
 10. Bluetooth companion-app support — skipped automatically if already installed; self-gating, so it's safe to re-run even if the OS needs an `apt upgrade` + reboot first
 
-After it finishes:
-
-1. Join WiFi (or connect via ethernet) and open `http://<hostname>.local/`
-2. Use the **WiFi** page to join your real network if not already on it
-3. Use the **Setup** page to configure callsign, reflector, radio, and location
-4. Restart SvxLink from the **Power** page
-5. See the dashboard's own **Help** page (`/help/`) for what every page does
+See "Getting started" above for what to do next once it finishes.
 
 ## Project layout
 
