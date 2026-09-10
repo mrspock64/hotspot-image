@@ -50,6 +50,30 @@ echo "=== Stopping SvxLink for the duration of setup ==="
 # just be wasted CPU contention against itself.
 service svxlink stop 2>/dev/null || true
 
+echo "=== Adding temporary swap for the SvxLink build ==="
+# Confirmed live on svxlinkmobile: RF.Guru's stock swap (~200MB) plus this
+# hardware's ~417MB RAM isn't enough headroom for step 4's from-source
+# build -- Reflector.cpp (SvxReflector) alone drove swap to 100% full and
+# iowait to 65-85%, the system visibly thrashing rather than compiling.
+# Temporary on purpose -- removed again once this script exits (success
+# or failure, via the trap below), not left permanently. Normal 24/7
+# operation doesn't need this much swap, and extra swap is extra SD-card
+# wear for no ongoing benefit once the one-time build is done.
+SETUP_SWAPFILE=/var/swap-hotspot-image-setup
+cleanup_setup_swap() {
+  if [ -f "$SETUP_SWAPFILE" ]; then
+    swapoff "$SETUP_SWAPFILE" 2>/dev/null || true
+    rm -f "$SETUP_SWAPFILE"
+  fi
+}
+trap cleanup_setup_swap EXIT
+if [ ! -f "$SETUP_SWAPFILE" ]; then
+  fallocate -l 1G "$SETUP_SWAPFILE" 2>/dev/null || dd if=/dev/zero of="$SETUP_SWAPFILE" bs=1M count=1024 2>/dev/null
+  chmod 600 "$SETUP_SWAPFILE"
+  mkswap "$SETUP_SWAPFILE" >/dev/null 2>&1
+fi
+swapon "$SETUP_SWAPFILE" 2>/dev/null || echo "Could not enable temporary swap -- continuing without it."
+
 echo "=== 1/10: base packages ==="
 apt-get update -y
 apt-get install -y avahi-daemon avahi-utils network-manager
