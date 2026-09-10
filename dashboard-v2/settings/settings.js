@@ -143,6 +143,25 @@ async function resetToDefault() {
   render();
 }
 
-document.getElementById('save-btn').addEventListener('click', save);
-document.getElementById('reset-btn').addEventListener('click', resetToDefault);
+// Both handlers are async and mutate/read the shared `layout` variable --
+// disable both buttons for the duration of either one so a fast second
+// click (e.g. Save right after Reset, before its fetches resolve) can't
+// race and save a stale `layout` instead of the just-reset one.
+function withButtonsDisabled(fn) {
+  return async () => {
+    saveBtn.disabled = true;
+    resetBtn.disabled = true;
+    try {
+      await fn();
+    } finally {
+      saveBtn.disabled = false;
+      resetBtn.disabled = false;
+    }
+  };
+}
+
+const saveBtn = document.getElementById('save-btn');
+const resetBtn = document.getElementById('reset-btn');
+saveBtn.addEventListener('click', withButtonsDisabled(save));
+resetBtn.addEventListener('click', withButtonsDisabled(resetToDefault));
 load();
