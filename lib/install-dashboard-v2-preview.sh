@@ -34,6 +34,13 @@ systemctl enable --now dashboard-v2-collect-signal.timer
 # fire, so the API has real data (not a 503) right after this script exits.
 systemctl start dashboard-v2-collect-signal.service
 
+echo "--- dashboard-v2 preview: Node/vitals module collector ---"
+cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-node.service" /etc/systemd/system/dashboard-v2-collect-node.service
+cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-node.timer" /etc/systemd/system/dashboard-v2-collect-node.timer
+systemctl daemon-reload
+systemctl enable --now dashboard-v2-collect-node.timer
+systemctl start dashboard-v2-collect-node.service
+
 echo "--- dashboard-v2 preview: PHP built-in server on :8081 ---"
 cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-preview.service" /etc/systemd/system/dashboard-v2-preview.service
 systemctl daemon-reload

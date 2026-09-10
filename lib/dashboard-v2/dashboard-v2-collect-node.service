@@ -1,0 +1,6 @@
+[Unit]
+Description=dashboard-v2 Node/vitals module - sample load/memory/iowait/QSO disk use
+
+[Service]
+Type=oneshot
+ExecStart=/opt/hotspot-image/lib/dashboard-v2/collect-node.sh
