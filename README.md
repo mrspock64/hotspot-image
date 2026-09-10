@@ -2,13 +2,13 @@
 
 **Stock SvxLink + a rebuilt dashboard for RF.Guru Analog-HotSPOT-SVXLink nodes.**
 
-A substantial upgrade for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink) node: stock SvxLink instead of RF.Guru's own `Logic.tcl` (root cause of a cluster of bugs — see [issue #2](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink/issues/2) upstream), plus a rebuilt, secured, modernized dashboard fork.
+A substantial upgrade for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink) node: stock SvxLink instead of RF.Guru's own `Logic.tcl` (see [issue #2](https://github.com/Guru-RF/Analog-HotSPOT-SVXLink/issues/2) upstream for background), plus a rebuilt, secured, modernized dashboard fork.
 
 <!-- Drop a screenshot of the Dashboard page here, e.g.: ![Dashboard](docs/dashboard.png) -->
 
 ## Highlights
 
-- **Fixes the root cause** of a cluster of SvxLink bugs (crashes, missing periodic ID, silent DTMF commands) inherited from RF.Guru's own `Logic.tcl` — traced to a missing `locale.tcl` sourcing step, not the individual symptoms
+- **Resolves a cluster of SvxLink issues** (crashes, missing periodic ID, silent DTMF commands) at the source — a missing `locale.tcl` sourcing step in `Logic.tcl` — rather than patching the individual symptoms
 - **A real security pass**: fixed command-injection bugs across WiFi/Network/EchoLink/Buttons, removed several unauthenticated/orphaned pages including a root-level remote code execution vulnerability in the stock dashboard
 - **RX Monitor** — listen live, in real time, in the browser, to whatever the node is currently receiving or relaying (local RX *and* reflector traffic, including bursty digital-voice-relay traffic), backed by SvxLink's own QSO Recorder rather than a raw ALSA hack
 - **QSO Log** — record transmissions on demand, browsable/playable/downloadable, with on/off, disk-limit, and max-recordings-to-keep controls in the dashboard itself (off by default — a per-node decision to opt into, not something this project turns on for you); each recording auto-tagged with talkgroup/callsign when known
