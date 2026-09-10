@@ -41,6 +41,7 @@ $mxAdminItems = [
     ['/dtmf/', 'DTMF'],
     ['/bluetooth/', 'Bluetooth'],
     ['/radiotest/', 'Radio Test'],
+    ['/soundlib/', 'Sound Library'],
     ['/update/', 'Update'],
     ['/backup/', 'Backup'],
     ['/docs/', 'Docs'],

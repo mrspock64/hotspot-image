@@ -52,27 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnAbort']) && qsoSim
     $message = 'Stopping after the current transmission finishes (a few seconds) -- nothing to forcibly kill, SvxLink was never touched.';
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnSaveCustom'])) {
-    try {
-        generateTtsMessage($_POST['custom_text'] ?? '', $_POST['custom_voice'] ?? 'sv', TTS_OUTPUT_CUSTOM);
-        $message = 'Custom message saved -- the QSO simulation will use it instead of D911# from now on.';
-    } catch (Throwable $e) {
-        $error = $e->getMessage();
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnTestCustom']) && is_file(TTS_OUTPUT_CUSTOM)) {
     sendDtmfReliable('D920#');
     $message = 'Sent D920# -- listen for the custom message.';
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnSaveAlert'])) {
-    try {
-        generateTtsMessage($_POST['alert_text'] ?? '', $_POST['alert_voice'] ?? 'sv', TTS_OUTPUT_ALERT);
-        $message = 'Alert message saved. Not wired up to trigger automatically yet -- test it with the button below.';
-    } catch (Throwable $e) {
-        $error = $e->getMessage();
-    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnTestAlert']) && is_file(TTS_OUTPUT_ALERT)) {
@@ -131,43 +113,34 @@ $hasAlertMessage = is_file(TTS_OUTPUT_ALERT);
 <?php endif; ?>
 
   <div class="mx-section">Custom message (D920#)</div>
-  <p class="mx-hint">SvxLink has no free-text speech of its own -- this generates a real audio file via
-    text-to-speech and saves it as the D920# command's content, used by the QSO simulation above once saved.</p>
-  <form method="post">
-    <div class="mx-row"><label for="custom_text">Text</label>
-      <input type="text" id="custom_text" name="custom_text" placeholder="e.g. Test transmission from SA0LEK-U" style="width:100%; box-sizing:border-box;"></div>
-    <div class="mx-row"><label for="custom_voice">Voice</label>
-      <select id="custom_voice" name="custom_voice">
-<?php foreach (TTS_VOICES as $code => $label): ?>
-        <option value="<?php echo htmlspecialchars($code); ?>"><?php echo htmlspecialchars($label); ?></option>
-<?php endforeach; ?>
-      </select>
-    </div>
-    <button name="btnSaveCustom" type="submit" class="mx-btn" style="margin-right:8px;">Save</button>
+  <p class="mx-hint">
 <?php if ($hasCustomMessage): ?>
-    <button name="btnTestCustom" type="submit" class="mx-btn mx-btn-ghost">Test play</button>
+    Currently set from the <a href="/soundlib/">Sound Library</a>.
+<?php else: ?>
+    Nothing saved yet -- add and activate one from the <a href="/soundlib/">Sound Library</a>.
 <?php endif; ?>
+  </p>
+<?php if ($hasCustomMessage): ?>
+  <form method="post">
+    <button name="btnTestCustom" type="submit" class="mx-btn mx-btn-ghost">Test play</button>
   </form>
+<?php endif; ?>
 
   <div class="mx-section">Alert message (D921#)</div>
   <p class="mx-hint">A second, independent message slot reserved for automated alerts (e.g. announcing
     sustained high temperature over the air) -- not wired up to trigger automatically yet, that's a
-    separate decision to make later. Save and test it here in the meantime.</p>
-  <form method="post">
-    <div class="mx-row"><label for="alert_text">Text</label>
-      <input type="text" id="alert_text" name="alert_text" placeholder="e.g. Warning, high temperature" style="width:100%; box-sizing:border-box;"></div>
-    <div class="mx-row"><label for="alert_voice">Voice</label>
-      <select id="alert_voice" name="alert_voice">
-<?php foreach (TTS_VOICES as $code => $label): ?>
-        <option value="<?php echo htmlspecialchars($code); ?>"><?php echo htmlspecialchars($label); ?></option>
-<?php endforeach; ?>
-      </select>
-    </div>
-    <button name="btnSaveAlert" type="submit" class="mx-btn" style="margin-right:8px;">Save</button>
+    separate decision to make later.
 <?php if ($hasAlertMessage): ?>
-    <button name="btnTestAlert" type="submit" class="mx-btn mx-btn-ghost">Test play</button>
+    Currently set from the <a href="/soundlib/">Sound Library</a>.
+<?php else: ?>
+    Nothing saved yet -- add and activate one from the <a href="/soundlib/">Sound Library</a>.
 <?php endif; ?>
+  </p>
+<?php if ($hasAlertMessage): ?>
+  <form method="post">
+    <button name="btnTestAlert" type="submit" class="mx-btn mx-btn-ghost">Test play</button>
   </form>
+<?php endif; ?>
 
 <?php if ($result): ?>
   <div class="mx-section">Last result</div>
