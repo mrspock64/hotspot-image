@@ -24,7 +24,7 @@
     <li><b>Buttons</b> — the front-page quick-DTMF buttons (TG4, TG8, ...) are editable instead of requiring an SSH login and a text editor.</li>
     <li><b>Backup / Restore</b> — one download bundles the reflector certificate, node config, buttons, and TG names; restoring is one upload. How many old backups to keep (both config and dashboard-update snapshots) is configurable on the Backup page itself.</li>
     <li><b>Header RX level meter</b> — a live bar or analog needle next to the RX Monitor button showing signal level in real time while QSO Recorder is active; pick which style on the <a href="/setup/">Setup</a> page.</li>
-    <li><b>Load &amp; temperature watchdog</b> — a background service watches load/I-O-wait/memory and CPU temperature, with header badges ("High load" / "High temp") if either goes sustained. Optional auto-responses (all off by default): pause QSO Recorder under load, stop SvxLink or transmit a spoken alert (D921#) under heat. See "Load &amp; temperature watchdog" below.</li>
+    <li><b>Load &amp; temperature watchdog</b> — a background service watches load/I-O-wait/memory/swap and CPU temperature, with header badges ("High load" / "High temp") if either goes sustained. Optional auto-responses (all off by default): pause QSO Recorder under load, stop SvxLink or transmit a spoken alert (D921#) under heat. See "Load &amp; temperature watchdog" below.</li>
     <li><b>Guru / Turbo performance mode</b> — a toggle on the <a href="/power/">Power</a> page between RF.Guru's own stock "Temperature Tuning" (2 cores, underclocked) and Turbo (all 4 real cores, full clock) — confirmed live to run noticeably faster with no thermal issue in open air. Guarded to Pi Zero 2 W hardware only; never offered or appliable on other boards.</li>
     <li><b>Radio Test</b> — simulates a real QSO's rhythm (repeated transmissions with pauses) to exercise the radio module itself, e.g. to check whether it's the actual source of thermal throttling rather than just the SoC. Uses SvxLink's own DTMF-command mechanism, the same one every dashboard button already relies on, so it safely coexists with real reflector traffic instead of taking the node offline to test it.</li>
     <li><b>Sound Library</b> — save named messages (from text-to-speech, or a real uploaded recording — any common audio format) and pick which one is active for the Custom (D920#) and Alert (D921#) DTMF commands.</li>
@@ -66,7 +66,7 @@
   acting (a brief spike is never enough):
   </p>
   <ul style="padding-left:20px; font-size:13px; line-height:1.7;">
-    <li><b>Overload</b> (load/I-O-wait/memory) — shows a "High load" badge in the header, linking to
+    <li><b>Overload</b> (load/I-O-wait/memory/swap) — shows a "High load" badge in the header, linking to
     <a href="/qsolog/">QSO Log</a>. Optionally (off by default, toggle there) pauses the QSO Recorder,
     since it's a real CPU cost on this hardware independent of whether it's actually recording anything.</li>
     <li><b>High temperature</b> — shows a "High temp" badge, linking to <a href="/power/">Power</a>, where

@@ -41,6 +41,17 @@
 # fires only once per episode (not every ~30s while still hot) rather
 # than repeatedly keying up the radio, which would itself keep the PA
 # warm during the exact condition being warned about.
+#
+# Swap usage is folded into the same overload bucket as load/iowait/mem
+# above (same badge, same SUSTAINED_CHECKS/auto-pause-QSO response) --
+# found live on svxlinkmobile (2026-09-10): this hardware's stock ~200MB
+# swap filled completely (100%) during setup.sh's from-source SvxLink
+# build, with the compiler stuck in D-state (blocked on I/O) rather than
+# actually progressing. That specific case is now handled by setup.sh's
+# own temporary build-time swapfile, but the same exhaustion pattern
+# could plausibly happen during normal operation too (e.g. QSO Recorder
+# plus a load spike), so it's worth the same ongoing watch as the other
+# three metrics, not just a one-off fix.
 set -u
 
 SVX_CONF=/etc/svxlink/svxlink.conf
@@ -58,6 +69,9 @@ SUSTAINED_CHECKS=4   # 4 * ~30s = ~2 minutes of sustained overload before acting
 LOAD_THRESHOLD=3.5
 IOWAIT_THRESHOLD=30
 MEM_AVAILABLE_THRESHOLD_MB=40
+# 90% leaves some headroom below "completely full" (the observed failure
+# state) while still catching genuine exhaustion rather than routine use.
+SWAP_USED_PCT_THRESHOLD=90
 # Pi firmware soft-throttles at 80°C, hard-throttles/underclocks at 85°C
 # -- this default (75°C) leaves real margin below either, configurable
 # on the Power page. Confirmed live 2026-09-10: 51.5°C after 22 minutes
@@ -88,6 +102,20 @@ read_iowait() {
     else
         echo $((diff_io * 100 / diff_total))
     fi
+}
+
+# Percentage of configured swap currently in use -- 0 if no swap is
+# configured at all (SwapTotal=0), which never exceeds any real
+# threshold and so never triggers, rather than dividing by zero.
+read_swap_used_pct() {
+    awk '
+        /SwapTotal:/ { total = $2 }
+        /SwapFree:/  { free = $2 }
+        END {
+            if (total <= 0) { print 0; exit }
+            print int((total - free) * 100 / total)
+        }
+    ' /proc/meminfo
 }
 
 auto_pause_enabled() {
@@ -164,6 +192,7 @@ while true; do
     load1=$(awk '{print $1}' /proc/loadavg)
     iowait=$(read_iowait)
     mem_available_mb=$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)
+    swap_used_pct=$(read_swap_used_pct)
     temp_c=$(read_temp_c)
     temp_threshold=$(get_temp_threshold)
 
@@ -172,22 +201,24 @@ while true; do
     [ "$iowait" -gt "$IOWAIT_THRESHOLD" ] && over_iowait=1
     over_mem=0
     [ "$mem_available_mb" -lt "$MEM_AVAILABLE_THRESHOLD_MB" ] && over_mem=1
+    over_swap=0
+    [ "$swap_used_pct" -gt "$SWAP_USED_PCT_THRESHOLD" ] && over_swap=1
     over_temp=0
     [ "$temp_c" -gt "$temp_threshold" ] && over_temp=1
 
-    if [ "$over_load" = 1 ] || [ "$over_iowait" = 1 ] || [ "$over_mem" = 1 ]; then
+    if [ "$over_load" = 1 ] || [ "$over_iowait" = 1 ] || [ "$over_mem" = 1 ] || [ "$over_swap" = 1 ]; then
         overload_count=$((overload_count + 1))
-        echo "$(date '+%Y-%m-%d %H:%M:%S') overload check ${overload_count}/${SUSTAINED_CHECKS} -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') overload check ${overload_count}/${SUSTAINED_CHECKS} -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB swap=${swap_used_pct}% temp=${temp_c}C"
     else
         if [ "$overload_count" -gt 0 ]; then
-            echo "$(date '+%Y-%m-%d %H:%M:%S') load back to normal -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') load back to normal -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB swap=${swap_used_pct}% temp=${temp_c}C"
         fi
         overload_count=0
         rm -f "$STATE_FILE"
     fi
 
     if [ "$overload_count" -ge "$SUSTAINED_CHECKS" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED OVERLOAD -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB temp=${temp_c}C"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED OVERLOAD -- load1=$load1 iowait=${iowait}% mem_available=${mem_available_mb}MB swap=${swap_used_pct}% temp=${temp_c}C"
         echo "sustained overload since $(date '+%Y-%m-%d %H:%M:%S')" > "$STATE_FILE"
 
         if auto_pause_enabled && qso_recorder_active; then

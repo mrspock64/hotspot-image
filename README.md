@@ -17,7 +17,7 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 - **Updater** — checks/upgrades for the OS, SvxLink, and this dashboard itself from the browser, each upgrade confirmed first; upgrading the OS snapshots installed package versions beforehand and cleans up old kernels automatically
 - **Editable Buttons and Talk Group names** — no more SSH + text editor to relabel the quick-DTMF buttons or the Talk Groups table
 - **One-click Backup/Restore** — reflector certificate, node config, buttons, and TG names bundled into a single downloadable zip, with configurable retention on old backups
-- **Load & temperature watchdog** — background service watching load/I-O-wait/memory and CPU temperature, with header badges and optional (off by default) auto-responses: pause QSO Recorder under load, stop SvxLink or transmit a spoken alert under sustained heat
+- **Load & temperature watchdog** — background service watching load/I-O-wait/memory/swap and CPU temperature, with header badges and optional (off by default) auto-responses: pause QSO Recorder under load, stop SvxLink or transmit a spoken alert under sustained heat
 - **Guru / Turbo performance mode** — a Power-page toggle between RF.Guru's own stock underclocked "Temperature Tuning" and full-speed Turbo (all 4 real cores) — confirmed live, no thermal issue in open air; hardware-guarded to Pi Zero 2 W only
 - **Radio Test + Sound Library** — simulate a real QSO's rhythm to exercise the radio module itself (e.g. checking whether it's the actual source of thermal throttling), using SvxLink's own DTMF-command mechanism so it coexists safely with real traffic; save named custom/alert messages from text-to-speech or a real uploaded recording and pick which is active
 - **Selectable voice language** — which SvxLink sound-clip pack is used for stock announcements is a Setup-page dropdown instead of an svxlink.conf edit
@@ -103,7 +103,7 @@ Doesn't ask interactive questions (unlike RF.Guru's own `hotspot-config`) — ca
 5. Installs a Swedish sound-clip pack (`sv_SE`, real human voice) for stock SvxLink announcements alongside the English one RF.Guru ships — selectable afterwards on the Setup page
 6. Installs the dashboard fork
 7. Installs the watchdog
-8. Installs the load/I-O-wait/memory/temperature monitor, with two built-in (callsign-free) temperature-alert voice clips (Swedish + English) ready to use
+8. Installs the load/I-O-wait/memory/swap/temperature monitor, with two built-in (callsign-free) temperature-alert voice clips (Swedish + English) ready to use
 9. Sets up RX Monitor (live audio streaming) and enables SvxLink's built-in QSO Recorder
 10. Bluetooth companion-app support — skipped automatically if already installed; self-gating, so it's safe to re-run even if the OS needs an `apt upgrade` + reboot first
 
@@ -114,7 +114,7 @@ See "Getting started" above for what to do next once it finishes.
 - `setup.sh` — the upgrade script described above
 - `lib/` — the individual steps `setup.sh` runs:
   - `lib/rx-monitor/` — the RX Monitor/QSO Log backend: a vendored [DVSwitch Web_Proxy](https://github.com/DVSwitch/DVSwitch-Dashboard), a Python watcher over SvxLink's QSO Recorder output (tails the recorder's own in-progress file directly, not the finished/renamed one), and the systemd units for both
-  - `lib/load-monitor/` — the load/I-O-wait/memory/temperature watchdog (`monitor.sh`, systemd unit), the Radio Test page's QSO-simulation script (`qso_simulate.sh`), and the two built-in temperature-alert voice clips under `alerts/`
+  - `lib/load-monitor/` — the load/I-O-wait/memory/swap/temperature watchdog (`monitor.sh`, systemd unit), the Radio Test page's QSO-simulation script (`qso_simulate.sh`), and the two built-in temperature-alert voice clips under `alerts/`
   - `lib/install-language-pack.sh` — installs the Swedish sound-clip pack and sets it as SvxLink's default announcement language
   - `lib/install-bluetooth.sh` — a vendored, reviewed copy of RF.Guru's own `install-bluetooth.sh` (deliberately not fetched fresh on every run, unlike their `hotspot-config` — see the script's own header comment for why that distinction matters); sets up the BLE GATT service the companion app talks to
 - `events.d/Logic.tcl` — our replacement for RF.Guru's `Logic.tcl`: correct `locale.tcl` sourcing (the actual root cause fix), a full copy of stock content (not a from-scratch subset — RF.Guru's image has no real override layer), plus `D911#`/`D920#`/`D921#` DTMF-command additions
