@@ -13,7 +13,7 @@
 #
 # Deliberately NOT called from setup.sh and NOT merged to main -- this is
 # branch-only, per the brief ("main är produktionskoden och rörs inte").
-# Run this by hand on svxlinkuhf while iterating on the signal-monitor
+# Run this by hand on svxlinkuhf while iterating on the dashboard-v2
 # branch.
 #
 # Idempotent: safe to re-run.

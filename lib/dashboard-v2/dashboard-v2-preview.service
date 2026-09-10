@@ -1,5 +1,5 @@
 [Unit]
-Description=dashboard-v2 module-based dashboard preview (branch: signal-monitor, not production)
+Description=dashboard-v2 module-based dashboard preview (branch: dashboard-v2, not production)
 After=network.target
 
 [Service]
