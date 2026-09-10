@@ -38,7 +38,7 @@ Huvuddashboarden blir bara en lista: "visa dessa moduler". Att lägga till en ny
 
 Alla sökvägar i manifests/HTML är **rot-absoluta** (`/api/...`, `/modules/...`, `/css/...`) med flit — en sida en katalognivå ner (t.ex. `/qsolog/`) skulle annars få relativa sökvägar att peka fel.
 
-**Byggda sidor hittills:** Dashboard (`/`), QSO Log (`/qsolog/`) — bara `qsolog`-modulen på den senare, ett litet första bevis på att flersidesmönstret funkar innan de svårare, skrivande sidorna (Setup/WiFi/Power/Backup) tas an.
+**Byggda sidor hittills:** Dashboard (`/`), QSO Log (`/qsolog/`), RX Monitor (`/rxmonitor/`) — var och en med bara sin egen modul, beviset på att flersidesmönstret funkar innan de svårare, skrivande sidorna (Setup/WiFi/Power/Backup) tas an.
 
 ## Första riktiga modulen
 

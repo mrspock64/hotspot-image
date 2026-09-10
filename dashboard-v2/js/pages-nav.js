@@ -5,6 +5,7 @@
 const DASHBOARD_V2_PAGES = [
   { href: '/', label: 'Dashboard' },
   { href: '/qsolog/', label: 'QSO Log' },
+  { href: '/rxmonitor/', label: 'RX Monitor' },
 ];
 
 (function () {
