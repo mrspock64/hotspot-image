@@ -147,6 +147,7 @@ function addQuickButtonRow(label, dtmf, color) {
 }
 
 function addSm0to7() {
+  addQuickButtonRow('SM', '91240#', 'green');
   for (let i = 0; i <= 7; i++) {
     addQuickButtonRow('SM' + i, '91' + (2400 + i) + '#', 'green');
   }
