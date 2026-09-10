@@ -1,0 +1,521 @@
+<title>Hotspot Console</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600;700&display=swap');
+
+  :root{
+    --bg: #0b0f14;
+    --bg-deep: #07090d;
+    --surface: #121821;
+    --surface-2: #171f2b;
+    --border: #26313f;
+    --border-soft: #1b232e;
+    --text: #e7ecf2;
+    --text-dim: #8592a3;
+    --text-faint: #4d5866;
+    --copper: #ff9d4d;
+    --copper-dim: #a86a35;
+    --cyan: #4dd8e0;
+    --cyan-dim: #2c828a;
+    --ok: #5ed68c;
+    --warn: #f2c14e;
+    --crit: #f2664e;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --disp: 'Oswald', var(--sans);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--copper); color: #1a1006; }
+
+  a{ color: inherit; }
+
+  .tabular{ font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  /* ---------- shell ---------- */
+  .shell{
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 18px 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ---------- header ---------- */
+  .topbar{
+    background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 130%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(600px 140px at 12% -20%, rgba(255,157,77,0.10), transparent 70%);
+    pointer-events:none;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+    z-index:1;
+  }
+  .brand-mark{
+    width:38px; height:38px; border-radius:9px;
+    background: linear-gradient(145deg, var(--copper), #c9691f);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--disp); font-weight:700; font-size:16px; color:#1a0f04;
+    box-shadow: 0 0 0 1px rgba(255,157,77,0.35), 0 6px 18px -6px rgba(255,157,77,0.5);
+    flex-shrink:0;
+  }
+  .brand-text .call{
+    font-family: var(--disp); font-weight:600; font-size:20px; letter-spacing:0.5px;
+    color: var(--text);
+  }
+  .brand-text .sub{
+    font-size:11.5px; color: var(--text-dim); text-transform:uppercase; letter-spacing:1.2px;
+  }
+  .topbar-spacer{ flex:1; }
+  .clock-block{
+    text-align:right; z-index:1;
+  }
+  .clock-block .clock{
+    font-family: var(--mono); font-weight:600; font-size:26px; color: var(--text);
+    letter-spacing: 1px;
+  }
+  .clock-block .clock .zone{ color: var(--copper); font-size:13px; font-weight:600; margin-right:8px; vertical-align: 4px; letter-spacing: 1px; }
+  .clock-block .date{ font-size:11.5px; color: var(--text-dim); margin-top:2px; }
+
+  .status-chip{
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 6px 12px; border-radius:999px;
+    background: var(--surface-2); border:1px solid var(--border);
+    font-family: var(--mono); font-size:11.5px; font-weight:500; color: var(--text-dim);
+    z-index:1;
+  }
+  .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .dot.ok{ background: var(--ok); box-shadow: 0 0 8px 1px rgba(94,214,140,0.7); }
+  .dot.warn{ background: var(--warn); box-shadow: 0 0 8px 1px rgba(242,193,78,0.6); }
+  @media (prefers-reduced-motion: no-preference){
+    .dot.ok{ animation: pulse 2.4s ease-in-out infinite; }
+  }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
+
+  /* ---------- grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns: 300px 1fr 320px;
+    gap: 16px;
+    align-items:start;
+  }
+  @media (max-width: 1100px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .col{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow:hidden;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .panel-title{
+    font-family: var(--disp); font-weight:600; font-size:12px;
+    text-transform:uppercase; letter-spacing:1.4px; color: var(--text-dim);
+  }
+  .panel-body{ padding: 16px; }
+  .panel-foot{
+    padding: 9px 16px; border-top:1px solid var(--border-soft);
+    font-size:11.5px; color: var(--text-faint);
+  }
+
+  /* ---------- frequency readout (hero) ---------- */
+  .readout{
+    background: linear-gradient(160deg, var(--surface) 0%, #0e131a 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .readout::before{
+    content:"";
+    position:absolute; left:0; right:0; top:0; height:2px;
+    background: linear-gradient(90deg, transparent, var(--copper), transparent);
+    opacity:0.7;
+  }
+  .readout-row{ display:flex; align-items:flex-end; gap:28px; flex-wrap:wrap; }
+  .freq-block .label{ font-size:11px; text-transform:uppercase; letter-spacing:1.4px; color:var(--text-dim); margin-bottom:6px; }
+  .freq-block .value{
+    font-family: var(--mono); font-weight:600; font-size:44px; color:var(--text);
+    letter-spacing: 0.5px; line-height:1;
+  }
+  .freq-block .value .unit{ font-size:16px; color: var(--copper); margin-left:6px; }
+  .readout-meta{ display:flex; gap:22px; flex-wrap:wrap; margin-left:auto; }
+  .meta-item .label{ font-size:10.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text-faint); margin-bottom:4px; }
+  .meta-item .value{ font-family: var(--mono); font-size:18px; font-weight:600; color:var(--text); }
+  .meta-item .value.copper{ color: var(--copper); }
+  .meta-item .value.cyan{ color: var(--cyan); }
+
+  .waterfall-wrap{ margin-top:16px; border-radius:7px; overflow:hidden; border:1px solid var(--border-soft); background:#050709; }
+  canvas#waterfall{ display:block; width:100%; height:76px; }
+
+  .band-row{ display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+  .band-pill{
+    font-family: var(--mono); font-size:11.5px; font-weight:500;
+    padding: 5px 11px; border-radius:6px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    background: var(--surface-2);
+  }
+  .band-pill.active{
+    border-color: var(--copper); color:#1a0f04; background: var(--copper);
+    box-shadow: 0 0 0 1px rgba(255,157,77,0.4), 0 4px 12px -4px rgba(255,157,77,0.6);
+  }
+
+  /* ---------- info list ---------- */
+  .kv{ display:flex; flex-direction:column; gap:10px; }
+  .kv-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .kv-row .k{ font-size:12.5px; color:var(--text-dim); }
+  .kv-row .v{ font-family: var(--mono); font-size:13px; font-weight:500; color:var(--text); text-align:right; }
+  .kv-divider{ height:1px; background:var(--border-soft); margin:2px 0; }
+
+  /* ---------- vitals bars ---------- */
+  .vital{ margin-bottom:14px; }
+  .vital:last-child{ margin-bottom:0; }
+  .vital-top{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+  .vital-top .name{ color:var(--text-dim); }
+  .vital-top .val{ font-family:var(--mono); font-weight:600; color:var(--text); }
+  .bar-track{ height:6px; border-radius:4px; background:var(--surface-2); border:1px solid var(--border-soft); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:4px; }
+  .bar-fill.ok{ background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); }
+  .bar-fill.warn{ background: linear-gradient(90deg, var(--copper-dim), var(--copper)); }
+
+  /* ---------- signal history sparkline ---------- */
+  .signal-card .headline{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
+  .signal-card .headline .big{ font-family:var(--mono); font-size:28px; font-weight:600; color: var(--ok); }
+  .signal-card .headline .delta{ font-family:var(--mono); font-size:12.5px; color: var(--ok); background: rgba(94,214,140,0.12); border:1px solid rgba(94,214,140,0.3); padding:2px 7px; border-radius:5px; }
+  .signal-card .caption{ font-size:11.5px; color:var(--text-faint); margin-bottom:12px; }
+  svg.spark{ width:100%; height:64px; display:block; }
+
+  /* ---------- QSO log ---------- */
+  .qso-list{ display:flex; flex-direction:column; }
+  .qso-row{
+    display:grid; grid-template-columns: 52px 1fr auto; gap:10px; align-items:center;
+    padding: 10px 16px; border-bottom:1px solid var(--border-soft);
+  }
+  .qso-row:last-child{ border-bottom:none; }
+  .qso-row .time{ font-family:var(--mono); font-size:11.5px; color:var(--text-faint); }
+  .qso-row .who{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .qso-row .call{ font-family:var(--mono); font-weight:600; font-size:13.5px; color:var(--text); }
+  .qso-row .tg{ font-size:11px; color:var(--text-dim); }
+  .qso-row .tg .tg-num{ color:var(--cyan); font-family:var(--mono); }
+  .qso-row .dur{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); text-align:right; white-space:nowrap; }
+  .qso-row.live{ background: rgba(255,157,77,0.06); }
+  .qso-row.live .call{ color: var(--copper); }
+  .live-tag{
+    font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:0.5px;
+    color:#1a0f04; background:var(--copper); padding:2px 6px; border-radius:4px;
+    display:inline-flex; align-items:center; gap:4px; margin-left:6px; vertical-align:2px;
+  }
+
+  /* ---------- nav rail (visual only) ---------- */
+  .navrow{ display:flex; gap:6px; flex-wrap:wrap; }
+  .navchip{
+    font-family:var(--disp); font-weight:500; font-size:11.5px; letter-spacing:0.6px; text-transform:uppercase;
+    padding:8px 13px; border-radius:7px; border:1px solid var(--border); color:var(--text-dim);
+    background:var(--surface-2);
+  }
+  .navchip.on{ color:var(--text); border-color:var(--copper-dim); background: rgba(255,157,77,0.08); }
+
+  .footer-note{
+    text-align:center; color:var(--text-faint); font-size:11.5px; padding-top:6px;
+  }
+  .footer-note b{ color:var(--text-dim); font-weight:600; }
+</style>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">SA</div>
+      <div class="brand-text">
+        <div class="call">SA0LEK <span style="color:var(--text-dim); font-weight:400; font-size:14px;">/ svxlinkuhf</span></div>
+        <div class="sub">RF.Guru Analog&#8209;HotSPOT &middot; JO89mm</div>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="status-chip"><span class="dot ok"></span>SvxLink running</div>
+    <div class="status-chip"><span class="dot ok"></span>Reflector linked</div>
+    <div class="clock-block">
+      <div class="clock"><span class="zone">UTC</span>19:00:02</div>
+      <div class="date">10 Sep 2026 &middot; local 21:00</div>
+    </div>
+  </div>
+
+  <div class="readout">
+    <div class="readout-row">
+      <div class="freq-block">
+        <div class="label">Active frequency</div>
+        <div class="value">438.800<span class="unit">MHz</span></div>
+      </div>
+      <div class="readout-meta">
+        <div class="meta-item"><div class="label">Talkgroup</div><div class="value cyan">TG&nbsp;240</div></div>
+        <div class="meta-item"><div class="label">Mode</div><div class="value">FM &middot; Simplex</div></div>
+        <div class="meta-item"><div class="label">Squelch</div><div class="value copper">OPEN</div></div>
+        <div class="meta-item"><div class="label">CTCSS</div><div class="value">&mdash;</div></div>
+      </div>
+    </div>
+    <div class="waterfall-wrap"><canvas id="waterfall"></canvas></div>
+    <div class="band-row">
+      <span class="band-pill">70cm&nbsp;Link</span>
+      <span class="band-pill active">UHF&nbsp;438.800</span>
+      <span class="band-pill">DMR&nbsp;Bridge</span>
+      <span class="band-pill">Echolink</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Node</div><span class="status-chip" style="padding:3px 9px;"><span class="dot ok"></span>up 19h 52m</span></div>
+        <div class="panel-body">
+          <div class="kv">
+            <div class="kv-row"><span class="k">Hardware</span><span class="v">Pi Zero 2&nbsp;W</span></div>
+            <div class="kv-row"><span class="k">Firmware</span><span class="v">hotspot-image v1.0.0</span></div>
+            <div class="kv-row"><span class="k">Locator</span><span class="v">JO89mm</span></div>
+            <div class="kv-divider"></div>
+            <div class="kv-row"><span class="k">CPU mode</span><span class="v copper" style="color:var(--copper);">Turbo &middot; 4&times;1000MHz</span></div>
+            <div class="kv-row"><span class="k">Temp</span><span class="v">52.4&deg;C</span></div>
+            <div class="kv-row"><span class="k">Load avg</span><span class="v">0.31&nbsp;0.28&nbsp;0.24</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">System vitals</div></div>
+        <div class="panel-body">
+          <div class="vital">
+            <div class="vital-top"><span class="name">CPU load</span><span class="val">31%</span></div>
+            <div class="bar-track"><div class="bar-fill ok" style="width:31%;"></div></div>
+          </div>
+          <div class="vital">
+            <div class="vital-top"><span class="name">Memory</span><span class="val">44%</span></div>
+            <div class="bar-track"><div class="bar-fill ok" style="width:44%;"></div></div>
+          </div>
+          <div class="vital">
+            <div class="vital-top"><span class="name">I/O wait</span><span class="val">3%</span></div>
+            <div class="bar-track"><div class="bar-fill ok" style="width:3%;"></div></div>
+          </div>
+          <div class="vital">
+            <div class="vital-top"><span class="name">QSO disk use</span><span class="val">61%</span></div>
+            <div class="bar-track"><div class="bar-fill warn" style="width:61%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Pages</div></div>
+        <div class="panel-body">
+          <div class="navrow">
+            <span class="navchip on">Dashboard</span>
+            <span class="navchip">QSO&nbsp;Log</span>
+            <span class="navchip">RX&nbsp;Monitor</span>
+            <span class="navchip">Setup</span>
+            <span class="navchip">WiFi</span>
+            <span class="navchip">Power</span>
+            <span class="navchip">Backup</span>
+            <span class="navchip">Update</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel signal-card">
+        <div class="panel-head"><div class="panel-title">WiFi link quality &middot; 6h</div><span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">IOT &middot; ch 11</span></div>
+        <div class="panel-body">
+          <div class="headline">
+            <span class="big">&minus;74&nbsp;dBm</span>
+            <span class="delta">&uarr; 8&nbsp;dB since reposition</span>
+          </div>
+          <div class="caption">Packet loss 0% (last 20 probes) &middot; was 50&ndash;75% before the antenna was reoriented</div>
+          <svg class="spark" viewBox="0 0 560 64" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sigfill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--ok)" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="var(--ok)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,14 L60,15 L120,13 L180,16 L240,50 L300,52 L360,48 L420,20 L480,17 L540,15 L560,14 L560,64 L0,64 Z" fill="url(#sigfill)"/>
+            <path d="M0,14 L60,15 L120,13 L180,16 L240,50 L300,52 L360,48 L420,20 L480,17 L540,15 L560,14" fill="none" stroke="var(--ok)" stroke-width="2"/>
+            <circle cx="560" cy="14" r="3.5" fill="var(--ok)"/>
+          </svg>
+        </div>
+        <div class="panel-foot">Antenna repositioned 18:24 UTC &middot; measured via <span style="color:var(--text-dim);">/proc/net/wireless</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">RX monitor &middot; live</div><span class="status-chip" style="padding:3px 9px;"><span class="dot ok"></span>streaming</span></div>
+        <div class="panel-body" style="padding-top:14px;">
+          <div class="waterfall-wrap" style="border-radius:7px;"><canvas id="waterfall2"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">QSO log</div><span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">28 recordings</span></div>
+        <div class="qso-list">
+          <div class="qso-row live">
+            <span class="time tabular">18:24</span>
+            <span class="who"><span class="call">SK7REE<span class="live-tag"><span class="dot ok" style="background:#1a0f04; box-shadow:none;"></span>REC</span></span><span class="tg">TG <span class="tg-num">2407</span></span></span>
+            <span class="dur tabular">&hellip;</span>
+          </div>
+          <div class="qso-row">
+            <span class="time tabular">17:46</span>
+            <span class="who"><span class="call">SM7WPD-M</span><span class="tg">TG <span class="tg-num">2407</span></span></span>
+            <span class="dur tabular">4:37</span>
+          </div>
+          <div class="qso-row">
+            <span class="time tabular">15:26</span>
+            <span class="who"><span class="call">SM5GXQ</span><span class="tg">TG <span class="tg-num">240</span></span></span>
+            <span class="dur tabular">0:52</span>
+          </div>
+          <div class="qso-row">
+            <span class="time tabular">15:25</span>
+            <span class="who"><span class="call">SK3RQE</span><span class="tg">TG <span class="tg-num">240</span></span></span>
+            <span class="dur tabular">0:22</span>
+          </div>
+          <div class="qso-row">
+            <span class="time tabular">15:02</span>
+            <span class="who"><span class="call">SK3GW</span><span class="tg">TG <span class="tg-num">240</span></span></span>
+            <span class="dur tabular">2:31</span>
+          </div>
+        </div>
+        <div class="panel-foot">Range-request playback enabled &middot; seek &amp; scrub supported</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Auto-update</div></div>
+        <div class="panel-body">
+          <div class="kv">
+            <div class="kv-row"><span class="k">Dashboard</span><span class="v" style="color:var(--ok);">998a281 &middot; current</span></div>
+            <div class="kv-row"><span class="k">Checked</span><span class="v">6 min ago</span></div>
+            <div class="kv-row"><span class="k">Next check</span><span class="v">in 54 min</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">Concept sketch for <b>hotspot-image</b> &middot; a dashboard redesign direction, not the shipped UI</div>
+</div>
+
+<script>
+(function(){
+  function drawWaterfall(id, seedShift){
+    var canvas = document.getElementById(id);
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function size(){
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    }
+    size();
+    window.addEventListener('resize', size);
+
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var cols = 96;
+    var history = [];
+    for(var i=0;i<cols;i++){ history.push(randRow()); }
+
+    function randRow(){
+      var row = [];
+      var bumps = 3 + Math.floor(Math.random()*3);
+      var base = new Array(48).fill(0).map(function(){ return Math.random()*0.12; });
+      for(var b=0;b<bumps;b++){
+        var center = Math.floor(Math.random()*48);
+        var width = 2 + Math.random()*4;
+        var amp = 0.35 + Math.random()*0.65;
+        for(var x=0;x<48;x++){
+          var d = (x-center)/width;
+          base[x] += amp * Math.exp(-d*d);
+        }
+      }
+      return base.map(function(v){ return Math.min(1, v); });
+    }
+
+    function color(v){
+      var c1 = [10,15,20], c2 = [44,130,138], c3 = [255,157,77];
+      var t = v;
+      var r,g,b;
+      if(t < 0.5){
+        var k = t/0.5;
+        r = c1[0] + (c2[0]-c1[0])*k;
+        g = c1[1] + (c2[1]-c1[1])*k;
+        b = c1[2] + (c2[2]-c1[2])*k;
+      } else {
+        var k2 = (t-0.5)/0.5;
+        r = c2[0] + (c3[0]-c2[0])*k2;
+        g = c2[1] + (c3[1]-c2[1])*k2;
+        b = c2[2] + (c3[2]-c2[2])*k2;
+      }
+      return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
+    }
+
+    function render(){
+      var w = canvas.width, h = canvas.height;
+      var colW = w/cols, rowH = h/48;
+      ctx.clearRect(0,0,w,h);
+      for(var i=0;i<cols;i++){
+        var row = history[i];
+        for(var j=0;j<48;j++){
+          ctx.fillStyle = color(row[j]);
+          ctx.fillRect(i*colW, h-(j+1)*rowH, colW+0.6, rowH+0.6);
+        }
+      }
+    }
+    render();
+
+    if(reduced) return;
+
+    var last = 0;
+    function tick(ts){
+      if(ts - last > 220){
+        history.shift();
+        history.push(randRow());
+        render();
+        last = ts;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  drawWaterfall('waterfall');
+  drawWaterfall('waterfall2');
+})();
+</script>
