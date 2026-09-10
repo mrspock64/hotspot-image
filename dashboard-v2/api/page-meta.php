@@ -46,7 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     $label = trim((string)($body['label'] ?? ''));
-    if ($label === '' || mb_strlen($label) > 40) {
+    // mbstring isn't installed on svxlinkuhf (confirmed live: a real 500
+    // the very first time this endpoint was actually used -- "Call to
+    // undefined function mb_strlen()"). function_exists() guard rather
+    // than depending on an extension this image doesn't ship; a label a
+    // few bytes longer than intended for non-ASCII text (Swedish å/ä/ö
+    // etc.) is harmless, an uncaught fatal on every save is not.
+    $labelLen = function_exists('mb_strlen') ? mb_strlen($label) : strlen($label);
+    if ($label === '' || $labelLen > 40) {
         http_response_code(400);
         echo json_encode(['error' => 'Label must be 1-40 characters.']);
         exit;
