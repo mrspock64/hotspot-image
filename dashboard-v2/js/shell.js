@@ -1,10 +1,14 @@
-// dashboard-v2 shell: reads layout.json -- the single place that decides
-// which modules show, in which column, and in what order within that
-// column (array order = display order). A module's own manifest.json
+// dashboard-v2 shell: reads api/layout.php -- the single place that
+// decides which modules show, in which column, and in what order within
+// that column (array order = display order). A module's own manifest.json
 // never says where it lives; moving a module or switching it off means
-// editing one entry in layout.json, not touching the module's own files.
-// Adding a brand-new module means adding its three files plus one entry
-// here -- this file itself shouldn't need to change either way.
+// editing one entry there (by hand, or via /settings/), not touching the
+// module's own files. Adding a brand-new module means adding its three
+// files plus one entry -- this file itself shouldn't need to change
+// either way. (api/layout.php itself reads dashboard-v2/layout.json, the
+// shipped default, falling back to a saved override under
+// /var/cache/hotspot-image if the settings page has ever been used --
+// see that file's own header comment for why the split exists.)
 (async function () {
   const grid = document.getElementById('module-grid');
   const cols = { 1: null, 2: null, 3: null };
@@ -18,9 +22,10 @@
 
   let layout;
   try {
-    layout = await fetch('layout.json', { cache: 'no-store' }).then((r) => r.json());
+    const res = await fetch('api/layout.php', { cache: 'no-store' }).then((r) => r.json());
+    layout = res.layout;
   } catch (e) {
-    grid.innerHTML = '<div class="panel"><div class="panel-body">Could not load layout.json</div></div>';
+    grid.innerHTML = '<div class="panel"><div class="panel-body">Could not load the module layout</div></div>';
     return;
   }
 
