@@ -45,11 +45,14 @@ ssh hotspot@<yourhostname>.local
 git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git ~/hotspot-image
 cd ~/hotspot-image
 
-# 3. Run the installer -- takes a while (SvxLink is built from source), and
-#    does not ask any interactive questions. Stops SvxLink first (it stays
-#    stopped until you restart it from the Power page at the end) -- a
-#    live svxlink competing for CPU with the from-source build otherwise
-#    caused visible slowdowns on a Pi Zero 2 W
+# 3. Run the installer. SvxLink is built from source on the device itself
+#    (there's no prebuilt package for this) -- on a Pi Zero 2 W, that step
+#    alone took over an hour in practice (Reflector.cpp is the single
+#    slowest file to compile), so budget well over an hour total, not
+#    minutes. Doesn't ask any interactive questions once started, so it's
+#    safe to leave running. Stops SvxLink first (it stays stopped until
+#    you restart it from the Power page at the end) -- a live svxlink
+#    competing for CPU with the build otherwise caused visible slowdowns
 sudo bash setup.sh
 
 # 4. Reboot once it finishes, so every config.txt change takes effect cleanly
