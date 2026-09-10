@@ -39,7 +39,7 @@ class FrequencyPanel extends HTMLElement {
       : '<span class="status-chip" style="padding:3px 9px;"><span class="dot warn"></span>stopped</span>';
 
     this.innerHTML =
-      '<div class="panel">' +
+      '<div class="panel freq-panel">' +
         '<div class="panel-head"><div class="panel-title">Frequency</div>' + statusChip + '</div>' +
         '<div class="panel-body">' +
           '<div class="freq-readout">' + freq + '</div>' +
