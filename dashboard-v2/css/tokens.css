@@ -1,0 +1,127 @@
+/* dashboard-v2 shared styling -- design tokens and shell/panel rules lifted
+ * from docs/dashboard-redesign-concept.html (the Artifact mockup), per
+ * docs/dashboard-v2-brief.md: that file's <style> block is the reference to
+ * build on, this is where it actually lives for real modules to share.
+ * Carries the full token set even though this first module only needs a
+ * few of them, so later modules (Node, QSO Log, Vitals, RX Monitor, ...)
+ * can rely on the same variables/classes already being here.
+ */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600;700&display=swap');
+
+:root{
+  --bg: #0b0f14;
+  --bg-deep: #07090d;
+  --surface: #121821;
+  --surface-2: #171f2b;
+  --border: #26313f;
+  --border-soft: #1b232e;
+  --text: #e7ecf2;
+  --text-dim: #8592a3;
+  --text-faint: #4d5866;
+  --copper: #ff9d4d;
+  --copper-dim: #a86a35;
+  --cyan: #4dd8e0;
+  --cyan-dim: #2c828a;
+  --ok: #5ed68c;
+  --warn: #f2c14e;
+  --crit: #f2664e;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --disp: 'Oswald', var(--sans);
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; }
+body{
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+::selection{ background: var(--copper); color: #1a1006; }
+a{ color: inherit; }
+.tabular{ font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+/* ---------- shell ---------- */
+.shell{
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 18px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shell-head{
+  display:flex; align-items:baseline; gap:12px;
+}
+.shell-head .title{
+  font-family: var(--disp); font-weight:600; font-size:20px; letter-spacing:0.5px;
+}
+.shell-head .sub{
+  font-size:11.5px; color: var(--text-dim); text-transform:uppercase; letter-spacing:1.2px;
+}
+
+/* ---------- grid ---------- */
+.grid{
+  display:grid;
+  grid-template-columns: 300px 1fr 320px;
+  gap: 16px;
+  align-items:start;
+}
+@media (max-width: 1100px){
+  .grid{ grid-template-columns: 1fr; }
+}
+.col{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+
+/* ---------- panel ---------- */
+.panel{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow:hidden;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.panel-title{
+  font-family: var(--disp); font-weight:600; font-size:12px;
+  text-transform:uppercase; letter-spacing:1.4px; color: var(--text-dim);
+}
+.panel-body{ padding: 16px; }
+.panel-foot{
+  padding: 9px 16px; border-top:1px solid var(--border-soft);
+  font-size:11.5px; color: var(--text-faint);
+}
+
+/* ---------- status chip (also used standalone by future modules) ---------- */
+.status-chip{
+  display:inline-flex; align-items:center; gap:7px;
+  padding: 6px 12px; border-radius:999px;
+  background: var(--surface-2); border:1px solid var(--border);
+  font-family: var(--mono); font-size:11.5px; font-weight:500; color: var(--text-dim);
+}
+.dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.dot.ok{ background: var(--ok); box-shadow: 0 0 8px 1px rgba(94,214,140,0.7); }
+.dot.warn{ background: var(--warn); box-shadow: 0 0 8px 1px rgba(242,193,78,0.6); }
+.dot.crit{ background: var(--crit); box-shadow: 0 0 8px 1px rgba(242,102,78,0.6); }
+@media (prefers-reduced-motion: no-preference){
+  .dot.ok{ animation: pulse 2.4s ease-in-out infinite; }
+}
+@keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
+
+/* ---------- signal history sparkline (Signal module) ---------- */
+.signal-card .headline{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
+.signal-card .headline .big{ font-family:var(--mono); font-size:28px; font-weight:600; }
+.signal-card .headline .delta{ font-family:var(--mono); font-size:12.5px; background: rgba(94,214,140,0.12); border:1px solid rgba(94,214,140,0.3); padding:2px 7px; border-radius:5px; }
+.signal-card .caption{ font-size:11.5px; color:var(--text-faint); margin-bottom:12px; }
+svg.spark{ width:100%; height:64px; display:block; }
+
+.footer-note{
+  text-align:center; color:var(--text-faint); font-size:11.5px; padding-top:6px;
+}
+.footer-note b{ color:var(--text-dim); font-weight:600; }

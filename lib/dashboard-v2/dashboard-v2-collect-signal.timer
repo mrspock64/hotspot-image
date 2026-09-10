@@ -1,0 +1,10 @@
+[Unit]
+Description=dashboard-v2 Signal module - run the collector every 60s
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=60s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

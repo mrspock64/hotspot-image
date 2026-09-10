@@ -1,0 +1,6 @@
+[Unit]
+Description=dashboard-v2 Signal module - sample /proc/net/wireless + gateway ping
+
+[Service]
+Type=oneshot
+ExecStart=/opt/hotspot-image/lib/dashboard-v2/collect-signal.sh
