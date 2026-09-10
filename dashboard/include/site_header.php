@@ -43,6 +43,29 @@ $mxSvxlinkUpdateAvailable = $mxSvxlinkUpdate['available'];
 $mxDashboardVersion = trim((string)@shell_exec('git -C /opt/hotspot-image rev-parse --short HEAD 2>/dev/null'));
 $mxSvxlinkVersion = $mxSvxlinkUpdate['installed'];
 
+// Written by dashboard/update/update.dashboard.sh whenever it actually
+// applies a change (manual "Update Dashboard" click or the hourly
+// auto-updater both go through that exact script) -- shown for 24h so a
+// change that happened unattended, overnight, is still noticeable the
+// next time someone looks rather than only in the log at the moment it
+// ran. is_readable rather than is_file: no sudo here, this file is
+// written as root but 644, same as every other /var/cache/hotspot-image
+// state file this header already reads.
+$mxRecentlyUpdated = false;
+$mxLastUpdateFrom = '';
+$mxLastUpdateTo = '';
+if (is_readable('/var/cache/hotspot-image/last_dashboard_update.json')) {
+    $lastUpdate = json_decode((string)@file_get_contents('/var/cache/hotspot-image/last_dashboard_update.json'), true);
+    if (is_array($lastUpdate) && !empty($lastUpdate['timestamp'])) {
+        $updatedAt = strtotime($lastUpdate['timestamp']);
+        if ($updatedAt !== false && (time() - $updatedAt) < 86400) {
+            $mxRecentlyUpdated = true;
+            $mxLastUpdateFrom = substr((string)($lastUpdate['from'] ?? ''), 0, 7);
+            $mxLastUpdateTo = substr((string)($lastUpdate['to'] ?? ''), 0, 7);
+        }
+    }
+}
+
 // Shown only while on (not a persistent "off" indicator) -- the point is a
 // hard-to-miss reminder that the node is currently reachable, unauthenticated,
 // over BLE (see dashboard/bluetooth/ and the ble_companion_app memory note),
@@ -132,6 +155,7 @@ $mxTempWarning = is_file('/var/cache/hotspot-image/temp_warning');
       <a id="mx-load-badge" href="/qsolog/" title="Load, I/O-wait, free memory, or swap usage has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-pause on the QSO Log page." style="display:<?php echo $mxLoadWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High load</a>
       <a id="mx-ble-badge" href="/bluetooth/" title="Bluetooth companion app access is on -- anyone in range can connect. Click to turn off." style="display:<?php echo $mxBleActive ? 'inline-flex' : 'none'; ?>; background:#fff; color:#2563eb; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#2563eb; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>BLE on</a>
       <a id="mx-update-badge" href="/update/" style="display:<?php echo $mxUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; Dashboard update</a>
+      <a id="mx-updated-badge" href="/update/" title="<?php echo $mxRecentlyUpdated ? htmlspecialchars("Dashboard updated: $mxLastUpdateFrom \xe2\x86\x92 $mxLastUpdateTo") : ''; ?>" style="display:<?php echo $mxRecentlyUpdated ? 'inline-flex' : 'none'; ?>; background:#fff; color:#15803d; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#15803d; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>&#10003; Updated</a>
       <a id="mx-svxlink-update-badge" href="/update/" style="display:<?php echo $mxSvxlinkUpdateAvailable ? 'inline-flex' : 'none'; ?>; background:#fff; color:var(--mx-accent-dark); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center;">&#8593; SvxLink update</a>
     </div>
 <?php if ($mxDashboardVersion !== '' || $mxSvxlinkVersion): ?>

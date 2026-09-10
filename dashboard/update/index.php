@@ -10,6 +10,36 @@
   <h1 style="text-align:center;">Updater</h1>
 
 <?php
+// Persistent reference line (unlike the header's own "Updated" badge,
+// which only shows for 24h) -- written by update.dashboard.sh whenever
+// it actually applies a change, whether from a manual click here or the
+// hourly auto-updater. Simple relative-time formatting rather than
+// pulling in a library for one line.
+if (is_readable('/var/cache/hotspot-image/last_dashboard_update.json')) {
+    $lastUpdateInfo = json_decode((string)@file_get_contents('/var/cache/hotspot-image/last_dashboard_update.json'), true);
+    if (is_array($lastUpdateInfo) && !empty($lastUpdateInfo['timestamp'])) {
+        $lastUpdateTs = strtotime($lastUpdateInfo['timestamp']);
+        if ($lastUpdateTs !== false) {
+            $ago = time() - $lastUpdateTs;
+            if ($ago < 60) {
+                $agoStr = 'just now';
+            } elseif ($ago < 3600) {
+                $agoStr = (int)($ago / 60) . ' minute(s) ago';
+            } elseif ($ago < 86400) {
+                $agoStr = (int)($ago / 3600) . ' hour(s) ago';
+            } else {
+                $agoStr = (int)($ago / 86400) . ' day(s) ago';
+            }
+            $lastUpdateFromShort = htmlspecialchars(substr((string)($lastUpdateInfo['from'] ?? ''), 0, 7));
+            $lastUpdateToShort = htmlspecialchars(substr((string)($lastUpdateInfo['to'] ?? ''), 0, 7));
+            echo '<p class="mx-hint" style="text-align:center; margin:-8px 0 12px;">Last update applied: '
+                . htmlspecialchars($agoStr) . " ($lastUpdateFromShort &rarr; $lastUpdateToShort)</p>";
+        }
+    }
+}
+?>
+
+<?php
 // The check.*.sh/update.*.sh scripts below are invoked by bare filename
 // (e.g. "sh check.os.sh"), which assumes PHP's cwd is this exact
 // directory -- not guaranteed otherwise (e.g. testing this dashboard from

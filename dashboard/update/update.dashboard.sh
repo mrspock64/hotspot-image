@@ -10,6 +10,7 @@ fi
 
 echo "--- Pulling latest hotspot-image ---"
 cd "$REPO_DIR"
+old_rev=$(git rev-parse HEAD 2>/dev/null)
 if ! git fetch origin; then
   echo "Could not fetch from origin -- aborting, nothing was changed."
   echo "###-FINISH-####"
@@ -78,6 +79,20 @@ chown -R www-data:www-data /var/www/html
 
 echo "--- SVXlink service restart ---"
 sudo service svxlink restart
+
+# Records that a real change was applied (not just "someone clicked the
+# button" -- old_rev was captured before the fetch/reset above, so a
+# no-op run against an already-current checkout correctly writes nothing
+# here). Read by the header's "Updated" badge (site_header.php) and the
+# Update page's own "Last update applied" line -- both this manual button
+# and the hourly auto-updater (dashboard-autoupdate.sh) go through this
+# exact script, so either path shows up the same way.
+if [ -n "$old_rev" ] && [ "$old_rev" != "$remote_rev" ]; then
+  mkdir -p /var/cache/hotspot-image
+  printf '{"from":"%s","to":"%s","timestamp":"%s"}\n' \
+    "$old_rev" "$remote_rev" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    > /var/cache/hotspot-image/last_dashboard_update.json
+fi
 
 # The header's "Update available" badge is cached for 6h (see
 # update_check.php) so a page load doesn't hit the network every time --
