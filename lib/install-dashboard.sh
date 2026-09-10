@@ -10,16 +10,13 @@
 #
 set -euo pipefail
 
-# Defaults to empty (local-copy fallback below) while mrspock64/hotspot-image
-# stays private -- setup.sh calls this script with no override, so a real
-# GitHub URL default here would make every setup.sh run try to `git clone`
-# a private repo and fail with "could not read Username for 'https://
-# github.com'". Flip this back to the real URL once the repo goes public;
-# until then, override with DASHBOARD_REPO_URL=<url> for a one-off test of
-# the clone path itself. (Note the missing ':' in ${VAR-default} -- that's
-# deliberate, ${VAR:-default} would treat an explicitly-empty override the
-# same as unset and defeat DASHBOARD_REPO_URL="" too.)
-DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL-}"
+# mrspock64/hotspot-image went public 2026-09-10 -- this now just clones
+# the real thing over plain HTTPS, no auth needed. Override with
+# DASHBOARD_REPO_URL=<url> to point at a fork or a different remote for
+# testing; the local-copy fallback below only kicks in if that clone
+# itself fails (offline, GitHub unreachable, etc.), not as the default
+# path anymore.
+DASHBOARD_REPO_URL="${DASHBOARD_REPO_URL:-https://github.com/mrspock64/hotspot-image.git}"
 REAL_REPO_URL="https://github.com/mrspock64/hotspot-image.git"
 REPO_DIR="/opt/hotspot-image"
 
@@ -30,22 +27,22 @@ apt-get install -y apache2 php php-cli libapache2-mod-php git
 
 echo "--- Cloning hotspot-image into $REPO_DIR ---"
 rm -rf "$REPO_DIR"
-if [ -n "$DASHBOARD_REPO_URL" ]; then
-  git clone "$DASHBOARD_REPO_URL" "$REPO_DIR"
+if git clone "$DASHBOARD_REPO_URL" "$REPO_DIR"; then
+  :
 else
-  echo "WARNING: DASHBOARD_REPO_URL is not set — copying the local checkout"
-  echo "         instead. The dashboard's Update page won't have anything"
-  echo "         new to pull until this repo goes public (git fetch needs"
-  echo "         auth against a private repo), but 'origin' is still"
-  echo "         pointed at the real URL so it's ready the moment it does."
+  echo "WARNING: git clone of $DASHBOARD_REPO_URL failed -- copying the"
+  echo "         local checkout instead. The dashboard's Update page won't"
+  echo "         have anything new to pull until this is fixed, but"
+  echo "         'origin' is still pointed at the real URL so it's ready"
+  echo "         the moment connectivity/auth is sorted out."
   cp -r "$SCRIPT_DIR" "$REPO_DIR"
   # $SCRIPT_DIR is very likely itself a git checkout -- it's however the
   # person running setup.sh got this repo onto the device in the first
-  # place (e.g. `git clone https://TOKEN@github.com/...`). Copying that
-  # .git along would both make the next line fail ("remote origin
-  # already exists") and, worse, leave any embedded clone credentials
-  # sitting in a directory this script is about to chown to www-data.
-  # Always start clean here regardless of what the source directory is.
+  # place. Copying that .git along would both make the next line fail
+  # ("remote origin already exists") and, worse, leave any embedded
+  # clone credentials sitting in a directory this script is about to
+  # chown to www-data. Always start clean here regardless of what the
+  # source directory is.
   rm -rf "$REPO_DIR/.git"
   git -C "$REPO_DIR" init -q
   git -C "$REPO_DIR" remote add origin "$REAL_REPO_URL"

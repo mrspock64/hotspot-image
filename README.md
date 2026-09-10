@@ -29,7 +29,6 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 
 1. An RF.Guru Analog-HotSPOT-SVXLink node already booted on RF.Guru's own stock image, reachable over SSH (e.g. `ssh hotspot@<yourhostname>.local`)
 2. That node already taken through RF.Guru's own `hotspot-config` (or equivalent) far enough that `/etc/svxlink/svxlink.conf` exists and you have a reflector certificate signed by your reflector network's admin — this project can't automate that registration step, see "What this is — and isn't" below
-3. This repo is currently **private**, so cloning it needs a token. On github.com: **Settings → Developer settings → Personal access tokens → Generate new token** (a fine-grained token scoped to just this repo, read-only, is enough)
 
 **Then, on the node itself:**
 
@@ -37,12 +36,11 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 # 1. SSH into the node
 ssh hotspot@<yourhostname>.local
 
-# 2. Clone this repo -- paste your token in place of YOUR_TOKEN.
-#    Clone into your home directory, NOT /opt/hotspot-image: setup.sh
-#    manages that path itself (see the note below) and it's also
-#    root-owned, so a plain `git clone` there fails with "Permission
-#    denied" anyway.
-git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git ~/hotspot-image
+# 2. Clone this repo. Into your home directory, NOT /opt/hotspot-image:
+#    setup.sh manages that path itself (see the note below) and it's
+#    also root-owned, so a plain `git clone` there fails with
+#    "Permission denied" anyway.
+git clone https://github.com/mrspock64/hotspot-image.git ~/hotspot-image
 cd ~/hotspot-image
 
 # 3. Run the installer. SvxLink is built from source on the device itself
@@ -71,13 +69,7 @@ That's it — no interactive prompts, no manual config-file editing required for
 
 **If step 10 (Bluetooth) stops with a wall of pending package names:** that's expected, not a bug. On a node that hasn't been updated in a while, the OS itself can be 150-200+ packages behind -- Bluetooth's install step deliberately refuses to proceed on top of that (self-gating, see `lib/install-bluetooth.sh`) rather than risk it. Nothing else has been changed by this -- just run the three commands it prints (`apt update && apt upgrade`, `reboot`, then `install-bluetooth` again) and the rest of the install (steps 1-9) is already done and unaffected. `svxlinkuhf`, the project's own long-running test node, hit the same wall the first time -- it's just been kept current in small batches since, rather than all at once like a freshly-dusty node's first run.
 
-**Note on the Update page:** `setup.sh` re-clones the repo into `/opt/hotspot-image` itself (that's the copy the dashboard actually serves and where its Update page looks for new commits — see `lib/install-dashboard.sh`). While this repo is private, that step can't authenticate on its own, so it just copies your local checkout there instead of doing a real `git clone` — the install itself works fine, but the Update page's "Dashboard" check/upgrade won't be able to fetch new commits afterward. Set `DASHBOARD_REPO_URL` (a `git@github.com:...` SSH URL, using a read-only deploy key added under this repo's **Settings → Deploy keys**) before running `setup.sh` if you want the Update page to work right away:
-
-```bash
-DASHBOARD_REPO_URL="git@github.com:mrspock64/hotspot-image.git" sudo -E bash setup.sh
-```
-
-Otherwise, add a deploy key after the fact and point `/opt/hotspot-image`'s `origin` at it manually — this is what `svxlinkuhf` (the project's own test node) does.
+**Note on the Update page:** `setup.sh` re-clones the repo into `/opt/hotspot-image` itself over plain HTTPS (that's the copy the dashboard actually serves and where its Update page looks for new commits — see `lib/install-dashboard.sh`). Since this repo is public, that just works out of the box — no token or deploy key needed for a normal install.
 
 ## What this is — and isn't
 
