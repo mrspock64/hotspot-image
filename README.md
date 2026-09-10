@@ -37,10 +37,13 @@ An upgrade path for an [RF.Guru Analog-HotSPOT-SVXLink](https://github.com/Guru-
 # 1. SSH into the node
 ssh hotspot@<yourhostname>.local
 
-# 2. Clone this repo -- paste your token in place of YOUR_TOKEN
-#    (git will remember it for this clone; no need to type it again)
-git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git /opt/hotspot-image
-cd /opt/hotspot-image
+# 2. Clone this repo -- paste your token in place of YOUR_TOKEN.
+#    Clone into your home directory, NOT /opt/hotspot-image: setup.sh
+#    manages that path itself (see the note below) and it's also
+#    root-owned, so a plain `git clone` there fails with "Permission
+#    denied" anyway.
+git clone https://YOUR_TOKEN@github.com/mrspock64/hotspot-image.git ~/hotspot-image
+cd ~/hotspot-image
 
 # 3. Run the installer -- takes a while (SvxLink is built from source), and
 #    does not ask any interactive questions
@@ -59,6 +62,14 @@ sudo reboot
 5. The dashboard's own **Help** page (`/help/`) explains what every other page does
 
 That's it — no interactive prompts, no manual config-file editing required for a normal install.
+
+**Note on the Update page:** `setup.sh` re-clones the repo into `/opt/hotspot-image` itself (that's the copy the dashboard actually serves and where its Update page looks for new commits — see `lib/install-dashboard.sh`). While this repo is private, that step can't authenticate on its own, so it just copies your local checkout there instead of doing a real `git clone` — the install itself works fine, but the Update page's "Dashboard" check/upgrade won't be able to fetch new commits afterward. Set `DASHBOARD_REPO_URL` (a `git@github.com:...` SSH URL, using a read-only deploy key added under this repo's **Settings → Deploy keys**) before running `setup.sh` if you want the Update page to work right away:
+
+```bash
+DASHBOARD_REPO_URL="git@github.com:mrspock64/hotspot-image.git" sudo -E bash setup.sh
+```
+
+Otherwise, add a deploy key after the fact and point `/opt/hotspot-image`'s `origin` at it manually — this is what `svxlinkuhf` (the project's own test node) does.
 
 ## What this is — and isn't
 
