@@ -19,10 +19,19 @@
 # this Pi Zero 2 W can't spare (see monitor.sh's own iowait-incident
 # notes) -- the mockup only ever shows a handful of recent rows anyway.
 #
+# Durations are also CACHED across runs (DURATIONS_CACHE_FILE, keyed by
+# filename): a finished recording's .mp3 is immutable, its duration never
+# changes, so re-probing all 15 most recent files every single 30s tick
+# forever was pure waste -- confirmed live on svxlinkuhf: this collector
+# alone was burning ~9s of CPU per run (systemctl show -p CPUUsageNSec),
+# roughly 30% of a core continuously on hardware already running warm.
+# With the cache, a steady-state run only probes genuinely new files.
+#
 set -euo pipefail
 
 STATE_DIR="/var/cache/hotspot-image"
 STATE_FILE="$STATE_DIR/dashboard-v2-qsolog.json"
+DURATIONS_CACHE_FILE="$STATE_DIR/dashboard-v2-qsolog-durations.json"
 REPO_QSO_RECORDER_PHP="/opt/hotspot-image/dashboard/include/qso_recorder.php"
 QSOLOG_RECENT_LIMIT=15
 
@@ -59,13 +68,22 @@ if (\$r['inProgress']) {
 echo json_encode(\$out);
 ")
 
-python3 - "$STATE_FILE" "$listing_json" <<'PYEOF'
+python3 - "$STATE_FILE" "$DURATIONS_CACHE_FILE" "$listing_json" <<'PYEOF'
 import json
+import os
 import subprocess
 import sys
 
-state_file, listing_json = sys.argv[1], sys.argv[2]
+state_file, cache_file, listing_json = sys.argv[1], sys.argv[2], sys.argv[3]
 listing = json.loads(listing_json)
+
+try:
+    with open(cache_file) as f:
+        cache = json.load(f)
+    if not isinstance(cache, dict):
+        cache = {}
+except (OSError, ValueError):
+    cache = {}
 
 
 def probe_duration_sec(path):
@@ -80,8 +98,21 @@ def probe_duration_sec(path):
         return None
 
 
+recent_names = set()
 for rec in listing["recent"]:
-    rec["duration_sec"] = probe_duration_sec(rec.pop("path"))
+    path = rec.pop("path")
+    name = os.path.basename(path)
+    recent_names.add(name)
+    if name in cache:
+        rec["duration_sec"] = cache[name]
+    else:
+        rec["duration_sec"] = probe_duration_sec(path)
+        cache[name] = rec["duration_sec"]
+
+# Prune anything not among this run's recent files -- an unbounded cache
+# would just grow forever as old recordings roll off the "recent" window
+# (or get deleted from the QSO Log page entirely).
+cache = {name: dur for name, dur in cache.items() if name in recent_names}
 
 listing["updated_at"] = __import__("datetime").datetime.now(
     __import__("datetime").timezone.utc
@@ -89,4 +120,7 @@ listing["updated_at"] = __import__("datetime").datetime.now(
 
 with open(state_file, "w") as f:
     json.dump(listing, f)
+
+with open(cache_file, "w") as f:
+    json.dump(cache, f)
 PYEOF
