@@ -84,10 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Each entry needs a string id.']);
             exit;
         }
+        // 4, not 3 -- matches api/page-meta.php's MAX_COLUMNS, since a
+        // page can now be configured for up to 4 columns.
         $col = (int)($entry['col'] ?? 1);
-        if ($col < 1 || $col > 3) {
+        if ($col < 1 || $col > 4) {
             http_response_code(400);
-            echo json_encode(['error' => 'col must be 1, 2, or 3 (entry: ' . $entry['id'] . ').']);
+            echo json_encode(['error' => 'col must be between 1 and 4 (entry: ' . $entry['id'] . ').']);
             exit;
         }
         $clean[] = [

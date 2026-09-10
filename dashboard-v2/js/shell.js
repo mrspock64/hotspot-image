@@ -1,6 +1,6 @@
-// dashboard-v2 shell: reads api/layout.php?page=<page> -- the single
-// place that decides which modules show, in which column, and in what
-// order within that column (array order = display order). A module's own
+// dashboard-v2 shell: reads api/page-meta.php?page=<page> (label, column
+// count) and api/layout.php?page=<page> (which modules, where) -- the
+// single places that decide what a page looks like. A module's own
 // manifest.json never says where it lives; moving a module or switching
 // it off means editing one entry there (by hand, or via /settings/), not
 // touching the module's own files. Adding a brand-new module means
@@ -10,16 +10,37 @@
 // `page` comes from #module-grid's data-page attribute, defaulting to
 // "dashboard" -- lets more than one page (Dashboard, QSO Log, ...) share
 // this exact shell/module engine while each keeps its own module
-// selection. All fetch/script paths here and in every manifest.json are
-// root-absolute ("/api/...", "/modules/...") rather than relative, on
-// purpose: a page one directory deep (e.g. /qsolog/) would otherwise
-// resolve "modules/x/panel.js" against its own path instead of the
-// dashboard-v2 site root.
+// selection and column count. All fetch/script paths here and in every
+// manifest.json are root-absolute ("/api/...", "/modules/...") rather
+// than relative, on purpose: a page one directory deep (e.g. /qsolog/)
+// would otherwise resolve "modules/x/panel.js" against its own path
+// instead of the dashboard-v2 site root.
 (async function () {
   const grid = document.getElementById('module-grid');
   const page = grid.dataset.page || 'dashboard';
-  const cols = { 1: null, 2: null, 3: null };
-  for (const n of [1, 2, 3]) {
+
+  // Only the column count comes from here -- the page's *displayed name*
+  // is the nav chip rendered by pages-nav.js (same api/page-meta.php
+  // source), not anything in this shell, so a rename doesn't require this
+  // file to also know how/where a page's title is shown.
+  let columns = 3;
+  try {
+    const meta = await fetch('/api/page-meta.php?page=' + encodeURIComponent(page), { cache: 'no-store' }).then((r) => r.json());
+    columns = meta.columns || 3;
+  } catch (e) {
+    // Falls back to the 3-column default below -- not worth failing the
+    // whole page over this.
+  }
+
+  // The classic 3-column dashboard keeps its original asymmetric layout
+  // (narrow sidebar / wide middle / sidebar, defined in css/tokens.css's
+  // .grid rule) since that's the shape every existing module screenshot
+  // was designed against. Any other column count gets equal-width
+  // columns -- there's no "correct" asymmetric shape for e.g. 2 or 4.
+  grid.style.gridTemplateColumns = columns === 3 ? '' : 'repeat(' + columns + ', 1fr)';
+
+  const cols = {};
+  for (let n = 1; n <= columns; n++) {
     const col = document.createElement('div');
     col.className = 'col';
     col.dataset.col = n;
@@ -52,7 +73,10 @@
           el.setAttribute(key.replace(/_/g, '-'), String(value));
         }
       }
-      const col = cols[entry.col] || cols[1];
+      // A module saved against a column that no longer exists on this
+      // page (columns lowered after the layout was saved) falls back to
+      // the last real column rather than vanishing.
+      const col = cols[entry.col] || cols[columns] || cols[1];
       col.appendChild(el);
     } catch (e) {
       console.error('dashboard-v2: failed to load module', entry.id, e);

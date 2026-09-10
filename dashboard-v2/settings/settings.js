@@ -1,32 +1,86 @@
 // Layout settings page. `page` comes from ?page=<id> in the URL
 // (defaulting to "dashboard"), so one settings page serves every page's
-// module layout -- must stay in sync with js/pages-nav.js's page list.
-// Fetches api/layout.php's effective layout for that page (already
-// merged with each module's title, and back-filled with any module on
-// disk that isn't in a saved/default layout yet -- see that file's own
-// comment), renders one draggable card per module inside three column
-// boxes. Dragging a card within a column reorders it; dragging it into a
-// different column changes which column it belongs to. The `layout`
-// array is only the source of truth for the initial render and for
-// Save -- while dragging, the DOM itself is the live state (classic
-// "insert before the closest element" pattern), then dragend reads the
-// DOM back into `layout`.
+// module layout and page metadata -- must stay in sync with
+// js/pages-nav.js's page list.
+//
+// Two independent things get edited here:
+//  - Page metadata (name shown in the nav, column count) via
+//    api/page-meta.php -- its own small form + Save button.
+//  - Module layout (which modules, which column, what order) via
+//    api/layout.php, rendered as draggable cards -- see that section's
+//    own comments below. The drag area's column count follows whatever
+//    was last saved/loaded for the page metadata, re-rendering if you
+//    change and save the column count.
 const PAGE_META = {
-  dashboard: { label: 'Dashboard', href: '/' },
-  qsolog: { label: 'QSO Log', href: '/qsolog/' },
-  rxmonitor: { label: 'RX Monitor', href: '/rxmonitor/' },
+  dashboard: { href: '/' },
+  qsolog: { href: '/qsolog/' },
+  rxmonitor: { href: '/rxmonitor/' },
 };
 
 const page = new URLSearchParams(window.location.search).get('page') || 'dashboard';
-const pageMeta = PAGE_META[page] || PAGE_META.dashboard;
-
-document.getElementById('page-sub').textContent = 'dashboard-v2 preview · ' + pageMeta.label + ' · which modules, where';
-document.getElementById('panel-title').textContent = pageMeta.label + ' modules';
-document.getElementById('back-link').href = pageMeta.href;
+const pageHref = (PAGE_META[page] || PAGE_META.dashboard).href;
+document.getElementById('back-link').href = pageHref;
 
 let layout = [];
+let columns = 3;
 
-async function load() {
+async function loadPageMeta() {
+  const res = await fetch('/api/page-meta.php?page=' + encodeURIComponent(page), { cache: 'no-store' }).then((r) => r.json());
+  columns = res.columns;
+  document.getElementById('page-label-input').value = res.label;
+  document.getElementById('page-columns-input').value = String(res.columns);
+  document.getElementById('page-source-tag').innerHTML = res.using_saved
+    ? '<span class="dot ok"></span>saved'
+    : '<span class="dot warn"></span>shipped default';
+  document.getElementById('page-sub').textContent = 'dashboard-v2 preview · ' + res.label + ' · which modules, where';
+  document.getElementById('panel-title').textContent = res.label + ' modules';
+}
+
+async function savePageMeta() {
+  const msg = document.getElementById('page-save-msg');
+  msg.className = 'save-msg';
+  msg.textContent = 'Saving…';
+  try {
+    const body = {
+      label: document.getElementById('page-label-input').value.trim(),
+      columns: parseInt(document.getElementById('page-columns-input').value, 10),
+    };
+    const res = await fetch('/api/page-meta.php?page=' + encodeURIComponent(page), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    msg.className = 'save-msg ok';
+    msg.textContent = 'Saved. Reload any page for the new name/columns to show.';
+    await loadPageMeta();
+    buildDragCols();
+    render();
+  } catch (e) {
+    msg.className = 'save-msg err';
+    msg.textContent = 'Could not save: ' + e.message;
+  }
+}
+
+/** (Re)builds the empty column boxes to match the current `columns`
+ * count -- called on load and whenever the page's column count changes,
+ * since the drag area itself has no fixed 3-column assumption anymore. */
+function buildDragCols() {
+  const wrap = document.getElementById('drag-cols');
+  wrap.style.gridTemplateColumns = 'repeat(' + columns + ', 1fr)';
+  wrap.innerHTML = '';
+  for (let n = 1; n <= columns; n++) {
+    const col = document.createElement('div');
+    col.className = 'drag-col';
+    col.dataset.col = n;
+    col.innerHTML = '<div class="drag-col-label">Column ' + n + '</div>';
+    wrap.appendChild(col);
+  }
+  wireDragEvents();
+}
+
+async function loadLayout() {
   const res = await fetch('/api/layout.php?page=' + encodeURIComponent(page), { cache: 'no-store' }).then((r) => r.json());
   layout = res.layout;
   document.getElementById('source-tag').innerHTML = res.using_saved
@@ -36,7 +90,8 @@ async function load() {
 }
 
 function render() {
-  const cols = { 1: document.querySelector('.drag-col[data-col="1"]'), 2: document.querySelector('.drag-col[data-col="2"]'), 3: document.querySelector('.drag-col[data-col="3"]') };
+  const cols = {};
+  document.querySelectorAll('.drag-col').forEach((el) => { cols[el.dataset.col] = el; });
   Object.values(cols).forEach((col) => {
     col.querySelectorAll('.mod-card').forEach((c) => c.remove());
   });
@@ -65,7 +120,11 @@ function render() {
       syncLayoutFromDom();
     });
 
-    cols[entry.col].appendChild(card);
+    // A module saved against a column beyond the page's current column
+    // count (e.g. columns lowered since) still needs somewhere to render
+    // here -- clamp to the last real column instead of disappearing.
+    const targetCol = cols[entry.col] || cols[columns] || cols[1];
+    targetCol.appendChild(card);
   });
 }
 
@@ -81,27 +140,29 @@ function draggableCardAfterPoint(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-document.querySelectorAll('.drag-col').forEach((col) => {
-  col.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    col.classList.add('drag-over');
-    const dragging = document.querySelector('.mod-card.dragging');
-    if (!dragging) return;
-    const after = draggableCardAfterPoint(col, e.clientY);
-    if (after == null) {
-      col.appendChild(dragging);
-    } else {
-      col.insertBefore(dragging, after);
-    }
+function wireDragEvents() {
+  document.querySelectorAll('.drag-col').forEach((col) => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      col.classList.add('drag-over');
+      const dragging = document.querySelector('.mod-card.dragging');
+      if (!dragging) return;
+      const after = draggableCardAfterPoint(col, e.clientY);
+      if (after == null) {
+        col.appendChild(dragging);
+      } else {
+        col.insertBefore(dragging, after);
+      }
+    });
+    col.addEventListener('dragleave', (e) => {
+      if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    });
+    col.addEventListener('drop', (e) => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+    });
   });
-  col.addEventListener('dragleave', (e) => {
-    if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
-  });
-  col.addEventListener('drop', (e) => {
-    e.preventDefault();
-    col.classList.remove('drag-over');
-  });
-});
+}
 
 /** Rebuilds the `layout` array from the DOM's current card order/column
  * placement -- the actual result of a drag, since dragover already moved
@@ -134,7 +195,7 @@ async function save() {
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     msg.className = 'save-msg ok';
     msg.textContent = 'Saved. Reload the console to see it take effect.';
-    await load();
+    await loadLayout();
   } catch (e) {
     msg.className = 'save-msg err';
     msg.textContent = 'Could not save: ' + e.message;
@@ -159,25 +220,29 @@ async function resetToDefault() {
   render();
 }
 
-// Both handlers are async and mutate/read the shared `layout` variable --
-// disable both buttons for the duration of either one so a fast second
-// click (e.g. Save right after Reset, before its fetches resolve) can't
-// race and save a stale `layout` instead of the just-reset one.
-function withButtonsDisabled(fn) {
+// All four async handlers mutate/read shared state (`layout` or the page
+// meta form) -- disable the relevant button(s) for the duration of each
+// so a fast second click can't race and save something stale.
+function withButtonsDisabled(buttons, fn) {
   return async () => {
-    saveBtn.disabled = true;
-    resetBtn.disabled = true;
+    buttons.forEach((b) => { b.disabled = true; });
     try {
       await fn();
     } finally {
-      saveBtn.disabled = false;
-      resetBtn.disabled = false;
+      buttons.forEach((b) => { b.disabled = false; });
     }
   };
 }
 
 const saveBtn = document.getElementById('save-btn');
 const resetBtn = document.getElementById('reset-btn');
-saveBtn.addEventListener('click', withButtonsDisabled(save));
-resetBtn.addEventListener('click', withButtonsDisabled(resetToDefault));
-load();
+const pageSaveBtn = document.getElementById('page-save-btn');
+saveBtn.addEventListener('click', withButtonsDisabled([saveBtn, resetBtn], save));
+resetBtn.addEventListener('click', withButtonsDisabled([saveBtn, resetBtn], resetToDefault));
+pageSaveBtn.addEventListener('click', withButtonsDisabled([pageSaveBtn], savePageMeta));
+
+(async function init() {
+  await loadPageMeta();
+  buildDragCols();
+  await loadLayout();
+})();
