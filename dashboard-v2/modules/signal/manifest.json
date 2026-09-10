@@ -5,5 +5,5 @@
   "script": "modules/signal/panel.js",
   "api": "api/signal.php",
   "refresh_ms": 15000,
-  "col": 3
+  "col": 2
 }

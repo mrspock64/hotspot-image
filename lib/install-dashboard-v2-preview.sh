@@ -23,7 +23,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "--- dashboard-v2 preview: packages ---"
-apt-get install -y php-cli iputils-ping
+# ffmpeg: just for ffprobe, the QSO Log module's real (not estimated)
+# per-recording duration -- see collect-qsolog.sh.
+apt-get install -y php-cli iputils-ping ffmpeg
 
 echo "--- dashboard-v2 preview: Signal module collector ---"
 cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-signal.service" /etc/systemd/system/dashboard-v2-collect-signal.service
@@ -40,6 +42,13 @@ cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-node.timer" /etc/systemd/syste
 systemctl daemon-reload
 systemctl enable --now dashboard-v2-collect-node.timer
 systemctl start dashboard-v2-collect-node.service
+
+echo "--- dashboard-v2 preview: QSO Log module collector ---"
+cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-qsolog.service" /etc/systemd/system/dashboard-v2-collect-qsolog.service
+cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-collect-qsolog.timer" /etc/systemd/system/dashboard-v2-collect-qsolog.timer
+systemctl daemon-reload
+systemctl enable --now dashboard-v2-collect-qsolog.timer
+systemctl start dashboard-v2-collect-qsolog.service
 
 echo "--- dashboard-v2 preview: PHP built-in server on :8081 ---"
 cp "$SCRIPT_DIR/dashboard-v2/dashboard-v2-preview.service" /etc/systemd/system/dashboard-v2-preview.service

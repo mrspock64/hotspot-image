@@ -144,3 +144,24 @@ svg.spark{ width:100%; height:64px; display:block; }
 .bar-fill.ok{ background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); }
 .bar-fill.warn{ background: linear-gradient(90deg, var(--copper-dim), var(--copper)); }
 .bar-fill.crit{ background: linear-gradient(90deg, #a83a2c, var(--crit)); }
+
+/* ---------- QSO log ---------- */
+.qso-list{ display:flex; flex-direction:column; }
+.qso-row{
+  display:grid; grid-template-columns: 52px 1fr auto; gap:10px; align-items:center;
+  padding: 10px 16px; border-bottom:1px solid var(--border-soft);
+}
+.qso-row:last-child{ border-bottom:none; }
+.qso-row .time{ font-family:var(--mono); font-size:11.5px; color:var(--text-faint); }
+.qso-row .who{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.qso-row .call{ font-family:var(--mono); font-weight:600; font-size:13.5px; color:var(--text); }
+.qso-row .tg{ font-size:11px; color:var(--text-dim); }
+.qso-row .tg .tg-num{ color:var(--cyan); font-family:var(--mono); }
+.qso-row .dur{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); text-align:right; white-space:nowrap; }
+.qso-row.live{ background: rgba(255,157,77,0.06); }
+.qso-row.live .call{ color: var(--copper); }
+.live-tag{
+  font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:0.5px;
+  color:#1a0f04; background:var(--copper); padding:2px 6px; border-radius:4px;
+  display:inline-flex; align-items:center; gap:4px; margin-left:6px; vertical-align:2px;
+}
