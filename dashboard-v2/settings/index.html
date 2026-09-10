@@ -6,27 +6,31 @@
 <title>Hotspot Console -- Layout settings</title>
 <link rel="stylesheet" href="../css/tokens.css">
 <style>
-  .settings-panel{ max-width: 720px; margin: 0 auto; }
-  .layout-row{
-    display:grid; grid-template-columns: 28px 1fr 90px 100px; gap:12px; align-items:center;
-    padding: 10px 16px; border-bottom:1px solid var(--border-soft);
+  .settings-panel{ max-width: 960px; margin: 0 auto; }
+  .drag-cols{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; padding:16px; }
+  .drag-col{
+    background: var(--surface-2); border:1px dashed var(--border); border-radius:8px;
+    min-height:80px; padding:8px; display:flex; flex-direction:column; gap:8px;
   }
-  .layout-row:last-child{ border-bottom:none; }
-  .layout-row.disabled .name{ color:var(--text-faint); }
-  .layout-row .name{ font-size:13.5px; font-weight:500; }
-  .layout-row select{
-    font-family:var(--mono); font-size:12.5px; background:var(--surface-2); color:var(--text);
-    border:1px solid var(--border); border-radius:6px; padding:5px 6px;
+  .drag-col.drag-over{ border-color: var(--copper-dim); background: rgba(255,157,77,0.05); }
+  .drag-col-label{
+    font-family: var(--disp); font-weight:600; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:1.2px; color:var(--text-faint); padding:2px 4px 4px;
   }
-  .layout-row .reorder{ display:flex; gap:4px; }
-  .layout-row .reorder button{
-    font-family:var(--mono); font-size:11px; width:26px; height:26px; line-height:1;
-    background:var(--surface-2); color:var(--text-dim); border:1px solid var(--border); border-radius:5px; cursor:pointer;
+  .mod-card{
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface); border:1px solid var(--border); border-radius:7px;
+    padding:9px 10px; cursor:grab; user-select:none;
   }
-  .layout-row .reorder button:hover{ color:var(--text); border-color:var(--copper-dim); }
-  .layout-row .reorder button:disabled{ opacity:0.3; cursor:default; }
-  input[type="checkbox"]{ width:16px; height:16px; accent-color: var(--copper); }
-  .settings-actions{ display:flex; align-items:center; gap:12px; margin-top:16px; }
+  .mod-card:active{ cursor:grabbing; }
+  .mod-card.dragging{ opacity:0.35; }
+  .mod-card.disabled{ opacity:0.5; }
+  .mod-card.disabled .name{ color:var(--text-faint); text-decoration:line-through; }
+  .mod-card .grip{ color:var(--text-faint); font-size:13px; line-height:1; flex-shrink:0; }
+  .mod-card .name{ font-size:13px; font-weight:500; flex:1; min-width:0; }
+  input[type="checkbox"]{ width:16px; height:16px; accent-color: var(--copper); flex-shrink:0; }
+  .settings-hint{ font-size:11.5px; color:var(--text-faint); padding:0 16px 4px; }
+  .settings-actions{ display:flex; align-items:center; gap:12px; margin-top:0; }
   .btn{
     font-family: var(--disp); font-weight:600; font-size:12.5px; letter-spacing:0.5px; text-transform:uppercase;
     padding:9px 18px; border-radius:7px; border:1px solid var(--copper-dim); background: var(--copper); color:#1a0f04;
@@ -60,8 +64,11 @@
       <div class="panel-title">Modules</div>
       <span id="source-tag" class="status-chip" style="padding:3px 9px;"></span>
     </div>
-    <div class="panel-body" style="padding:0;">
-      <div id="layout-rows"></div>
+    <p class="settings-hint">Drag a card to reorder it or move it to another column. Uncheck to turn a module off without removing it.</p>
+    <div class="drag-cols" id="drag-cols">
+      <div class="drag-col" data-col="1"><div class="drag-col-label">Column 1</div></div>
+      <div class="drag-col" data-col="2"><div class="drag-col-label">Column 2</div></div>
+      <div class="drag-col" data-col="3"><div class="drag-col-label">Column 3</div></div>
     </div>
     <div class="panel-foot">
       <div class="settings-actions">

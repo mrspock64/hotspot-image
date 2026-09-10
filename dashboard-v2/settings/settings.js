@@ -1,11 +1,13 @@
 // Layout settings page. Fetches api/layout.php's effective layout
 // (already merged with each module's title, and back-filled with any
 // module on disk that isn't in a saved/default layout yet -- see that
-// file's own comment), renders one row per module with a checkbox
-// (enabled), a column select, and up/down reorder buttons (plain
-// buttons, not drag-and-drop -- reliable with no extra library, and
-// order only matters within a column so up/down is unambiguous), then
-// POSTs the edited array back on Save.
+// file's own comment), renders one draggable card per module inside
+// three column boxes. Dragging a card within a column reorders it;
+// dragging it into a different column changes which column it belongs
+// to. The `layout` array is only the source of truth for the initial
+// render and for Save -- while dragging, the DOM itself is the live
+// state (classic "insert before the closest element" pattern), then
+// dragend reads the DOM back into `layout`.
 let layout = [];
 
 async function load() {
@@ -18,53 +20,87 @@ async function load() {
 }
 
 function render() {
-  const rows = document.getElementById('layout-rows');
-  rows.innerHTML = '';
-  // Group by column, in-column order preserved, so reorder buttons only
-  // ever move a row within its own column -- matches how the grid itself
-  // works (array order = display order within that column).
-  layout.forEach((entry, i) => {
-    const row = document.createElement('div');
-    row.className = 'layout-row' + (entry.enabled ? '' : ' disabled');
-
-    const colSiblings = layout.filter((e) => e.col === entry.col);
-    const posInCol = colSiblings.indexOf(entry);
-    const isFirst = posInCol === 0;
-    const isLast = posInCol === colSiblings.length - 1;
-
-    row.innerHTML =
-      '<input type="checkbox" ' + (entry.enabled ? 'checked' : '') + ' data-idx="' + i + '" class="enable-toggle">' +
-      '<span class="name">' + entry.title + '</span>' +
-      '<select data-idx="' + i + '" class="col-select">' +
-        [1, 2, 3].map((c) => '<option value="' + c + '"' + (c === entry.col ? ' selected' : '') + '>Column ' + c + '</option>').join('') +
-      '</select>' +
-      '<span class="reorder">' +
-        '<button data-idx="' + i + '" class="move-up" ' + (isFirst ? 'disabled' : '') + '>&uarr;</button>' +
-        '<button data-idx="' + i + '" class="move-down" ' + (isLast ? 'disabled' : '') + '>&darr;</button>' +
-      '</span>';
-    rows.appendChild(row);
+  const cols = { 1: document.querySelector('.drag-col[data-col="1"]'), 2: document.querySelector('.drag-col[data-col="2"]'), 3: document.querySelector('.drag-col[data-col="3"]') };
+  Object.values(cols).forEach((col) => {
+    col.querySelectorAll('.mod-card').forEach((c) => c.remove());
   });
 
-  rows.querySelectorAll('.enable-toggle').forEach((el) => el.addEventListener('change', (e) => {
-    layout[+e.target.dataset.idx].enabled = e.target.checked;
-    render();
-  }));
-  rows.querySelectorAll('.col-select').forEach((el) => el.addEventListener('change', (e) => {
-    layout[+e.target.dataset.idx].col = parseInt(e.target.value, 10);
-    render();
-  }));
-  rows.querySelectorAll('.move-up').forEach((el) => el.addEventListener('click', (e) => moveWithinColumn(+e.target.dataset.idx, -1)));
-  rows.querySelectorAll('.move-down').forEach((el) => el.addEventListener('click', (e) => moveWithinColumn(+e.target.dataset.idx, 1)));
+  layout.forEach((entry) => {
+    const card = document.createElement('div');
+    card.className = 'mod-card' + (entry.enabled ? '' : ' disabled');
+    card.draggable = true;
+    card.dataset.id = entry.id;
+    card.innerHTML =
+      '<span class="grip">&#8942;&#8942;</span>' +
+      '<input type="checkbox" ' + (entry.enabled ? 'checked' : '') + '>' +
+      '<span class="name">' + entry.title + '</span>';
+
+    card.querySelector('input').addEventListener('change', (e) => {
+      const target = layout.find((l) => l.id === entry.id);
+      target.enabled = e.target.checked;
+      card.classList.toggle('disabled', !e.target.checked);
+    });
+
+    card.addEventListener('dragstart', () => {
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      syncLayoutFromDom();
+    });
+
+    cols[entry.col].appendChild(card);
+  });
 }
 
-function moveWithinColumn(idx, dir) {
-  const entry = layout[idx];
-  const colIndices = layout.map((e, i) => (e.col === entry.col ? i : -1)).filter((i) => i !== -1);
-  const pos = colIndices.indexOf(idx);
-  const swapWith = colIndices[pos + dir];
-  if (swapWith === undefined) return;
-  [layout[idx], layout[swapWith]] = [layout[swapWith], layout[idx]];
-  render();
+function draggableCardAfterPoint(container, y) {
+  const cards = [...container.querySelectorAll('.mod-card:not(.dragging)')];
+  return cards.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+}
+
+document.querySelectorAll('.drag-col').forEach((col) => {
+  col.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    col.classList.add('drag-over');
+    const dragging = document.querySelector('.mod-card.dragging');
+    if (!dragging) return;
+    const after = draggableCardAfterPoint(col, e.clientY);
+    if (after == null) {
+      col.appendChild(dragging);
+    } else {
+      col.insertBefore(dragging, after);
+    }
+  });
+  col.addEventListener('dragleave', (e) => {
+    if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+  });
+  col.addEventListener('drop', (e) => {
+    e.preventDefault();
+    col.classList.remove('drag-over');
+  });
+});
+
+/** Rebuilds the `layout` array from the DOM's current card order/column
+ * placement -- the actual result of a drag, since dragover already moved
+ * the real elements around live rather than just tracking indices. */
+function syncLayoutFromDom() {
+  document.querySelectorAll('.drag-col').forEach((col) => col.classList.remove('drag-over'));
+  const newLayout = [];
+  document.querySelectorAll('.drag-col').forEach((col) => {
+    const colNum = parseInt(col.dataset.col, 10);
+    col.querySelectorAll('.mod-card').forEach((card) => {
+      const existing = layout.find((l) => l.id === card.dataset.id);
+      newLayout.push({ id: card.dataset.id, col: colNum, enabled: existing.enabled, title: existing.title });
+    });
+  });
+  layout = newLayout;
 }
 
 async function save() {
@@ -92,16 +128,16 @@ async function save() {
 async function resetToDefault() {
   const msg = document.getElementById('save-msg');
   const shipped = await fetch('../layout.json', { cache: 'no-store' }).then((r) => r.json());
-  layout = shipped.map((e) => ({ ...e }));
+  const res = await fetch('../api/layout.php', { cache: 'no-store' }).then((r) => r.json());
   // Fold in any module the shipped default doesn't know about yet, same
   // back-fill api/layout.php does server-side, so resetting never hides a
-  // newer module that was added after this default was written.
-  const knownIds = layout.map((e) => e.id);
-  const res = await fetch('../api/layout.php', { cache: 'no-store' }).then((r) => r.json());
-  res.layout.forEach((e) => {
-    if (!knownIds.includes(e.id)) layout.push({ id: e.id, col: e.col, enabled: e.enabled });
-  });
-  layout = layout.map((e) => ({ ...e, title: (res.layout.find((r) => r.id === e.id) || {}).title || e.id }));
+  // newer module added after this default was written.
+  const knownIds = shipped.map((e) => e.id);
+  const extra = res.layout.filter((e) => !knownIds.includes(e.id)).map((e) => ({ id: e.id, col: e.col, enabled: e.enabled }));
+  layout = [...shipped, ...extra].map((e) => ({
+    ...e,
+    title: (res.layout.find((r) => r.id === e.id) || {}).title || e.id,
+  }));
   msg.className = 'save-msg';
   msg.textContent = 'Reset in the form below -- click Save to make it permanent.';
   render();
