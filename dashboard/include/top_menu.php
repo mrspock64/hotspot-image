@@ -40,6 +40,7 @@ $mxAdminItems = [
     // EchoLink investigation this came from) if EchoLink is ever wanted.
     ['/dtmf/', 'DTMF'],
     ['/bluetooth/', 'Bluetooth'],
+    ['/radiotest/', 'Radio Test'],
     ['/update/', 'Update'],
     ['/backup/', 'Backup'],
     ['/docs/', 'Docs'],
