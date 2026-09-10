@@ -39,6 +39,17 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+echo "=== Stopping SvxLink for the duration of setup ==="
+# A live svxlink (encoding reflector audio, processing traffic) competing
+# for CPU with step 4's from-source SvxLink build is real, observed
+# contention on a Pi Zero 2 W -- confirmed live: sshd itself failed the
+# banner exchange under the combined load. Left stopped afterward on
+# purpose rather than auto-restarted here -- restarting it is already the
+# documented last manual step (Power page) once Setup has been filled in,
+# and starting the OLD build back up mid-way through replacing it would
+# just be wasted CPU contention against itself.
+service svxlink stop 2>/dev/null || true
+
 echo "=== 1/10: base packages ==="
 apt-get update -y
 apt-get install -y avahi-daemon avahi-utils network-manager
