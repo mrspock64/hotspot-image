@@ -113,17 +113,20 @@ if (is_file(UPDATER_SCREEN_LOG) && filesize(UPDATER_SCREEN_LOG) > 0) {
         $stillRunning = true;
     }
 }
-if ($stillRunning) {
-    // The flock in runUpdaterScript() already stops a second action from
-    // actually running (or corrupting the shared log), but until now
-    // gave no visual sign that a click while one was already in progress
-    // did nothing -- confirmed live, the user had no way to tell a check
-    // click landed on a no-op while an upgrade was still building.
-    // Disabling every button while something is running (this page
-    // auto-refreshes every 3s regardless, so they re-enable themselves
-    // the moment it finishes) makes that state visible instead of silent.
-    header('Refresh: 3');
-}
+// The flock in runUpdaterScript() already stops a second action from
+// actually running (or corrupting the shared log), but until now gave no
+// visual sign that a click while one was already in progress did nothing
+// -- confirmed live, the user had no way to tell a check click landed on
+// a no-op while an upgrade was still building. Disabling every button
+// while something is running (log.php polling below re-enables them --
+// via a one-time reload once it finishes) makes that state visible
+// instead of silent.
+//
+// Used to be header('Refresh: 3') -- a full page reload every 3s.
+// Confirmed live (2026-09-10): individual responses stayed fast (~0.2s)
+// even mid-upgrade, so the reload itself (re-running every page script,
+// re-fetching every asset) was the slow part users actually felt, not
+// the server. log.php + JS below polls for just the log text instead.
 ?>
 
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
@@ -133,7 +136,7 @@ if ($stillRunning) {
   <script>document.getElementById('updater-screen').scrollTop = 1e9;</script>
 
 <?php if ($stillRunning): ?>
-  <p class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">&#9203; An action is already running -- buttons are disabled until it finishes. This page updates itself every few seconds.</p>
+  <p class="mx-msg" style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;">&#9203; An action is already running -- buttons are disabled until it finishes. The log below updates live.</p>
 <?php endif; ?>
   <div class="mx-section">Check versions</div>
   <button name="btnChkOs" type="submit" class="mx-btn mx-btn-ghost"<?php echo $stillRunning ? ' disabled' : ''; ?>>OS</button>
@@ -147,6 +150,39 @@ if ($stillRunning) {
   <p class="mx-hint" style="margin-top:8px;">Sounds and Config updates from the original SVXLink-Dash-V2 project pointed at an unrelated ham network's own GitHub repo and would have overwritten this node's sound pack / event scripts with theirs -- removed rather than pointed at a real destination. See <a href="/help/">Help</a>.</p>
 
 </form>
+
+<?php if ($stillRunning): ?>
+<script>
+// Polls log.php for new log text every 2s instead of reloading the whole
+// page -- see the "Used to be header('Refresh: 3')" comment above for
+// why. One real reload happens once the action actually finishes, to
+// cleanly restore normal (non-disabled) button state and pick up
+// anything else that changed (dashboard/svxlink version strings, etc.)
+// rather than trying to patch all of that up via JS too.
+(function () {
+  var ta = document.getElementById('updater-screen');
+  function poll() {
+    fetch('log.php', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+      ta.value = d.log;
+      ta.scrollTop = 1e9;
+      if (d.running) {
+        setTimeout(poll, 2000);
+      } else {
+        // Not location.reload() -- this page was itself loaded via a POST
+        // (the button click that started the action), and reload() on a
+        // POST-loaded document resubmits that POST. Confirmed live: it
+        // silently re-triggered the same check/upgrade action a second
+        // time. A plain GET to the same path avoids that entirely.
+        window.location.href = window.location.pathname;
+      }
+    }).catch(function () {
+      setTimeout(poll, 2000);
+    });
+  }
+  setTimeout(poll, 2000);
+})();
+</script>
+<?php endif; ?>
 
 </div>
 </body>
