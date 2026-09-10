@@ -60,7 +60,15 @@ spin_run() {
 }
 
 RAW="https://raw.githubusercontent.com/Guru-RF/Analog-HotSPOT-SVXLink/master"
-INSTALLER_NAME="sudo /usr/sbin/install-bluetooth"
+# RF.Guru's own upstream script (this file is a vendored, reviewed copy --
+# see the header above) hardcodes this as "sudo /usr/sbin/install-bluetooth",
+# a wrapper their own hotspot-config toolchain installs elsewhere. This
+# project never installs anything at that path, so that recovery
+# instruction pointed at a command that doesn't exist -- confirmed live
+# (svxlinkmobile, 2026-09-10): "command not found". Resolve this script's
+# own actual invoked path instead, so the printed recovery command is one
+# that really works, wherever this repo happens to be checked out.
+INSTALLER_NAME="sudo bash $(readlink -f "${BASH_SOURCE[0]}")"
 
 # Refuse to install on a not-fully-updated OR not-yet-rebooted OS — a
 # kernel/libc upgrade left half-applied would put userspace and modules
