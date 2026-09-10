@@ -69,6 +69,8 @@ sudo reboot
 
 That's it — no interactive prompts, no manual config-file editing required for a normal install.
 
+**If step 10 (Bluetooth) stops with a wall of pending package names:** that's expected, not a bug. On a node that hasn't been updated in a while, the OS itself can be 150-200+ packages behind -- Bluetooth's install step deliberately refuses to proceed on top of that (self-gating, see `lib/install-bluetooth.sh`) rather than risk it. Nothing else has been changed by this -- just run the three commands it prints (`apt update && apt upgrade`, `reboot`, then `install-bluetooth` again) and the rest of the install (steps 1-9) is already done and unaffected. `svxlinkuhf`, the project's own long-running test node, hit the same wall the first time -- it's just been kept current in small batches since, rather than all at once like a freshly-dusty node's first run.
+
 **Note on the Update page:** `setup.sh` re-clones the repo into `/opt/hotspot-image` itself (that's the copy the dashboard actually serves and where its Update page looks for new commits — see `lib/install-dashboard.sh`). While this repo is private, that step can't authenticate on its own, so it just copies your local checkout there instead of doing a real `git clone` — the install itself works fine, but the Update page's "Dashboard" check/upgrade won't be able to fetch new commits afterward. Set `DASHBOARD_REPO_URL` (a `git@github.com:...` SSH URL, using a read-only deploy key added under this repo's **Settings → Deploy keys**) before running `setup.sh` if you want the Update page to work right away:
 
 ```bash
