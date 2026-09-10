@@ -39,11 +39,11 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "=== 1/9: base packages ==="
+echo "=== 1/10: base packages ==="
 apt-get update -y
 apt-get install -y avahi-daemon avahi-utils network-manager
 
-echo "=== 2/9: persistent crash logging ==="
+echo "=== 2/10: persistent crash logging ==="
 # RF.Guru's stock image logs to memory only (journald Storage=volatile) --
 # confirmed live on svxlinkuhf: an actual crash/reboot mid-investigation
 # left zero forensic logs, since the reboot wiped the in-memory journal.
@@ -53,25 +53,28 @@ mkdir -p /var/log/journal
 sed -i 's/^#\?Storage=.*/Storage=persistent/' /etc/systemd/journald.conf
 systemctl restart systemd-journald
 
-echo "=== 3/9: audio (WM8960) + GPIO PTT ==="
+echo "=== 3/10: audio (WM8960) + GPIO PTT ==="
 bash "$SCRIPT_DIR/lib/audio-gpio.sh"
 
-echo "=== 4/9: building SvxLink (stock) + installing our Logic.tcl ==="
+echo "=== 4/10: building SvxLink (stock) + installing our Logic.tcl ==="
 bash "$SCRIPT_DIR/lib/build-svxlink.sh"
 
-echo "=== 5/9: dashboard ==="
+echo "=== 5/10: Swedish sound pack for stock announcements ==="
+bash "$SCRIPT_DIR/lib/install-language-pack.sh"
+
+echo "=== 6/10: dashboard ==="
 bash "$SCRIPT_DIR/lib/install-dashboard.sh"
 
-echo "=== 6/9: watchdog ==="
+echo "=== 7/10: watchdog ==="
 bash "$SCRIPT_DIR/lib/install-watchdog.sh"
 
-echo "=== 7/9: load monitor (load/iowait/memory) ==="
+echo "=== 8/10: load monitor (load/iowait/memory) ==="
 bash "$SCRIPT_DIR/lib/install-load-monitor.sh"
 
-echo "=== 8/9: RX Monitor audio streaming + QSO Log ==="
+echo "=== 9/10: RX Monitor audio streaming + QSO Log ==="
 bash "$SCRIPT_DIR/lib/install-rx-monitor.sh"
 
-echo "=== 9/9: Bluetooth companion app support ==="
+echo "=== 10/10: Bluetooth companion app support ==="
 if [ -f /etc/systemd/system/hotspot-bluetooth.service ]; then
   echo "Already installed -- skipping (use lib/install-bluetooth.sh directly to update it)."
 else
