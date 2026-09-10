@@ -72,7 +72,7 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
 </details>
 <?php if (isProcessRunning('node')): ?>
 <?php if ($mxQsoRecorderActive ?? false): ?>
-  <button onclick="playAudioToggle(8080, this)" class="mx-rxmon-btn" style="margin-left:auto;">
+  <button id="mx-rxmon-btn" onclick="mxToggleRxMonitor(this)" class="mx-rxmon-btn" style="margin-left:auto;">
     <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor
   </button>
 <?php else: ?>
@@ -82,6 +82,46 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
 <?php endif; ?>
 <?php endif; ?>
 </nav>
+<script>
+// RX Monitor's own player (pcm-player.min.js's SVXPlayer) lives entirely
+// in page JS -- a full page navigation (every link in this multi-page
+// dashboard) tears it down along with everything else, since there's no
+// SPA-style persistence here. Full persistence-without-a-gap would need
+// restructuring the whole dashboard as an SPA; this is the practical
+// middle ground instead -- remember "was playing" across the navigation
+// in localStorage, and auto-resume on the next page if it's still
+// available there (a second or two gap while the new page loads, not
+// seamless, but no manual re-click needed).
+(function () {
+  var RXMON_KEY = 'mxRxMonitorPlaying';
+  window.mxToggleRxMonitor = function (btn) {
+    playAudioToggle(8080, btn);
+    // playAudioToggle() toggles synchronously (isPlaying() flips inside
+    // the same call), so the state right after the call is the new state.
+    try {
+      if (window.svxp && window.svxp.isPlaying()) {
+        localStorage.setItem(RXMON_KEY, '1');
+      } else {
+        localStorage.removeItem(RXMON_KEY);
+      }
+    } catch (e) { /* localStorage unavailable (private mode, etc) -- just skip persistence */ }
+  };
+  try {
+    if (localStorage.getItem(RXMON_KEY) === '1') {
+      var btn = document.getElementById('mx-rxmon-btn');
+      // Only auto-resume if this page actually has the button (QSO
+      // Recorder still on, rx-monitor-proxy still running) -- otherwise
+      // clear the stale flag so it doesn't keep trying on every future
+      // page too.
+      if (btn) {
+        playAudioToggle(8080, btn);
+      } else {
+        localStorage.removeItem(RXMON_KEY);
+      }
+    }
+  } catch (e) { /* localStorage unavailable -- nothing to resume */ }
+})();
+</script>
 <script>
 document.addEventListener('click', function (e) {
   document.querySelectorAll('.mx-dropdown[open]').forEach(function (d) {
