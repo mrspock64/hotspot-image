@@ -74,6 +74,7 @@ if (isset($_POST['save_temp_protect'])) {
         iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'Dashboard', [
             'LOAD_MONITOR_TEMP_THRESHOLD_C' => $tempThreshold,
             'LOAD_MONITOR_AUTO_STOP_SVXLINK' => isset($_POST['temp_auto_stop']) ? '1' : '0',
+            'LOAD_MONITOR_AUTO_ALERT_TX' => isset($_POST['temp_auto_alert_tx']) ? '1' : '0',
         ]);
         $message = 'Saved.';
     }
@@ -84,6 +85,7 @@ $perfMode = getPerfMode();
 $isZero2W = isPiZero2W();
 $tempThreshold = getLoadMonitorTempThreshold();
 $tempAutoStop = getLoadMonitorAutoStopSvxlink();
+$tempAutoAlertTx = getLoadMonitorAutoAlertTx();
 $currentTempC = null;
 if (is_readable('/sys/class/thermal/thermal_zone0/temp')) {
     $raw = trim((string)@file_get_contents('/sys/class/thermal/thermal_zone0/temp'));
@@ -158,7 +160,11 @@ if (is_readable('/sys/class/thermal/thermal_zone0/temp')) {
         <input type="checkbox" name="temp_auto_stop" <?php echo $tempAutoStop ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
         Automatically stop SvxLink if it stays that hot
       </label>
-      <p class="mx-hint" style="text-align:center; margin:0 0 8px;">Checked every ~30s by the load monitor; needs ~2 minutes sustained above the threshold before acting (a brief spike isn't enough). Off by default -- it only ever stops the service, never restarts it, and only takes effect if it's on to begin with. Pi firmware itself throttles at 80&deg;C.</p>
+      <label style="font-size:13px; font-weight:normal; display:block; text-align:center; margin-bottom:6px;">
+        <input type="checkbox" name="temp_auto_alert_tx" <?php echo $tempAutoAlertTx ? 'checked' : ''; ?> style="width:auto; vertical-align:middle;">
+        Transmit alert message (D921#) once if it stays that hot
+      </label>
+      <p class="mx-hint" style="text-align:center; margin:0 0 8px;">Checked every ~30s by the load monitor; needs ~2 minutes sustained above the threshold before acting (a brief spike isn't enough). Both off by default. The alert transmits once per warning (not repeatedly) and uses whatever's set as the Alert message in the <a href="/soundlib/">Sound Library</a> -- fires before auto-stop, so it still goes out if both are on. Pi firmware itself throttles at 80&deg;C.</p>
       <button type="submit" name="save_temp_protect" class="mx-btn mx-btn-ghost" style="width:260px;">Save</button>
     </form>
 

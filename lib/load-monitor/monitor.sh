@@ -31,6 +31,16 @@
 # response than pausing QSO recording, reserved for actual thermal
 # danger rather than the load/iowait/memory pattern above. Never
 # restarts it automatically either.
+#
+# Also optionally (LOAD_MONITOR_AUTO_ALERT_TX=1, off by default, toggle
+# on the Power page) transmits D921# -- the Sound Library's alert-message
+# slot (dashboard/include/sound_library.php) -- once when sustained high
+# temperature is first detected, so anyone monitoring the frequency
+# actually hears why the node went quiet. Fired before auto-stop, not
+# after, so the alert goes out even when both are enabled. Deliberately
+# fires only once per episode (not every ~30s while still hot) rather
+# than repeatedly keying up the radio, which would itself keep the PA
+# warm during the exact condition being warned about.
 set -u
 
 SVX_CONF=/etc/svxlink/svxlink.conf
@@ -60,6 +70,7 @@ mkdir -p "$(dirname "$STATE_FILE")"
 
 overload_count=0
 temp_overload_count=0
+alert_tx_sent=0
 
 # %iowait since boot isn't useful on its own -- sample /proc/stat twice,
 # a second apart, and diff the "iowait" jiffies field against total
@@ -130,6 +141,25 @@ stop_svxlink() {
     sudo service svxlink stop 2>&1
 }
 
+auto_alert_tx_enabled() {
+    grep -E '^[ \t]*LOAD_MONITOR_AUTO_ALERT_TX[ \t]*=' "$SVX_CONF" 2>/dev/null \
+        | tail -n1 | cut -d'=' -f2 | tr -d '[:space:]' | grep -q '^1$'
+}
+
+# Same double-send mitigation as everywhere else this DTMF relay is used
+# (dashboard/include/tts_message.php's sendDtmfReliable(), qso_simulate.sh)
+# -- RF.Guru's own nc-based relay occasionally drops leading digits.
+send_alert_tx() {
+    if [ ! -f /etc/svxlink/alert_message.wav ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') LOAD_MONITOR_AUTO_ALERT_TX is on but no alert message is saved (Sound Library) -- nothing to send"
+        return
+    fi
+    /usr/sbin/hotspot_dtmf 'D921#' >/dev/null 2>&1
+    sleep 0.3
+    /usr/sbin/hotspot_dtmf 'D921#' >/dev/null 2>&1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') sent D921# temperature alert"
+}
+
 while true; do
     load1=$(awk '{print $1}' /proc/loadavg)
     iowait=$(read_iowait)
@@ -175,12 +205,18 @@ while true; do
             echo "$(date '+%Y-%m-%d %H:%M:%S') temp back to normal -- temp=${temp_c}C"
         fi
         temp_overload_count=0
+        alert_tx_sent=0
         rm -f "$STATE_FILE_TEMP"
     fi
 
     if [ "$temp_overload_count" -ge "$TEMP_SUSTAINED_CHECKS" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') SUSTAINED HIGH TEMPERATURE -- temp=${temp_c}C (threshold ${temp_threshold}C)"
         echo "sustained high temperature since $(date '+%Y-%m-%d %H:%M:%S')" > "$STATE_FILE_TEMP"
+
+        if [ "$alert_tx_sent" = 0 ] && auto_alert_tx_enabled; then
+            send_alert_tx
+            alert_tx_sent=1
+        fi
 
         if auto_stop_svxlink_enabled; then
             svxlink_status=$(systemctl is-active svxlink 2>/dev/null || true)

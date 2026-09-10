@@ -64,6 +64,12 @@ function getLoadMonitorAutoStopSvxlink(): bool
     return ($conf['Dashboard']['LOAD_MONITOR_AUTO_STOP_SVXLINK'] ?? '0') === '1';
 }
 
+function getLoadMonitorAutoAlertTx(): bool
+{
+    $conf = @parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW) ?: [];
+    return ($conf['Dashboard']['LOAD_MONITOR_AUTO_ALERT_TX'] ?? '0') === '1';
+}
+
 function pruneOldBackups(string $filePath): void
 {
     $maxKeep = getConfigBackupMaxKeep();

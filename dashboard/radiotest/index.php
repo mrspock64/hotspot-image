@@ -127,9 +127,8 @@ $hasAlertMessage = is_file(TTS_OUTPUT_ALERT);
 <?php endif; ?>
 
   <div class="mx-section">Alert message (D921#)</div>
-  <p class="mx-hint">A second, independent message slot reserved for automated alerts (e.g. announcing
-    sustained high temperature over the air) -- not wired up to trigger automatically yet, that's a
-    separate decision to make later.
+  <p class="mx-hint">Automatically transmitted once by the load monitor on sustained high temperature, if
+    enabled on the <a href="/power/">Power</a> page.
 <?php if ($hasAlertMessage): ?>
     Currently set from the <a href="/soundlib/">Sound Library</a>.
 <?php else: ?>
