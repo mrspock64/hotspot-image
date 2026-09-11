@@ -5,5 +5,6 @@
   { "id": "autoupdate", "col": 1, "enabled": true },
   { "id": "signal", "col": 2, "enabled": true },
   { "id": "rxmonitor", "col": 2, "enabled": true },
+  { "id": "reflector-activity", "col": 3, "enabled": true },
   { "id": "qsolog", "col": 3, "enabled": true }
 ]

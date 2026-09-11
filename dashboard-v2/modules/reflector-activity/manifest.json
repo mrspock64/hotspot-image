@@ -1,0 +1,8 @@
+{
+  "id": "reflector-activity",
+  "title": "Reflector Activity",
+  "element": "reflector-activity-panel",
+  "script": "/modules/reflector-activity/panel.js",
+  "api": "/api/reflector-activity.php",
+  "refresh_ms": 10000
+}
