@@ -1,0 +1,8 @@
+{
+  "id": "monitored-talkgroups",
+  "title": "Monitored Talkgroups",
+  "element": "monitored-talkgroups-panel",
+  "script": "/modules/monitored-talkgroups/panel.js",
+  "api": "/api/monitored-talkgroups.php",
+  "refresh_ms": 10000
+}
