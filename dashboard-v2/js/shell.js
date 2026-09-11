@@ -90,7 +90,15 @@
       detachBtn.innerHTML = '&#8599;';
       detachBtn.addEventListener('click', () => {
         const winName = 'dv2-module-' + page + '-' + entry.id;
-        window.open('/module/?id=' + encodeURIComponent(entry.id), winName, 'width=480,height=560,resizable=yes,scrollbars=yes');
+        // "popup=yes" is what actually gets Chrome to open a real chrome-
+        // less window instead of a new tab -- confirmed live: without it,
+        // width/height/resizable alone were silently ignored and this
+        // opened as an ordinary tab. Starts at a guessed size; js/module.js
+        // resizes it to the module's real rendered size once content
+        // settles, since different modules are very different heights
+        // (Radio Status vs. a long QSO Log list) and there's no single
+        // right fixed size to pick here.
+        window.open('/module/?id=' + encodeURIComponent(entry.id), winName, 'popup=yes,width=480,height=420,resizable=yes,scrollbars=yes');
       });
       wrap.appendChild(detachBtn);
       wrap.appendChild(el);
