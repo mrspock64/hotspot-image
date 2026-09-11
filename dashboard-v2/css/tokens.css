@@ -130,6 +130,19 @@ a{ color: inherit; }
 }
 .col{ display:flex; flex-direction:column; gap:16px; min-width:0; }
 
+/* ---------- module wrap / pop-out button ---------- */
+.module-wrap{ position:relative; }
+.module-detach{
+  position:absolute; top:-9px; right:-9px; z-index:10;
+  width:24px; height:24px; border-radius:50%; line-height:1;
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center; font-size:12px;
+  cursor:pointer; opacity:0; transition:opacity .15s ease, color .15s ease, border-color .15s ease;
+}
+.module-wrap:hover .module-detach{ opacity:1; }
+.module-detach:hover{ color:var(--copper); border-color:var(--copper-dim); }
+.module-detach:focus-visible{ opacity:1; outline:2px solid var(--copper); outline-offset:1px; }
+
 /* ---------- panel ---------- */
 .panel{
   background: var(--surface);

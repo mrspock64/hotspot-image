@@ -73,11 +73,33 @@
           el.setAttribute(key.replace(/_/g, '-'), String(value));
         }
       }
+
+      // Pop-out button: opens the exact same manifest/panel.js/api in its
+      // own small window (/module/?id=..., see js/module.js) -- the
+      // module itself never knows it's detached. Wrapping here, not
+      // inside each panel.js, keeps "detachable" a shell-level concern
+      // every module gets for free rather than something each one has to
+      // opt into. A named window target (not "_blank") means clicking the
+      // button again for the same module on the same page re-focuses the
+      // existing popup instead of spawning duplicates.
+      const wrap = document.createElement('div');
+      wrap.className = 'module-wrap';
+      const detachBtn = document.createElement('button');
+      detachBtn.className = 'module-detach';
+      detachBtn.title = 'Open in its own window';
+      detachBtn.innerHTML = '&#8599;';
+      detachBtn.addEventListener('click', () => {
+        const winName = 'dv2-module-' + page + '-' + entry.id;
+        window.open('/module/?id=' + encodeURIComponent(entry.id), winName, 'width=480,height=560,resizable=yes,scrollbars=yes');
+      });
+      wrap.appendChild(detachBtn);
+      wrap.appendChild(el);
+
       // A module saved against a column that no longer exists on this
       // page (columns lowered after the layout was saved) falls back to
       // the last real column rather than vanishing.
       const col = cols[entry.col] || cols[columns] || cols[1];
-      col.appendChild(el);
+      col.appendChild(wrap);
     } catch (e) {
       console.error('dashboard-v2: failed to load module', entry.id, e);
     }
