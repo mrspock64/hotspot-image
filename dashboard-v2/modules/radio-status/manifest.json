@@ -1,0 +1,8 @@
+{
+  "id": "radio-status",
+  "title": "Radio Status",
+  "element": "radio-status-panel",
+  "script": "/modules/radio-status/panel.js",
+  "api": "/api/radio-status.php",
+  "refresh_ms": 2000
+}

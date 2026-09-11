@@ -1,5 +1,6 @@
 [
   { "id": "frequency", "col": 1, "enabled": true },
+  { "id": "radio-status", "col": 1, "enabled": true },
   { "id": "talkgroup", "col": 1, "enabled": true },
   { "id": "node", "col": 1, "enabled": true },
   { "id": "autoupdate", "col": 1, "enabled": true },
