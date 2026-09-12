@@ -54,9 +54,19 @@ Signal/WiFi-kortet — verklig data från `/proc/net/wireless` på svxlinkuhf (d
 
 ## Byggda moduler hittills
 
-Frequency, Talkgroup, Node/Vitals, WiFi Signal, RX Monitor, Auto-update, QSO Log — alla live på svxlinkuhf:8081 med riktig data.
+Frequency, Radio Status, Talkgroup, Node/Vitals, WiFi Signal, RX Monitor, Reflector Activity, Monitored Talkgroups, Auto-update, QSO Log, Setup (read-only) — alla live på svxlinkuhf:8081 med riktig data.
 
-Talkgroup-modulens datakälla (`dashboard-v2/api/talkgroup.php`): `/var/log/svxlink` loggar redan `Selecting TG #<n>` och `Talker start/stop on TG #<n>: <call>` verbatim — samma rad `lib/rx-monitor/tag_and_encode.py` redan tailar. Ingen ny backend-daemon behövdes. OBS tidszonsfälla löst där: SvxLink:s loggtider är `localtime()` utan tidszon i strängen — PHP måste sättas till samma tidszon som `/etc/timezone` innan `strtotime()`, annars blir allt "0s ago" om PHP:s standard (ofta UTC) skiljer sig från systemets faktiska zon.
+Talkgroup/Reflector Activity/Monitored Talkgroups/Radio Status delar alla samma källa (`/var/log/svxlink`): `Selecting TG #<n>`, `Talker start/stop on TG #<n>: <call>`, `Node joined/left: <call>`, `Tx1: Turning the transmitter ON/OFF`, `Rx1: The squelch is OPEN/CLOSED` loggas redan verbatim av SvxLink självt — samma logg `lib/rx-monitor/tag_and_encode.py` redan tailar. Ingen ny backend-daemon behövdes för nån av dem. OBS tidszonsfälla löst i alla fyra: SvxLink:s loggtider är `localtime()` utan tidszon i strängen — PHP måste sättas till samma tidszon som `/etc/timezone` innan `strtotime()`, annars blir allt "0s ago" om PHP:s standard (ofta UTC) skiljer sig från systemets faktiska zon.
+
+## Övriga funktioner
+
+- **Döpa om sidor + kolumnantal (1–4)**: `dashboard-v2/pages/<sida>/meta.json` (standard) + sparad override, redigerbart i `/settings/?page=<sida>`. Samma mbstring-fälla som andra API:er kan råka ut för — se `api/page-meta.php`:s kommentar.
+- **Detacha modul till eget fönster**: hover-knapp (↗) på varje panel, öppnar `/module/?id=<id>` (`js/module.js`) — exakt samma manifest/panel.js/api, ingen modul behöver veta att den är lösgjord. `popup=yes` krävs i `window.open`-featuresträngen, annars öppnas det som en vanlig flik (hittat live).
+- **App-ikon/namn**: `manifest.webmanifest` + `icons/` (kopparfärgad "HS", matchar topbaren) för Chromes "Skapa genväg". **OBS:** ger bara rätt namn/ikon på genvägen — Chromes riktiga "Öppna som fönster"-läge (och install-ikonen i adressfältet) kräver HTTPS/`localhost`, funkar inte över vanlig HTTP. Se backlog nedan.
+
+## Backlog
+
+- **HTTPS för dashboard-v2:8081** — enda sättet att få Chromes riktiga "Installera app"/"Öppna som fönster" att fungera (bekräftat live: utan HTTPS visas inte kryssrutan alls, genvägen öppnar bara en vanlig flik). Kräver självsignerat cert (eller mkcert) för svxlinkuhf + antingen TLS-stöd i PHP:s inbyggda server eller en nginx/Apache-proxy framför `:8081`, plus att godkänna certifikatvarningen en gång per enhet. Medvetet pausad 2026-09-12, inte bortglömd.
 
 ## Viktiga ramar
 
