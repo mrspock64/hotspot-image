@@ -71,15 +71,15 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
   </div>
 </details>
 <?php if (isProcessRunning('node')): ?>
-<?php if ($mxQsoRecorderActive ?? false): ?>
+  <!-- Always the live button now, even if QSO logging itself is off --
+       mxToggleRxMonitor() below turns the recorder on just long enough
+       to feed this (see rx_monitor_toggle.php), without keeping any
+       recordings (lib/rx-monitor/tag_and_encode.py discards them while
+       that "monitor-only" session is active). Previously this rendered
+       a disabled link to the QSO Log page instead when logging was off. -->
   <button id="mx-rxmon-btn" onclick="mxToggleRxMonitor(this)" class="mx-rxmon-btn" style="margin-left:auto;">
     <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor
   </button>
-<?php else: ?>
-  <a href="/qsolog/" class="mx-rxmon-btn" style="margin-left:auto; opacity:0.6; text-decoration:none;" title="RX Monitor needs QSO Recorder turned on first -- click to go to the QSO Log page and turn it on.">
-    <img src="/images/speaker.png" alt="" style="vertical-align:middle;height:12px;margin-right:4px;">RX Monitor (off)
-  </a>
-<?php endif; ?>
 <?php endif; ?>
 </nav>
 <script>
@@ -94,7 +94,23 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
 // seamless, but no manual re-click needed).
 (function () {
   var RXMON_KEY = 'mxRxMonitorPlaying';
+  // Fire-and-forget: playback itself doesn't need to wait on this, and
+  // both endpoints are meant to tolerate being called when there's
+  // nothing to do (see rx_monitor_toggle.php's own early-return cases).
+  function mxRxMonitorRequest(action) {
+    try {
+      fetch('/include/rx_monitor_toggle.php?action=' + action, { method: 'POST' }).catch(function () {});
+    } catch (e) { /* fetch unavailable -- RX Monitor still works if logging happens to already be on */ }
+  }
   window.mxToggleRxMonitor = function (btn) {
+    var startingUp = !(window.svxp && window.svxp.isPlaying());
+    if (startingUp) {
+      // Turns the QSO Recorder on first if it's currently off (see
+      // rx_monitor_toggle.php) -- without this, a node with logging off
+      // has nothing for tail_qso_recorder.py to stream, same as before
+      // this feature existed.
+      mxRxMonitorRequest('start');
+    }
     playAudioToggle(8080, btn);
     // playAudioToggle() toggles synchronously (isPlaying() flips inside
     // the same call), so the state right after the call is the new state.
@@ -103,17 +119,19 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
         localStorage.setItem(RXMON_KEY, '1');
       } else {
         localStorage.removeItem(RXMON_KEY);
+        // Only relevant if this session was the one that turned logging
+        // on in the first place -- rx_monitor_toggle.php/
+        // stop_monitor_only.sh sort that out; this call is harmless if
+        // logging was already genuinely on for real.
+        mxRxMonitorRequest('stop');
       }
     } catch (e) { /* localStorage unavailable (private mode, etc) -- just skip persistence */ }
   };
   try {
     if (localStorage.getItem(RXMON_KEY) === '1') {
       var btn = document.getElementById('mx-rxmon-btn');
-      // Only auto-resume if this page actually has the button (QSO
-      // Recorder still on, rx-monitor-proxy still running) -- otherwise
-      // clear the stale flag so it doesn't keep trying on every future
-      // page too.
       if (btn) {
+        mxRxMonitorRequest('start');
         playAudioToggle(8080, btn);
       } else {
         localStorage.removeItem(RXMON_KEY);

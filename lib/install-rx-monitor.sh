@@ -54,7 +54,8 @@ mkdir -p /opt/rx-monitor /var/log/dvswitch
 cp "$SCRIPT_DIR/rx-monitor/proxy.js" /opt/rx-monitor/proxy.js
 cp "$SCRIPT_DIR/rx-monitor/tail_qso_recorder.py" /opt/rx-monitor/tail_qso_recorder.py
 cp "$SCRIPT_DIR/rx-monitor/tag_and_encode.py" /opt/rx-monitor/tag_and_encode.py
-chmod +x /opt/rx-monitor/tail_qso_recorder.py /opt/rx-monitor/tag_and_encode.py
+cp "$SCRIPT_DIR/rx-monitor/stop_monitor_only.sh" /opt/rx-monitor/stop_monitor_only.sh
+chmod +x /opt/rx-monitor/tail_qso_recorder.py /opt/rx-monitor/tag_and_encode.py /opt/rx-monitor/stop_monitor_only.sh
 (cd /opt/rx-monitor && npm install ws --no-fund --no-audit --loglevel=error)
 
 echo "--- RX Monitor / QSO Log: SvxLink QSO Recorder ---"
