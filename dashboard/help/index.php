@@ -95,11 +95,13 @@
   talker on a monitored TG) means no audio — that's expected, not a bug.
   </p>
   <p style="font-size:13px; line-height:1.6;">
-  Needs QSO Recorder switched on (<a href="/qsolog/">QSO Log</a> page, off by default) — the button shows
-  as dimmed "RX Monitor (off)" and links there instead if it isn't. Since the player itself lives in page
-  JavaScript, clicking a link elsewhere in the dashboard stops it (a full page load tears it down along
-  with everything else on the old page) — it remembers it was playing and automatically starts again on
-  the new page after a second or two, so you don't need to re-click it on every page.
+  Works even if <a href="/qsolog/">QSO Log</a> recording is switched off — clicking RX Monitor turns
+  SvxLink's QSO Recorder on just long enough to feed the live audio, and back off a few seconds after you
+  stop listening, without keeping any of the recordings made in between. If QSO Log recording is already on
+  for real, RX Monitor just uses that — nothing changes when you turn it off. Since the player itself lives
+  in page JavaScript, clicking a link elsewhere in the dashboard stops it (a full page load tears it down
+  along with everything else on the old page) — it remembers it was playing and automatically starts again
+  on the new page after a second or two, so you don't need to re-click it on every page.
   </p>
 
 </div>
