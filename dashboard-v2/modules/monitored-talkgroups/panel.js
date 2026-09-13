@@ -89,6 +89,17 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
           directory.map((t) => this.tgRow(t, data.selected_tg)).join('')
         : '');
 
+    // Every poll rebuilds this.innerHTML wholesale, which silently resets
+    // .activity-list's scrollTop to 0 -- confirmed live (2026-09-14):
+    // scroll down toward a talkgroup further in the list, get caught by
+    // the next refresh_ms tick, and the list jumps back to the top right
+    // as you're about to click. Row order is already stable (see
+    // api/monitored-talkgroups.php's sort comment), so the fix here is
+    // just carrying the scroll position across the rebuild, not avoiding
+    // the rebuild itself.
+    const prevList = this.querySelector('.activity-list');
+    const scrollTop = prevList ? prevList.scrollTop : 0;
+
     this.innerHTML =
       '<div class="panel">' +
         '<div class="panel-head"><div class="panel-title">Monitored Talkgroups</div>' +
@@ -97,6 +108,10 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
         '<div class="activity-list">' + rows + '</div>' +
         '<div class="panel-foot">Click a talkgroup to switch to it &middot; MONITOR_TGS + TG Names in svxlink.conf &middot; activity parsed from /var/log/svxlink</div>' +
       '</div>';
+
+    if (scrollTop) {
+      this.querySelector('.activity-list').scrollTop = scrollTop;
+    }
   }
 
   tgRow(t, selectedTg) {
