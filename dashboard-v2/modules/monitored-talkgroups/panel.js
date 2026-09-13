@@ -5,13 +5,25 @@
 // Reflector Activity (whole reflector) and Talkgroup (just the single
 // most recent event anywhere) -- this is "how are the TGs I actually
 // monitor doing".
+//
+// Rows are also the TG switcher: click one to make it this node's active
+// TG (?action=select, which shells out the same "91<tg>#" DTMF command
+// the production TG page's own "A" button sends -- see
+// api/monitored-talkgroups.php's header comment). Replaces that page's
+// separate admin table + button column entirely for this data set; no
+// new visual element, the list that was already on screen just became
+// actionable. The currently-active TG (selected_tg, from the same log
+// scan) gets a copper left-border highlight so "where am I" reads at a
+// glance instead of needing a separate status line.
 class MonitoredTalkgroupsPanel extends HTMLElement {
   connectedCallback() {
     this.apiUrl = this.getAttribute('api') || 'api/monitored-talkgroups.php';
     this.refreshMs = parseInt(this.getAttribute('refresh-ms'), 10) || 10000;
+    this.selectingTg = null;
     this.render({ loading: true });
     this.poll();
     this._timer = setInterval(() => this.poll(), this.refreshMs);
+    this.addEventListener('click', (e) => this.onClick(e));
   }
 
   disconnectedCallback() {
@@ -28,6 +40,27 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
     }
   }
 
+  onClick(e) {
+    const row = e.target.closest('.activity-row.selectable');
+    if (!row) return;
+    const tg = row.getAttribute('data-tg');
+    if (!tg || tg === this.selectingTg) return;
+    this.selectTg(tg, row);
+  }
+
+  async selectTg(tg, row) {
+    this.selectingTg = tg;
+    row.classList.add('selecting');
+    try {
+      await fetch(this.apiUrl + '?action=select&tg=' + encodeURIComponent(tg), { cache: 'no-store' });
+    } catch (e) {
+      // Fall through to the next poll either way -- it reflects whatever
+      // SvxLink's log actually shows, not this request's own success.
+    }
+    this.selectingTg = null;
+    this.poll();
+  }
+
   render({ loading, error, data }) {
     if (loading || error || !data) {
       const msg = loading ? 'Loading&hellip;' : 'Monitored talkgroup data unavailable';
@@ -38,7 +71,7 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
     }
 
     const rows = data.talkgroups.length
-      ? data.talkgroups.map((t) => this.tgRow(t)).join('')
+      ? data.talkgroups.map((t) => this.tgRow(t, data.selected_tg)).join('')
       : '<div class="kv-row" style="padding:14px 16px;"><span class="k">No monitored talkgroups configured</span></div>';
 
     this.innerHTML =
@@ -47,11 +80,11 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
           '<span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">' + data.talkgroups.length + ' TGs</span>' +
         '</div>' +
         '<div class="activity-list">' + rows + '</div>' +
-        '<div class="panel-foot">MONITOR_TGS in svxlink.conf &middot; activity parsed from /var/log/svxlink</div>' +
+        '<div class="panel-foot">Click a talkgroup to switch to it &middot; MONITOR_TGS in svxlink.conf &middot; activity parsed from /var/log/svxlink</div>' +
       '</div>';
   }
 
-  tgRow(t) {
+  tgRow(t, selectedTg) {
     const nameLabel = t.name && t.name !== t.tg ? ' <span style="color:var(--text-faint);">(' + this.esc(t.name) + ')</span>' : '';
     const priority = t.priority > 0 ? ' <span style="color:var(--copper);">' + '+'.repeat(t.priority) + '</span>' : '';
 
@@ -66,8 +99,11 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
       ago = '';
     }
 
+    const isCurrent = selectedTg !== null && String(selectedTg) === String(t.tg);
+    const rowClass = 'activity-row selectable' + (isCurrent ? ' current' : '');
+
     return (
-      '<div class="activity-row">' +
+      '<div class="' + rowClass + '" data-tg="' + this.esc(t.tg) + '" title="Switch to TG ' + this.esc(t.tg) + '">' +
         '<span class="activity-dot ' + dotClass + '"></span>' +
         '<span class="activity-text"><span class="tg-num">TG ' + this.esc(t.tg) + '</span>' + priority + nameLabel + ' &mdash; ' + activityText + '</span>' +
         '<span class="activity-ago">' + ago + '</span>' +

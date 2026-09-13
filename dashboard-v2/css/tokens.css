@@ -355,6 +355,13 @@ svg.spark{ width:100%; height:64px; display:block; }
 .activity-ago{ font-family:var(--mono); font-size:11px; color:var(--text-faint); white-space:nowrap; }
 .tg-num{ color:var(--cyan); font-family:var(--mono); font-weight:600; }
 
+/* ---------- selectable rows (Monitored Talkgroups: click a row to switch to it) ---------- */
+.activity-row.selectable{ cursor:pointer; border-left:2px solid transparent; transition:background .12s ease, border-color .12s ease; }
+.activity-row.selectable:hover{ background:rgba(255,157,77,0.05); }
+.activity-row.selectable.current{ background:rgba(255,157,77,0.07); border-left-color:var(--copper); }
+.activity-row.selectable.current .tg-num{ color:var(--copper); }
+.activity-row.selecting{ opacity:.55; pointer-events:none; }
+
 /* ---------- waterfall (RX Monitor module) ---------- */
 .waterfall-wrap{ border-radius:7px; overflow:hidden; border:1px solid var(--border-soft); background:#050709; }
 canvas.waterfall-canvas{ display:block; width:100%; height:76px; }

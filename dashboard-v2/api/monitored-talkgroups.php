@@ -12,9 +12,34 @@
 // require(), not duplicated logic) -- unlike Setup's readCurrent(), this
 // lives in a proper dashboard/include/*.php file already, so there's
 // nothing to duplicate.
+//
+// ?action=select&tg=<n>: switches the node's active talkgroup, reusing
+// production's own sendTgSelectDtmf() (dashboard/include/tg_select.php,
+// extracted from buttons.php specifically so this endpoint could require
+// it without pulling in that file's page template) -- same "91<tg>#" DTMF
+// command and double-send workaround the production TG page's own "A"
+// (cell_tower) button sends. Only accepts TG numbers already on this
+// node's own MONITOR_TGS list, not an arbitrary string -- this endpoint
+// has no separate "add a new favorite TG" concern, that stays on the
+// production TG Names page.
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../dashboard/include/tgdb_store.php';
+
+$action = $_GET['action'] ?? ($_POST['action'] ?? '');
+if ($action === 'select') {
+    require_once __DIR__ . '/../../dashboard/include/tg_select.php';
+    $tg = $_GET['tg'] ?? ($_POST['tg'] ?? '');
+    $monitored = loadMonitoredTgNumbers();
+    if (!ctype_digit((string)$tg) || !in_array((string)$tg, $monitored, true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'tg must be a number on the monitored list']);
+        exit;
+    }
+    sendTgSelectDtmf('91' . $tg . '#');
+    echo json_encode(['selected' => (string)$tg]);
+    exit;
+}
 
 // Same timezone trap as api/talkgroup.php and api/reflector-activity.php.
 $systemTz = trim((string)@file_get_contents('/etc/timezone'));
@@ -47,8 +72,13 @@ $names = loadTgDb();
 // the monitored list -- no point remembering activity for TGs this node
 // doesn't care about.
 $lastActivity = []; // tg (string) => ['type','callsign','at']
+$selectedTg = null; // this node's currently active TG, same log line api/talkgroup.php reads
 $lines = tailLines(LOG_FILE, TAIL_LINES);
 foreach ($lines as $line) {
+    if (preg_match('/^(.+?): ReflectorLogic: Selecting TG #(\d+)/', $line, $m)) {
+        $selectedTg = $m[2];
+        continue;
+    }
     if (!preg_match('/^(.+?): ReflectorLogic: Talker (start|stop) on TG #(\d+): (\S+)/', $line, $m)) {
         continue;
     }
@@ -88,4 +118,4 @@ usort($result, function ($a, $b) {
     return $aAt <=> $bAt;
 });
 
-echo json_encode(['talkgroups' => $result]);
+echo json_encode(['talkgroups' => $result, 'selected_tg' => $selectedTg]);
