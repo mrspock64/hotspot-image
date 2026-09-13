@@ -14,9 +14,9 @@
 // plus everywhere else I could go".
 //
 // Rows are also the TG switcher: click one to make it this node's active
-// TG (?action=select, which shells out the same "91<tg>#" DTMF command
-// the production TG page's own "A" button sends -- see
-// api/monitored-talkgroups.php's header comment). Replaces that page's
+// TG via window.dv2SelectTg() (js/tg-select.js), which shells out the
+// same "91<tg>#" DTMF command the production TG page's own "A" button
+// sends -- see api/tg-select.php's header comment. Replaces that page's
 // separate admin table + button column entirely; no new visual element,
 // the list that was already on screen just became actionable. The
 // currently-active TG (selected_tg, from the same log scan) gets a
@@ -58,12 +58,7 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
   async selectTg(tg, row) {
     this.selectingTg = tg;
     row.classList.add('selecting');
-    try {
-      await fetch(this.apiUrl + '?action=select&tg=' + encodeURIComponent(tg), { cache: 'no-store' });
-    } catch (e) {
-      // Fall through to the next poll either way -- it reflects whatever
-      // SvxLink's log actually shows, not this request's own success.
-    }
+    await window.dv2SelectTg(tg);
     this.selectingTg = null;
     this.poll();
   }

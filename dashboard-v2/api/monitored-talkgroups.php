@@ -27,31 +27,14 @@
 // regex pass shared across every log-based module) rather than this
 // file's own independent scan -- see that file's header comment.
 //
-// ?action=select&tg=<n>: switches the node's active talkgroup, reusing
-// production's own sendTgSelectDtmf() (dashboard/include/tg_select.php,
-// extracted from buttons.php specifically so this endpoint could require
-// it without pulling in that file's page template) -- same "91<tg>#" DTMF
-// command and double-send workaround the production TG page's own "A"
-// (cell_tower) button sends. Accepts any TG number that has a name in
-// the TG Names database (monitored or not), not an arbitrary string.
+// TG selection itself lives in the shared api/tg-select.php now (used by
+// this module's rows and Reflector Activity's), not here -- see that
+// file's header comment for why the "must already be named" restriction
+// this endpoint used to enforce was dropped once a second module needed
+// to select TGs the name database doesn't know about.
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../dashboard/include/tgdb_store.php';
-
-$action = $_GET['action'] ?? ($_POST['action'] ?? '');
-if ($action === 'select') {
-    require_once __DIR__ . '/../../dashboard/include/tg_select.php';
-    $tg = $_GET['tg'] ?? ($_POST['tg'] ?? '');
-    $names = loadTgDb();
-    if (!ctype_digit((string)$tg) || !array_key_exists((string)$tg, $names)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'tg must be a number in the TG Names database']);
-        exit;
-    }
-    sendTgSelectDtmf('91' . $tg . '#');
-    echo json_encode(['selected' => (string)$tg]);
-    exit;
-}
 
 require_once __DIR__ . '/../../dashboard/include/svxlink_log_state.php';
 
