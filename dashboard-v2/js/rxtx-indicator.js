@@ -27,6 +27,20 @@
     }
   }
 
+  // SvxLink up/down chip -- always visible, not tied to the ambient
+  // pulse's own on/off switch. Reuses the existing .status-chip/.dot
+  // classes (same ones RX Monitor and Setup already use) rather than
+  // introducing a new visual element, since this is a plain binary
+  // status, not something that needs the pulse's own bar animation.
+  const statusChip = document.createElement('span');
+  statusChip.className = 'status-chip';
+  statusChip.id = 'svxlink-status';
+  statusChip.style.padding = '5px 12px';
+  statusChip.innerHTML = '<span class="dot warn"></span><span id="svxlink-status-label">svxlink&hellip;</span>';
+  clockBlock.parentNode.insertBefore(statusChip, clockBlock);
+  const svxlinkDot = statusChip.querySelector('.dot');
+  const svxlinkLabel = statusChip.querySelector('#svxlink-status-label');
+
   const el = document.createElement('div');
   el.className = 'rxtx idle';
   el.id = 'rxtx-indicator';
@@ -50,15 +64,26 @@
     label.textContent = state === 'tx' ? 'TX' : state === 'rx' ? 'RX' : state === 'offline' ? 'off' : '·';
   }
 
+  function setSvxlinkStatus(state) {
+    const offline = state === 'offline';
+    svxlinkDot.className = 'dot ' + (offline ? 'crit' : 'ok');
+    svxlinkLabel.textContent = offline ? 'svxlink stopped' : 'svxlink';
+  }
+
   async function poll() {
-    if (!enabled()) return;
+    let data;
     try {
-      const data = await fetch('/api/radio-status.php', { cache: 'no-store' }).then((r) => r.json());
-      setState(data.state || 'idle');
+      data = await fetch('/api/radio-status.php', { cache: 'no-store' }).then((r) => r.json());
     } catch (e) {
-      // Leave the last known state showing rather than flicker to idle
-      // on a single missed poll.
+      // Leave the last known state showing rather than flicker on a
+      // single missed poll.
+      return;
     }
+    // The SvxLink status chip is always kept current -- it's an
+    // operational fact, not the same "ambient life" concern the pulse's
+    // own on/off switch is meant to hide.
+    setSvxlinkStatus(data.state || 'idle');
+    if (enabled()) setState(data.state || 'idle');
   }
 
   applyVisibility();

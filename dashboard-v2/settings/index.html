@@ -143,6 +143,16 @@
           <span class="track"></span>
         </label>
       </div>
+      <div class="settings-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 0;">
+        <div>
+          <div style="font-size:13.5px; color:var(--text);">Primary clock</div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:3px;">Which time shows large in the topbar &mdash; the other stays small underneath</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn" id="clock-pref-local">Local</button>
+          <button type="button" class="btn" id="clock-pref-utc">UTC</button>
+        </div>
+      </div>
     </div>
   </div>
   <p class="footer-note">Turning a module off or moving it here never touches its own files -- see <b>docs/dashboard-v2-brief.md</b>. Saved to /var/cache/hotspot-image, not to the git checkout.</p>
@@ -160,6 +170,34 @@
   toggle.addEventListener('change', () => {
     try { localStorage.setItem(STORAGE_KEY, toggle.checked ? '1' : '0'); } catch (e) {}
   });
+})();
+
+// Same per-browser localStorage pattern, key clock.js reads on every
+// other page. Default 'local' (button starts active) matches clock.js's
+// own default when the key is unset.
+(function () {
+  const STORAGE_KEY = 'dv2PrimaryClock';
+  const localBtn = document.getElementById('clock-pref-local');
+  const utcBtn = document.getElementById('clock-pref-utc');
+
+  function current() {
+    try { return localStorage.getItem(STORAGE_KEY) === 'utc' ? 'utc' : 'local'; } catch (e) { return 'local'; }
+  }
+
+  function apply() {
+    const pref = current();
+    localBtn.classList.toggle('active', pref === 'local');
+    utcBtn.classList.toggle('active', pref === 'utc');
+  }
+
+  function set(pref) {
+    try { localStorage.setItem(STORAGE_KEY, pref); } catch (e) {}
+    apply();
+  }
+
+  localBtn.addEventListener('click', () => set('local'));
+  utcBtn.addEventListener('click', () => set('utc'));
+  apply();
 })();
 </script>
 <script src="/settings/settings.js"></script>
