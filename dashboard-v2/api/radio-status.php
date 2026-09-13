@@ -16,6 +16,15 @@
 // svxlink isn't running, state is forced to "offline" and tx/rx are
 // reported as unknown (null) rather than replaying a stale log line as
 // if it were still true.
+//
+// Also confirmed live: a plain restart isn't enough on its own -- the
+// stale pre-crash "Turning the transmitter ON" line is still the most
+// recent Tx1 line in the tail window even once svxlink is back up and
+// genuinely idle, since a fresh process never logs an explicit "OFF" to
+// contradict it. SvxLink prints its version banner ("SvxLink vX.Y.Z@...
+// Copyright ...") exactly once per process start, so it's used below as
+// a hard reset marker: any TX/RX line seen before the most recent banner
+// belongs to a previous incarnation and is discarded, not just aged.
 header('Content-Type: application/json');
 
 // Same timezone trap as the other log-based modules -- see
@@ -47,6 +56,11 @@ $lastTx = null; // ['on' => bool, 'at' => int]
 $lastRx = null; // ['open' => bool, 'signal' => string|null, 'at' => int]
 
 foreach ($lines as $line) {
+    if (preg_match('/^.+?: SvxLink v[\d.]+@\S+ Copyright/', $line)) {
+        $lastTx = null;
+        $lastRx = null;
+        continue;
+    }
     if (preg_match('/^(.+?): Tx1: Turning the transmitter (ON|OFF)/', $line, $m)) {
         $at = parseLogTimestamp($m[1]);
         if ($at !== null) {
