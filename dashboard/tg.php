@@ -7,17 +7,19 @@ include_once 'include/inisync.php';
 
 $monitorMsg = null;
 if (isset($_POST['btnSaveMonitor'])) {
+    // Delegates to tgdb_store.php's saveMonitoredTgs() (extracted so
+    // dashboard-v2's own Monitored Talkgroups edit mode could reuse it
+    // without duplicating the MONITOR_TGS-write + restart logic) --
+    // behavior unchanged, this page just builds the tg => priority map
+    // the same way it always did.
     $checked = array_filter($_POST['monitor'] ?? [], fn($tg) => ctype_digit($tg));
     $prios = $_POST['priority'] ?? [];
-    $entries = array_map(function ($tg) use ($prios) {
-        $p = max(0, min(3, (int)($prios[$tg] ?? 0)));
-        return $tg . str_repeat('+', $p);
-    }, $checked);
+    $tgToPriority = [];
+    foreach ($checked as $tg) {
+        $tgToPriority[$tg] = (int)($prios[$tg] ?? 0);
+    }
     try {
-        iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'ReflectorLogic', [
-            'MONITOR_TGS' => implode(',', $entries),
-        ]);
-        exec('sudo service svxlink restart > /dev/null 2>&1 &');
+        saveMonitoredTgs($tgToPriority);
         $monitorMsg = 'Saved and restarting SvxLink -- takes a few seconds, the dashboard stays up.';
     } catch (Throwable $e) {
         $monitorMsg = 'Failed to save: ' . $e->getMessage();

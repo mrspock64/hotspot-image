@@ -77,6 +77,39 @@ function loadMonitoredTgPriorities(): array
     return $priorities;
 }
 
+/**
+ * Writes MONITOR_TGS in svxlink.conf's [ReflectorLogic] from a full
+ * tg => priority (0-3) map -- only the given TGs end up monitored,
+ * anything omitted is cleared, same replace-the-whole-list semantics the
+ * Talk Groups page's own "Save monitoring" button always had. Restarts
+ * svxlink (backgrounded, non-blocking, matching the page's own exec()
+ * call) since MONITOR_TGS is only read at startup -- this is the one
+ * dashboard-v2 action that actually interrupts the radio for a few
+ * seconds, unlike the DTMF-based TG select/RX Monitor toggles, so it's
+ * meant to be an explicit, batched "Save" click, not an auto-save per
+ * checkbox flip.
+ *
+ * @param array<string,int> $tgToPriority
+ */
+function saveMonitoredTgs(array $tgToPriority): void
+{
+    require_once __DIR__ . '/inisync.php';
+
+    $entries = [];
+    foreach ($tgToPriority as $tg => $priority) {
+        if (!ctype_digit((string)$tg)) {
+            continue;
+        }
+        $p = max(0, min(3, (int)$priority));
+        $entries[] = $tg . str_repeat('+', $p);
+    }
+
+    iniSyncUpdateSection('/etc/svxlink/svxlink.conf', 'ReflectorLogic', [
+        'MONITOR_TGS' => implode(',', $entries),
+    ]);
+    exec('sudo service svxlink restart > /dev/null 2>&1 &');
+}
+
 function saveTgDb(array $tgdb): void
 {
     uksort($tgdb, fn($a, $b) => (int)$a <=> (int)$b);
