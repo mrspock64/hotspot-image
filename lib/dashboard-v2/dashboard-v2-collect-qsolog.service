@@ -3,4 +3,4 @@ Description=dashboard-v2 QSO Log module - list recent recordings + probe duratio
 
 [Service]
 Type=oneshot
-ExecStart=/opt/hotspot-image/lib/dashboard-v2/collect-qsolog.sh
+ExecStart=/opt/hotspot-image-dashboard-v2/lib/dashboard-v2/collect-qsolog.sh

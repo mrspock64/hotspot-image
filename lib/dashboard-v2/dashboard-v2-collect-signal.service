@@ -3,4 +3,4 @@ Description=dashboard-v2 Signal module - sample /proc/net/wireless + gateway pin
 
 [Service]
 Type=oneshot
-ExecStart=/opt/hotspot-image/lib/dashboard-v2/collect-signal.sh
+ExecStart=/opt/hotspot-image-dashboard-v2/lib/dashboard-v2/collect-signal.sh

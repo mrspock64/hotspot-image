@@ -29,10 +29,15 @@
 #
 set -euo pipefail
 
+# Self-locating -- see collect-node.sh's identical comment for why this
+# isn't a hardcoded /opt/hotspot-image (this branch lives in its own git
+# worktree, separate from production's checkout).
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 STATE_DIR="/var/cache/hotspot-image"
 STATE_FILE="$STATE_DIR/dashboard-v2-qsolog.json"
 DURATIONS_CACHE_FILE="$STATE_DIR/dashboard-v2-qsolog-durations.json"
-REPO_QSO_RECORDER_PHP="/opt/hotspot-image/dashboard/include/qso_recorder.php"
+REPO_QSO_RECORDER_PHP="$REPO_DIR/dashboard/include/qso_recorder.php"
 QSOLOG_RECENT_LIMIT=15
 
 mkdir -p "$STATE_DIR"

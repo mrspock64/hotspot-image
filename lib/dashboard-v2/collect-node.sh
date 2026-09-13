@@ -23,9 +23,18 @@
 #
 set -euo pipefail
 
+# Self-locating rather than a hardcoded /opt/hotspot-image -- this branch's
+# checkout lives in its own git worktree (/opt/hotspot-image-dashboard-v2),
+# separate from production's /opt/hotspot-image (which the auto-updater/
+# manual Update button reset --hard to origin/main; sharing one checkout
+# between "production, always on main" and "dashboard-v2 preview" was
+# exactly what let the auto-updater silently clobber this branch back to
+# main once already -- see docs/dashboard-v2-brief.md).
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 STATE_DIR="/var/cache/hotspot-image"
 STATE_FILE="$STATE_DIR/dashboard-v2-node.json"
-REPO_QSO_RECORDER_PHP="/opt/hotspot-image/dashboard/include/qso_recorder.php"
+REPO_QSO_RECORDER_PHP="$REPO_DIR/dashboard/include/qso_recorder.php"
 
 mkdir -p "$STATE_DIR"
 

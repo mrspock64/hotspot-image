@@ -40,8 +40,14 @@ if (is_file(STATE_FILE)) {
 // Same source as dashboard/include/perf_mode.php's own isPiZero2W().
 $hardware = trim((string)@file_get_contents('/proc/device-tree/model'), "\0 \t\n\r") ?: 'unknown';
 
-// Same source as dashboard/include/site_header.php's $mxDashboardVersion.
-$firmware = trim((string)@shell_exec('git -C /opt/hotspot-image rev-parse --short HEAD 2>/dev/null')) ?: 'unknown';
+// Same idea as dashboard/include/site_header.php's $mxDashboardVersion,
+// but reading THIS checkout (__DIR__/../.. -- dashboard-v2's own git
+// worktree), not a hardcoded /opt/hotspot-image: that path is production's
+// checkout (always on main), a completely different working directory
+// from wherever this branch's worktree happens to be installed -- see
+// lib/install-dashboard-v2-preview.sh's own comment for why they're kept
+// separate.
+$firmware = trim((string)@shell_exec('git -C ' . escapeshellarg(__DIR__ . '/../..') . ' rev-parse --short HEAD 2>/dev/null')) ?: 'unknown';
 
 $locator = '';
 $nodeInfoRaw = @file_get_contents(NODE_INFO_FILE);

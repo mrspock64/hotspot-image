@@ -1,11 +1,11 @@
 [Unit]
-Description=dashboard-v2 module-based dashboard preview (branch: dashboard-v2, not production)
+Description=dashboard-v2 module-based dashboard preview (branch: dashboard-v2, own worktree, not production)
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/hotspot-image/dashboard-v2
-ExecStart=/usr/bin/php -S 0.0.0.0:8081 -t /opt/hotspot-image/dashboard-v2
+WorkingDirectory=/opt/hotspot-image-dashboard-v2/dashboard-v2
+ExecStart=/usr/bin/php -S 0.0.0.0:8081 -t /opt/hotspot-image-dashboard-v2/dashboard-v2
 Restart=on-failure
 RestartSec=3
 
