@@ -29,6 +29,15 @@ LOG_FILE = "/var/log/svxlink"
 SVX_CONF = "/etc/svxlink/svxlink.conf"
 LOG_TAIL_LINES = 20000
 
+# Set by dashboard/include/rx_monitor_toggle.php's "start" action when it
+# turns the recorder on just to feed RX Monitor's audio tap (not because
+# real QSO logging was asked for) -- its mere presence, not its content,
+# is what matters here. Checked once per recording, at ENCODER_CMD time,
+# so a straggler that started before "stop" was clicked still gets
+# discarded correctly rather than kept -- see stop_monitor_only.sh's own
+# grace-delay comment for why that race is handled there, not here.
+MONITOR_ONLY_FLAG = "/dev/shm/hotspot_rx_monitor_only"
+
 TALKER_RE = re.compile(
     r'^(\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} \d{4}): \S+: Talker start on TG #(\d+): (\S+)'
 )
@@ -116,6 +125,17 @@ def find_talker(start_dt):
 
 def main():
     in_path = sys.argv[1]
+
+    # Monitor-only session: RX Monitor wanted the live audio, nothing
+    # about this recording was ever meant to be kept. Skip lame (the
+    # actual CPU cost) and the log-tail entirely, not just the file --
+    # confirmed elsewhere in this project that re-probing/re-encoding
+    # "for a moment, then discard" adds up fast on this hardware (see the
+    # dashboard-v2 QSO Log collector's own CPU-usage incident).
+    if os.path.exists(MONITOR_ONLY_FLAG):
+        os.remove(in_path)
+        return
+
     directory, filename = os.path.split(in_path)
     base = filename.rsplit(".", 1)[0]
 

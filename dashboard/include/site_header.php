@@ -74,11 +74,21 @@ if (is_readable('/var/cache/hotspot-image/last_dashboard_update.json')) {
 $mxBleActive = trim((string)@shell_exec('systemctl is-active hotspot-bluetooth 2>/dev/null')) === 'active';
 
 // The RX level meter only has anything to show while SvxLink's QSO
-// Recorder is actually recording (QSO Log page toggle) -- same dependency
-// as RX Monitor itself, see lib/rx-monitor/tail_qso_recorder.py. With it
-// off there's nothing to poll, so skip rendering the meter entirely
-// rather than showing a permanently-empty bar.
+// Recorder is actually recording -- same dependency as RX Monitor itself,
+// see lib/rx-monitor/tail_qso_recorder.py.
 $mxQsoRecorderActive = (@parse_ini_file('/etc/svxlink/svxlink.conf', true, INI_SCANNER_RAW)['QsoRecorder']['DEFAULT_ACTIVE'] ?? '0') === '1';
+
+// Also true while RX Monitor's own "turn the recorder on just to listen,
+// keep nothing" mode is running (dashboard/include/rx_monitor_toggle.php)
+// -- that never touches DEFAULT_ACTIVE (it's deliberately not meant to
+// look like the user turned real logging on), so $mxQsoRecorderActive
+// alone would stay false the whole time RX Monitor is actually playing.
+// Covers the page-load case (e.g. navigating to a new page while RX
+// Monitor is running, same as the "was playing" localStorage resume);
+// the same-page click case is handled by top_menu.php's JS toggling this
+// meter's visibility directly, since there's no page reload to re-run
+// this check on.
+$mxShowRxMeter = $mxQsoRecorderActive || is_file('/dev/shm/hotspot_rx_monitor_only');
 
 // Bar (default) or analog needle -- purely a display preference, set on
 // the Setup page. A custom key SvxLink itself never reads, same pattern
@@ -109,8 +119,7 @@ $mxTempWarning = is_file('/var/cache/hotspot-image/temp_warning');
     <div class="mx-network"><?php echo htmlspecialchars($fmnetwork); ?><?php echo ($fmnetwork !== '' && $mxHeaderFreq !== '') ? ' &middot; ' : ''; ?><?php echo htmlspecialchars($mxHeaderFreq); ?></div>
   </div>
   <div style="margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-<?php if ($mxQsoRecorderActive): ?>
-    <div class="mx-rx-meter">
+    <div id="mx-rx-meter-wrap" class="mx-rx-meter" style="display:<?php echo $mxShowRxMeter ? 'block' : 'none'; ?>;">
 <?php if ($mxRxMeterStyle === 'analog'): ?>
       <svg viewBox="0 0 400 128" width="228" height="73" class="mx-rx-analog">
         <rect x="4" y="3" width="392" height="121" rx="8" fill="#f4ecd8" stroke="#0f172a" stroke-width="2.5"/>
@@ -149,7 +158,6 @@ $mxTempWarning = is_file('/var/cache/hotspot-image/temp_warning');
       <div class="mx-rx-meter-track"><div id="mx-rx-meter-bar" class="mx-rx-meter-bar"></div></div>
 <?php endif; ?>
     </div>
-<?php endif; ?>
     <div style="display:flex; align-items:center; gap:8px; min-height:26px;">
       <a id="mx-temp-badge" href="/power/" title="CPU temperature has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-stop on the Power page." style="display:<?php echo $mxTempWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High temp</a>
       <a id="mx-load-badge" href="/qsolog/" title="Load, I/O-wait, free memory, or swap usage has been in the danger zone for a couple of minutes straight. Click to check/adjust auto-pause on the QSO Log page." style="display:<?php echo $mxLoadWarning ? 'inline-flex' : 'none'; ?>; background:#fff; color:#dc2626; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; text-decoration:none; white-space:nowrap; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; animation:mx-ble-pulse 2s ease-in-out infinite;"></span>High load</a>
@@ -182,9 +190,20 @@ window.mxSetHeaderBadge = function (id, visible) {
 // Recorder stream). Absolute path since this header is included from
 // pages at every depth (/wifi/, /power/, ...), not just the dashboard
 // root.
+//
+// Polling only runs while the meter is actually visible -- window.
+// mxRxMeterSetVisible(), called from here on page load (based on
+// $mxShowRxMeter) and from top_menu.php's RX Monitor button (which can
+// turn the meter on/off without a page reload, e.g. the "monitor-only"
+// mode that doesn't touch $mxQsoRecorderActive at all), both show/hide
+// the wrapper and start/stop this same interval rather than leaving it
+// running 300ms-forever on every page regardless of whether there's
+// anything to show.
 (function () {
   var bar = document.getElementById('mx-rx-meter-bar');
   var needle = document.getElementById('mx-rx-needle');
+  var wrap = document.getElementById('mx-rx-meter-wrap');
+  var timer = null;
   if (!bar && !needle) return;
   function poll() {
     fetch('/include/rx_level.php').then(function (r) { return r.json(); }).then(function (d) {
@@ -203,8 +222,21 @@ window.mxSetHeaderBadge = function (id, visible) {
       }
     }).catch(function () {});
   }
-  poll();
-  setInterval(poll, 300);
+  window.mxRxMeterSetVisible = function (visible) {
+    if (wrap) wrap.style.display = visible ? 'block' : 'none';
+    if (visible) {
+      if (!timer) {
+        poll();
+        timer = setInterval(poll, 300);
+      }
+    } else if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+  if (<?php echo $mxShowRxMeter ? 'true' : 'false'; ?>) {
+    window.mxRxMeterSetVisible(true);
+  }
 })();
 </script>
 <style>
