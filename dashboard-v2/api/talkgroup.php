@@ -1,101 +1,33 @@
 <?php
-// Talkgroup/reflector-info module. Real live source found for the "which
-// talkgroup is active right now" data api/frequency.php's own comment
-// said didn't exist yet: SvxLink's own /var/log/svxlink already logs it
-// verbatim, same log tag_and_encode.py already tails for the exact same
-// "Talker start on TG #<n>: <call>" line (see that file's TALKER_RE) --
-// this module just reads more of it and adds "Selecting TG #<n>" (which
-// TG this node's logic core currently has linked) and Node joined/left
-// counts. No new backend daemon, no new state file -- cheap enough
-// (~600KB/~8000 lines on svxlinkuhf) to tail and regex-scan fresh on
-// every request, same cost class as frequency.php's own file reads, not
-// the qsolog collector's ffprobe-per-file problem.
+// Talkgroup/reflector-info module. Backed by the shared
+// dashboard/include/svxlink_log_state.php parser (one tail + regex pass
+// shared across every log-based module) -- see that file's header
+// comment for why a shared parser exists.
 //
-// Also confirmed live (2026-09-10/11): a talkgroup number can be large/
-// odd-looking (e.g. "TG #240216") without being any kind of bug --
-// SvxLink Reflector dynamically regroups a QSO from a static TG (e.g.
-// 2400) into a generated dynamic TG so it can release repeaters that
-// aren't actually listening. Reported here exactly as SvxLink logs it,
-// no attempt to "clean up" or collapse it back to a static TG.
+// This module's own bug, and the reason the shared parser exists at all:
+// "talker" used to be tracked as "last talker event anywhere in the tail
+// window", completely independent of "which TG is currently selected" --
+// confirmed live 2026-09-14, switching TGs left this showing a stale
+// talker from a *different* TG than the one the header chip said was
+// linked. Now it's looked up as talker_by_tg[selected_tg] specifically:
+// no talker on the currently-linked TG yet means "No recent talker
+// activity", not a leftover from wherever the node used to be.
 header('Content-Type: application/json');
 
-// SvxLink's log timestamps are plain localtime() with no timezone in the
-// string -- confirmed live: this node's PHP defaults to UTC (php -i:
-// date.timezone => UTC) while its actual system timezone is Europe/
-// Brussels (currently UTC+2, /etc/timezone), so parsing the log's naive
-// "Thu Sep 10 23:37:48 2026" with strtotime() under PHP's default UTC
-// silently read it as 2 hours later than it really was -- every recent
-// event's computed age came out negative, clamped by max(0, ...) below
-// to a permanent, wrong "0s ago". Set PHP's timezone to match the
-// system's before parsing anything, so strtotime() agrees with
-// localtime()'s own idea of "now".
-$systemTz = trim((string)@file_get_contents('/etc/timezone'));
-if ($systemTz !== '' && in_array($systemTz, timezone_identifiers_list(), true)) {
-    date_default_timezone_set($systemTz);
-}
+require_once __DIR__ . '/../../dashboard/include/svxlink_log_state.php';
 
-const LOG_FILE = '/var/log/svxlink';
-const TAIL_LINES = 3000;
+$s = getSvxlinkLogState();
+$selectedTg = $s['selected_tg'] !== null ? (int)$s['selected_tg'] : null;
 
-function tailLines(string $path, int $n): array
-{
-    $out = [];
-    exec('tail -n ' . (int)$n . ' ' . escapeshellarg($path) . ' 2>/dev/null', $out);
-    return $out;
-}
-
-/** SvxLink's own log timestamp format: "Thu Sep 10 23:37:48 2026". No
- * timezone in the log -- same assumption tag_and_encode.py already makes
- * (strptime with no tz, i.e. server-local), so this matches that. */
-function parseLogTimestamp(string $s): ?int
-{
-    $ts = strtotime($s);
-    return $ts !== false ? $ts : null;
-}
-
-$lines = tailLines(LOG_FILE, TAIL_LINES);
-
-$selectedTg = null;
-$lastTalkerEvent = null; // ['type' => 'start'|'stop', 'tg' => int, 'call' => string, 'at' => int]
-// A set of node names (map used as a set -- PHP has no native Set), not a
-// plain +1/-1 counter. Confirmed live: a naive counter went to 0 (or
-// negative, silently clamped) whenever the tailed window's first "Node
-// left" for some node had no matching earlier "Node joined" in view --
-// completely plausible for a node that joined before TAIL_LINES' start,
-// and it happened on the very first deploy. A set can't go negative and,
-// more importantly, its size only reflects nodes actually seen joining
-// without a later leave in this window -- still not a true total (a node
-// that joined before the window and never left is invisible either way),
-// but no longer produces a nonsensical result when the window is messy.
-$onlineNodes = [];
-
-foreach ($lines as $line) {
-    if (preg_match('/^(.+?): ReflectorLogic: Selecting TG #(\d+)/', $line, $m)) {
-        $selectedTg = (int)$m[2];
-    } elseif (preg_match('/^(.+?): ReflectorLogic: Talker start on TG #(\d+): (\S+)/', $line, $m)) {
-        $at = parseLogTimestamp($m[1]);
-        if ($at !== null) {
-            $lastTalkerEvent = ['type' => 'start', 'tg' => (int)$m[2], 'call' => $m[3], 'at' => $at];
-        }
-    } elseif (preg_match('/^(.+?): ReflectorLogic: Talker stop on TG #(\d+): (\S+)/', $line, $m)) {
-        $at = parseLogTimestamp($m[1]);
-        if ($at !== null) {
-            $lastTalkerEvent = ['type' => 'stop', 'tg' => (int)$m[2], 'call' => $m[3], 'at' => $at];
-        }
-    } elseif (preg_match('/ReflectorLogic: Node joined: (\S+)/', $line, $m)) {
-        $onlineNodes[$m[1]] = true;
-    } elseif (preg_match('/ReflectorLogic: Node left: (\S+)/', $line, $m)) {
-        unset($onlineNodes[$m[1]]);
-    }
-}
+$talkerEvent = $selectedTg !== null ? ($s['talker_by_tg'][(string)$selectedTg] ?? null) : null;
 
 $talker = null;
-if ($lastTalkerEvent !== null) {
+if ($talkerEvent !== null) {
     $talker = [
-        'tg' => $lastTalkerEvent['tg'],
-        'callsign' => $lastTalkerEvent['call'],
-        'active' => $lastTalkerEvent['type'] === 'start',
-        'since_seconds' => max(0, time() - $lastTalkerEvent['at']),
+        'tg' => $selectedTg,
+        'callsign' => $talkerEvent['callsign'],
+        'active' => $talkerEvent['type'] === 'start',
+        'since_seconds' => max(0, $s['now'] - $talkerEvent['at']),
     ];
 }
 
@@ -103,7 +35,8 @@ echo json_encode([
     'selected_tg' => $selectedTg,
     'talker' => $talker,
     // Only a rough count over the tailed window, not a true total (a
-    // node that joined before TAIL_LINES' start is never counted) -- good
-    // enough as "roughly how busy is the reflector", not authoritative.
-    'nodes_online_approx' => count($onlineNodes),
+    // node that joined before the window started is never counted) --
+    // good enough as "roughly how busy is the reflector", not
+    // authoritative.
+    'nodes_online_approx' => count($s['online_nodes']),
 ]);
