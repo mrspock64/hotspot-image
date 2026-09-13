@@ -42,9 +42,12 @@
   }
 
   function setState(state) {
+    // "offline" (svxlink not running -- see api/radio-status.php's own
+    // comment on why this check exists) reuses the dim idle look, just
+    // with a different label so it doesn't read as "quiet but running".
     el.classList.remove('idle', 'rx', 'tx');
-    el.classList.add(state);
-    label.textContent = state === 'tx' ? 'TX' : state === 'rx' ? 'RX' : '·';
+    el.classList.add(state === 'offline' ? 'idle' : state);
+    label.textContent = state === 'tx' ? 'TX' : state === 'rx' ? 'RX' : state === 'offline' ? 'off' : '·';
   }
 
   async function poll() {

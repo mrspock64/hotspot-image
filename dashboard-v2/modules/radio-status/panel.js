@@ -42,6 +42,7 @@ class RadioStatusPanel extends HTMLElement {
       tx: { label: 'TRANSMITTING', color: 'var(--crit)', glow: 'rgba(242,102,78,0.5)' },
       rx: { label: 'RECEIVING', color: 'var(--ok)', glow: 'rgba(94,214,140,0.5)' },
       idle: { label: 'LISTENING', color: 'var(--cyan)', glow: 'rgba(77,216,224,0.35)' },
+      offline: { label: 'SVXLINK STOPPED', color: 'var(--text-faint)', glow: 'transparent' },
     }[data.state] || { label: 'UNKNOWN', color: 'var(--text-faint)', glow: 'transparent' };
 
     const rxSignal = data.rx && data.rx.signal ? ' <span style="color:var(--text-faint); font-size:11px;">(' + this.esc(data.rx.signal) + ')</span>' : '';

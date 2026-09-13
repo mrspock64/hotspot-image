@@ -7,6 +7,15 @@
 // events.d/Logic.tcl adds. Confirmed live: both fire in real time on
 // svxlinkuhf. No new backend daemon needed, same tail+regex-scan cost
 // class as the other log-based modules.
+//
+// Confirmed live (2026-09-13): stopping svxlink mid-transmission leaves
+// no "Turning the transmitter OFF" line behind -- the process just dies
+// -- so trusting the log's last-known TX/RX line alone left this stuck
+// showing "TRANSMITTING" forever after a stop. Same systemctl check
+// api/frequency.php already uses for its own "stopped" badge: when
+// svxlink isn't running, state is forced to "offline" and tx/rx are
+// reported as unknown (null) rather than replaying a stale log line as
+// if it were still true.
 header('Content-Type: application/json');
 
 // Same timezone trap as the other log-based modules -- see
@@ -49,6 +58,13 @@ foreach ($lines as $line) {
             $lastRx = ['open' => $m[2] === 'OPEN', 'signal' => $m[3] ?? null, 'at' => $at];
         }
     }
+}
+
+$svxlinkActive = trim((string)@shell_exec('systemctl is-active svxlink 2>/dev/null')) === 'active';
+
+if (!$svxlinkActive) {
+    echo json_encode(['state' => 'offline', 'tx' => null, 'rx' => null]);
+    exit;
 }
 
 $now = time();
