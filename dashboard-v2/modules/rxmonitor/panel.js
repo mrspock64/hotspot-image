@@ -5,12 +5,19 @@
 // through pcm-player.min.js. That file's own SVXPlayer sets the ground
 // truth for the real wire format -- 16-bit signed mono PCM at 16000 Hz
 // (this.sampleRate=16000 in dashboard/scripts/pcm-player.min.js) -- used
-// below for the FFT rather than assumed.
+// below for both the FFT and the "Lyssna" playback rather than assumed.
 //
-// The waterfall is real: an actual FFT run on the live incoming PCM
-// samples, not a decorative animation. No playback, no AudioContext --
-// this module never makes sound, only visualizes the same bytes the
-// production Play button would feed to the speaker.
+// The waterfall itself is always-on and ambient: a real FFT run on
+// whatever PCM happens to be flowing (a genuine QSO being recorded), no
+// user action needed -- that's deliberate, it's what gives the dashboard
+// a sense of life even when nobody's touched it. "Lyssna" is a separate,
+// explicit layer on top: it calls api/rxmonitor.php's monitor-only
+// start/stop (reusing production's rx_monitor_toggle.php, see that file's
+// own comment) to force the recorder on even with QSO Log off, and feeds
+// the exact same incoming PCM chunks to a small inline player -- no
+// second WebSocket connection, no vendored copy of pcm-player.min.js
+// (this preview's docroot is dashboard-v2/, which can't reach
+// dashboard/scripts/ over HTTP anyway).
 class RxmonitorPanel extends HTMLElement {
   connectedCallback() {
     this.apiUrl = this.getAttribute('api') || 'api/rxmonitor.php';
@@ -18,21 +25,29 @@ class RxmonitorPanel extends HTMLElement {
     this.wsPort = parseInt(this.getAttribute('ws-port'), 10) || 8080;
     this.lastAudioAt = 0;
     this.sampleBuf = new Float32Array(0);
+    this.listening = false;
+    this.audioCtx = null;
+    this.nextStartTime = 0;
 
     this.innerHTML =
       '<div class="panel">' +
         '<div class="panel-head"><div class="panel-title">RX monitor</div>' +
-          '<span class="status-chip" style="padding:3px 9px;"><span id="rxm-dot" class="dot warn"></span><span id="rxm-status">connecting&hellip;</span></span>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<button id="rxm-listen" class="btn" type="button">Lyssna</button>' +
+            '<span class="status-chip" style="padding:3px 9px;"><span id="rxm-dot" class="dot warn"></span><span id="rxm-status">connecting&hellip;</span></span>' +
+          '</div>' +
         '</div>' +
         '<div class="panel-body" style="padding-top:14px;">' +
           '<div class="waterfall-wrap"><canvas class="waterfall-canvas"></canvas></div>' +
         '</div>' +
-        '<div class="panel-foot">Live FFT of the same ws://&lt;host&gt;:' + this.wsPort + ' stream the dashboard\'s own RX Monitor button plays</div>' +
+        '<div class="panel-foot">Live FFT of the same ws://&lt;host&gt;:' + this.wsPort + ' stream the dashboard\'s own RX Monitor button plays. Lyssna forces the recorder on temporarily (monitor-only, no logging kept) and plays the audio here.</div>' +
       '</div>';
 
     this.dot = this.querySelector('#rxm-dot');
     this.statusEl = this.querySelector('#rxm-status');
     this.canvas = this.querySelector('canvas');
+    this.listenBtn = this.querySelector('#rxm-listen');
+    this.listenBtn.addEventListener('click', () => this.toggleListen());
 
     this.poll();
     this._statusTimer = setInterval(() => this.poll(), this.refreshMs);
@@ -44,6 +59,41 @@ class RxmonitorPanel extends HTMLElement {
     clearInterval(this._statusTimer);
     clearInterval(this._drawTimer);
     if (this.ws) this.ws.close();
+    if (this.listening) this.stopListening();
+    if (this.audioCtx) this.audioCtx.close();
+  }
+
+  async toggleListen() {
+    if (this.listening) {
+      this.stopListening();
+      return;
+    }
+    this.listening = true;
+    this.listenBtn.textContent = 'Stoppa';
+    this.listenBtn.classList.add('active');
+    // AudioContext must be created/resumed from a user gesture -- this
+    // click is that gesture, so do it synchronously before the await.
+    if (!this.audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      this.audioCtx = new Ctx();
+      this.gainNode = this.audioCtx.createGain();
+      this.gainNode.connect(this.audioCtx.destination);
+    }
+    this.nextStartTime = this.audioCtx.currentTime;
+    try {
+      await fetch(this.apiUrl + '?action=start', { cache: 'no-store' });
+    } catch (e) {
+      // The WS keeps flowing (or not) regardless -- a failed start
+      // request just means we didn't force the recorder on, an already
+      //-active recording (real QSO/logging) still plays fine.
+    }
+  }
+
+  stopListening() {
+    this.listening = false;
+    this.listenBtn.textContent = 'Lyssna';
+    this.listenBtn.classList.remove('active');
+    fetch(this.apiUrl + '?action=stop', { cache: 'no-store' }).catch(() => {});
   }
 
   async poll() {
@@ -99,6 +149,24 @@ class RxmonitorPanel extends HTMLElement {
     merged.set(floats, this.sampleBuf.length);
     const keep = FFT_SIZE * 2;
     this.sampleBuf = merged.length > keep ? merged.slice(merged.length - keep) : merged;
+
+    if (this.listening && this.audioCtx) this.feedPlayer(int16, floats);
+  }
+
+  // Schedules this chunk as its own AudioBuffer starting right after the
+  // previous one -- same gapless-queue approach as pcm-player.min.js's
+  // PCMPlayer.flush(), simplified since we already get one WS message
+  // per chunk instead of needing our own flush timer.
+  feedPlayer(int16, floats) {
+    const buf = this.audioCtx.createBuffer(1, floats.length, 16000);
+    buf.getChannelData(0).set(floats);
+    const src = this.audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(this.gainNode);
+    const now = this.audioCtx.currentTime;
+    if (this.nextStartTime < now) this.nextStartTime = now;
+    src.start(this.nextStartTime);
+    this.nextStartTime += buf.duration;
   }
 
   setStatus(level, text) {

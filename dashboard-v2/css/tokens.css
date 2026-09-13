@@ -207,6 +207,16 @@ a{ color: inherit; }
 @media (prefers-reduced-motion: no-preference){
   .dot.ok{ animation: pulse 2.4s ease-in-out infinite; }
 }
+
+/* ---------- small action button (module controls, e.g. RX Monitor's Listen) ---------- */
+.btn{
+  font-family: var(--mono); font-size:11.5px; font-weight:600;
+  padding: 6px 14px; border-radius:999px; cursor:pointer;
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text-dim);
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.btn:hover{ border-color: var(--copper-dim); color: var(--text); }
+.btn.active{ background: var(--copper-dim); border-color: var(--copper); color: var(--bg-deep); }
 @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
 /* ---------- signal history sparkline (Signal module) ---------- */
