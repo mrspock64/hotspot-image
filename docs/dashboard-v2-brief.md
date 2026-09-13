@@ -54,7 +54,9 @@ Signal/WiFi-kortet — verklig data från `/proc/net/wireless` på svxlinkuhf (d
 
 ## Byggda moduler hittills
 
-Frequency, Radio Status, Talkgroup, Node/Vitals, WiFi Signal, RX Monitor, Reflector Activity, Monitored Talkgroups, Auto-update, QSO Log, Setup (read-only) — alla live på svxlinkuhf:8081 med riktig data.
+Frequency, Radio Status, Talkgroup, Node/Vitals, WiFi Signal, RX Monitor, Reflector Activity, Monitored Talkgroups, Quick Buttons, Auto-update, QSO Log, Setup (read-only) — alla live på svxlinkuhf:8081 med riktig data.
+
+**Quick Buttons** (`api/buttons.php` + `modules/buttons/`) — produktionens makro-knappar (`dashboard/include/buttons.php` + Buttons-adminsidan), samma `/etc/svxlink/dashboard_buttons.json` läses/skrivs av båda versionerna via `buttons_store.php`. Klick = ett enda DTMF-skick (index-baserat, klienten kan aldrig skicka en godtycklig kod), ingen dubbelsändning (skiljer sig medvetet från TG-select — se `api/buttons.php`:s kommentar om varför). Redigeringsläge (lägg till/döp om/färg/flytta/ta bort) sparar direkt per ändring, ingen batch-knapp behövs eftersom inget kräver omstart. Färger sparas i produktionens eget vokabulär (green/blue/red/orange/purple) och mappas om till v2:s färgtema bara vid visning — aldrig skrivet tillbaka annorlunda, annars skulle v1:s admin-sida sluta känna igen dem. **Ingen fri DTMF-ruta** — det blir en egen, separat modul.
 
 Talkgroup/Reflector Activity/Monitored Talkgroups/Radio Status delar alla samma källa (`/var/log/svxlink`): `Selecting TG #<n>`, `Talker start/stop on TG #<n>: <call>`, `Node joined/left: <call>`, `Tx1: Turning the transmitter ON/OFF`, `Rx1: The squelch is OPEN/CLOSED` loggas redan verbatim av SvxLink självt — samma logg `lib/rx-monitor/tag_and_encode.py` redan tailar. Ingen ny backend-daemon behövdes för nån av dem.
 
