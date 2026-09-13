@@ -128,8 +128,40 @@
       </div>
     </div>
   </div>
+  <div class="panel settings-panel">
+    <div class="panel-head">
+      <div class="panel-title">Console</div>
+    </div>
+    <div class="panel-body" style="padding: 4px 16px;">
+      <div class="settings-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 0; border-bottom:1px solid var(--border-soft);">
+        <div>
+          <div style="font-size:13.5px; color:var(--text);">Topbar activity indicator</div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:3px;">RX/TX pulse next to the clock, on every page</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="rxtx-toggle">
+          <span class="track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
   <p class="footer-note">Turning a module off or moving it here never touches its own files -- see <b>docs/dashboard-v2-brief.md</b>. Saved to /var/cache/hotspot-image, not to the git checkout.</p>
 </div>
+<script>
+// Per-browser preference, same localStorage key rxtx-indicator.js reads
+// on every other page -- no server round-trip, no api/ endpoint needed
+// for a purely cosmetic on/off switch.
+(function () {
+  const STORAGE_KEY = 'dv2RxtxIndicator';
+  const toggle = document.getElementById('rxtx-toggle');
+  let stored;
+  try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) { stored = null; }
+  toggle.checked = stored !== '0';
+  toggle.addEventListener('change', () => {
+    try { localStorage.setItem(STORAGE_KEY, toggle.checked ? '1' : '0'); } catch (e) {}
+  });
+})();
+</script>
 <script src="/settings/settings.js"></script>
 </body>
 </html>

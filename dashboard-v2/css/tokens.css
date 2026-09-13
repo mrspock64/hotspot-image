@@ -217,6 +217,52 @@ a{ color: inherit; }
 }
 .btn:hover{ border-color: var(--copper-dim); color: var(--text); }
 .btn.active{ background: var(--copper-dim); border-color: var(--copper); color: var(--bg-deep); }
+
+/* ---------- topbar RX/TX indicator (js/rxtx-indicator.js) ---------- */
+.rxtx{
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 13px 5px 10px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .6px;
+  color: var(--text-faint);
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+.rxtx .bars{ display: flex; align-items: flex-end; gap: 2px; height: 11px; }
+.rxtx .bars span{ width: 2.5px; background: currentColor; border-radius: 1px; opacity: .35; height: 3px; transition: height .12s ease, opacity .12s ease; }
+.rxtx.idle .bars span{ height: 3px; opacity: .3; }
+.rxtx.rx{ color: var(--cyan); border-color: var(--cyan-dim); background: rgba(77,216,224,0.07); }
+.rxtx.rx .bars span{ opacity: .9; animation: rxtx-bounce 900ms ease-in-out infinite; }
+.rxtx.rx .bars span:nth-child(1){ animation-delay: 0ms; }
+.rxtx.rx .bars span:nth-child(2){ animation-delay: 120ms; }
+.rxtx.rx .bars span:nth-child(3){ animation-delay: 240ms; }
+.rxtx.rx .bars span:nth-child(4){ animation-delay: 80ms; }
+.rxtx.tx{ color: var(--copper); border-color: var(--copper-dim); background: rgba(255,157,77,0.09); }
+.rxtx.tx .bars span{ opacity: 1; animation: rxtx-bounce 480ms ease-in-out infinite; }
+.rxtx.tx .bars span:nth-child(1){ animation-delay: 0ms; }
+.rxtx.tx .bars span:nth-child(2){ animation-delay: 60ms; }
+.rxtx.tx .bars span:nth-child(3){ animation-delay: 120ms; }
+.rxtx.tx .bars span:nth-child(4){ animation-delay: 40ms; }
+@keyframes rxtx-bounce{
+  0%, 100%{ height: 3px; }
+  50%{ height: 11px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .rxtx .bars span{ animation: none !important; height: 7px; }
+}
+
+/* ---------- generic settings toggle switch (Settings page) ---------- */
+.switch{ position: relative; width: 38px; height: 21px; flex-shrink: 0; display:inline-block; }
+.switch input{ opacity: 0; width: 0; height: 0; position:absolute; }
+.switch .track{
+  position: absolute; inset: 0; border-radius: 999px; background: var(--surface-2);
+  border: 1px solid var(--border); cursor: pointer; transition: background .15s ease, border-color .15s ease;
+}
+.switch .track::after{
+  content: ''; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--text-faint); transition: transform .15s ease, background .15s ease;
+}
+.switch input:checked + .track{ background: rgba(255,157,77,0.15); border-color: var(--copper-dim); }
+.switch input:checked + .track::after{ transform: translateX(17px); background: var(--copper); }
 @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
 /* ---------- signal history sparkline (Signal module) ---------- */
