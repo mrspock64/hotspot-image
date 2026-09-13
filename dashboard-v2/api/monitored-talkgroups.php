@@ -117,13 +117,18 @@ foreach ($monitoredTgs as $tg) {
     ];
 }
 
-// Most recently active first (no activity in this window sorts last), so
-// the talkgroups actually seeing traffic float to the top rather than
-// staying in whatever order MONITOR_TGS happens to list them.
+// Sorted by priority (highest first) then TG number -- a stable order
+// that only changes if the actual MONITOR_TGS config changes, not on
+// every poll. Used to sort by most-recently-active instead, but
+// confirmed live (2026-09-14) that reordering rows out from under the
+// cursor every refresh_ms made them hard to actually click -- worse than
+// losing the "what's busy right now" at-a-glance ordering, since the
+// activity text/dot on each row already shows that anyway.
 usort($result, function ($a, $b) {
-    $aAt = $a['activity']['seconds_ago'] ?? PHP_INT_MAX;
-    $bAt = $b['activity']['seconds_ago'] ?? PHP_INT_MAX;
-    return $aAt <=> $bAt;
+    if ($a['priority'] !== $b['priority']) {
+        return $b['priority'] <=> $a['priority'];
+    }
+    return (int)$a['tg'] <=> (int)$b['tg'];
 });
 
 // Everything else named in the TG Names database but not on the monitor
