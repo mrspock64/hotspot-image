@@ -58,14 +58,27 @@
     border:1px solid var(--border); border-radius:6px; padding:7px 9px;
   }
   .page-field input[type="text"]{ width:220px; }
+  /* This page stands alone (no sidebar, reached via the gear icon and a
+     "back to console" link instead) -- .brand/.brand-text were the old
+     topbar-only classes, retired when the sidebar took over navigation;
+     these are this page's own equivalent, scoped here rather than
+     re-adding the retired ones to tokens.css for one page. */
+  .settings-header{ display:flex; align-items:center; gap:12px; z-index:1; }
+  .settings-header-text{ display:flex; flex-direction:column; gap:2px; }
+  .settings-header-text .title{
+    font-family: var(--disp); font-weight:600; font-size:19px; letter-spacing:0.5px; color:var(--text);
+  }
+  .settings-header-text .sub{
+    font-size:11px; color: var(--text-dim); text-transform:uppercase; letter-spacing:1.1px;
+  }
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="topbar">
-    <div class="brand">
+    <div class="settings-header">
       <div class="brand-mark">HS</div>
-      <div class="brand-text">
+      <div class="settings-header-text">
         <span class="title">Layout settings</span>
         <span class="sub" id="page-sub">dashboard-v2 preview &middot; which modules, where</span>
       </div>

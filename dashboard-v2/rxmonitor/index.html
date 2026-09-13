@@ -11,25 +11,33 @@
 <link rel="stylesheet" href="/css/tokens.css">
 </head>
 <body>
-<div class="shell">
-  <div class="topbar">
-    <div class="brand">
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
       <div class="brand-mark">HS</div>
-      <div class="brand-text">
+      <span class="sidebar-brand-text">Hotspot Console</span>
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse menu">&lsaquo;</button>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <a href="/settings/?page=rxmonitor" title="Layout settings"><span class="sidebar-icon">&#9881;</span><span class="sidebar-label">Settings</span></a>
+    </div>
+  </aside>
+  <div class="shell">
+    <div class="topbar">
+      <div class="topbar-title">
         <span class="title">RX Monitor</span>
         <span class="sub">dashboard-v2 preview &middot; branch: dashboard-v2, not production</span>
       </div>
+      <div class="topbar-spacer"></div>
+      <div class="clock-block">
+        <div class="clock"><span class="zone">UTC</span><span id="clock-utc">--:--:--</span></div>
+        <div class="clock-local">local <span id="clock-local">--:--:--</span></div>
+      </div>
     </div>
-    <div class="topbar-spacer"></div>
-    <nav class="pages-nav" id="pages-nav"></nav>
-    <a class="settings-link" href="/settings/?page=rxmonitor" title="Layout settings">&#9881;</a>
-    <div class="clock-block">
-      <div class="clock"><span class="zone">UTC</span><span id="clock-utc">--:--:--</span></div>
-      <div class="clock-local">local <span id="clock-local">--:--:--</span></div>
-    </div>
+    <div class="grid" id="module-grid" data-page="rxmonitor"></div>
+    <div class="footer-note">Module-based preview -- see <b>docs/dashboard-v2-brief.md</b>. Production dashboard is untouched, still served on :80.</div>
   </div>
-  <div class="grid" id="module-grid" data-page="rxmonitor"></div>
-  <div class="footer-note">Module-based preview -- see <b>docs/dashboard-v2-brief.md</b>. Production dashboard is untouched, still served on :80.</div>
 </div>
 <script>
 (function () {
@@ -45,7 +53,7 @@
   setInterval(tick, 1000);
 })();
 </script>
-<script src="/js/pages-nav.js"></script>
+<script src="/js/sidebar.js"></script>
 <script src="/js/shell.js"></script>
 </body>
 </html>

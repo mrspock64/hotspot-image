@@ -20,7 +20,7 @@
   const page = grid.dataset.page || 'dashboard';
 
   // Only the column count comes from here -- the page's *displayed name*
-  // is the nav chip rendered by pages-nav.js (same api/page-meta.php
+  // is the nav chip rendered by sidebar.js (same api/page-meta.php
   // source), not anything in this shell, so a rename doesn't require this
   // file to also know how/where a page's title is shown.
   let columns = 3;

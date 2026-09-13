@@ -1,7 +1,7 @@
 // Layout settings page. `page` comes from ?page=<id> in the URL
 // (defaulting to "dashboard"), so one settings page serves every page's
 // module layout and page metadata -- must stay in sync with
-// js/pages-nav.js's page list.
+// js/sidebar.js's page list.
 //
 // Two independent things get edited here:
 //  - Page metadata (name shown in the nav, column count) via
