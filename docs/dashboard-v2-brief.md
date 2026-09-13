@@ -65,6 +65,7 @@ Talkgroup/Reflector Activity/Monitored Talkgroups/Radio Status delar alla samma 
 - **Döpa om sidor + kolumnantal (1–4)**: `dashboard-v2/pages/<sida>/meta.json` (standard) + sparad override, redigerbart i `/settings/?page=<sida>`. Samma mbstring-fälla som andra API:er kan råka ut för — se `api/page-meta.php`:s kommentar.
 - **Detacha modul till eget fönster**: hover-knapp (↗) på varje panel, öppnar `/module/?id=<id>` (`js/module.js`) — exakt samma manifest/panel.js/api, ingen modul behöver veta att den är lösgjord. `popup=yes` krävs i `window.open`-featuresträngen, annars öppnas det som en vanlig flik (hittat live).
 - **App-ikon/namn**: `manifest.webmanifest` + `icons/` (kopparfärgad "HS", matchar topbaren) för Chromes "Skapa genväg". **OBS:** ger bara rätt namn/ikon på genvägen — Chromes riktiga "Öppna som fönster"-läge (och install-ikonen i adressfältet) kräver HTTPS/`localhost`, funkar inte över vanlig HTTP. Se backlog nedan.
+- **Klicka för att byta TG**: Monitored Talkgroups och Reflector Activity har båda klickbara TG-rader (`api/tg-select.php` + `js/tg-select.js`/`window.dv2SelectTg()`, delat mellan modulerna). Reflector Activity accepterar vilket siffer-TG som helst (även dynamiska omgrupperingar typ `TG 240216`, aldrig namngivna) — Monitored Talkgroups begränsade tidigare till namngivna TG:er men den regeln flyttades till den delade endpointen som en ren "siffror only"-check när ett andra modul behövde släppa igenom onämnda TG:er.
 
 ## Backlog
 
