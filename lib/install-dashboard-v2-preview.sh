@@ -48,6 +48,16 @@ else
   git -C "$REPO_DIR" fetch origin -q
   git -C "$REPO_DIR" worktree add "$WORKTREE_DIR" "$BRANCH"
 fi
+
+# --system, not --global: this directory gets read by whichever user runs
+# `git pull` by hand while developing (root via sudo, the login user) *and*
+# by www-data, since api/node.php's firmware-hash lookup shells out to git
+# from inside the PHP built-in server. Confirmed live: --global only
+# covers whichever single user's config it's added to, and www-data
+# specifically hit this ("detected dubious ownership") even after root's
+# own global config already had the exception -- --system (/etc/gitconfig)
+# is the one config every user actually shares.
+git config --system --add safe.directory "$WORKTREE_DIR"
 chown -R www-data:www-data "$WORKTREE_DIR"
 
 echo "--- dashboard-v2 preview: packages ---"
