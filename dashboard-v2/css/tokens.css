@@ -272,6 +272,16 @@ a{ color: inherit; }
 .switch input:checked + .track::after{ transform: translateX(17px); background: var(--copper); }
 @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
+/* ---------- generic form controls (module edit modes, e.g. Monitored Talkgroups) ---------- */
+input[type="text"], input[type="number"], select.field{
+  font-family: var(--mono); font-size:12.5px; background:var(--surface-2); color:var(--text);
+  border:1px solid var(--border); border-radius:6px; padding:6px 8px;
+}
+input[type="text"]:focus, input[type="number"]:focus, select.field:focus{
+  outline:none; border-color:var(--copper-dim);
+}
+input[type="checkbox"]{ accent-color: var(--copper); width:15px; height:15px; flex-shrink:0; }
+
 /* ---------- signal history sparkline (Signal module) ---------- */
 .signal-card .headline{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
 .signal-card .headline .big{ font-family:var(--mono); font-size:28px; font-weight:600; }

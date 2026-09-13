@@ -22,11 +22,24 @@
 // currently-active TG (selected_tg, from the same log scan) gets a
 // copper left-border highlight so "where am I" reads at a glance instead
 // of needing a separate status line.
+//
+// Edit mode (pencil button) replaces the production TG page's "Talk
+// Groups" table (monitor checkbox + priority, one batched "Save
+// monitoring & restart SvxLink" button -- api/monitored-talkgroups.php's
+// ?action=save_monitor, restarts svxlink since MONITOR_TGS is only read
+// at startup, so this is deliberately NOT an auto-save per checkbox) and
+// the "TG Names" page (rename/add a TG, ?action=rename, no restart --
+// plain JSON write, saved instantly per field on blur/Enter). While
+// editing, polling still refreshes this.lastData in the background but
+// stops re-rendering (see poll()'s own comment) so an in-progress edit
+// never gets silently overwritten by the next refresh_ms tick.
 class MonitoredTalkgroupsPanel extends HTMLElement {
   connectedCallback() {
     this.apiUrl = this.getAttribute('api') || 'api/monitored-talkgroups.php';
     this.refreshMs = parseInt(this.getAttribute('refresh-ms'), 10) || 10000;
     this.selectingTg = null;
+    this.editMode = false;
+    this.lastData = null;
     this.render({ loading: true });
     this.poll();
     this._timer = setInterval(() => this.poll(), this.refreshMs);
@@ -37,13 +50,24 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
     clearInterval(this._timer);
   }
 
-  async poll() {
+  // forceRenderInEdit: normal polling never re-renders while editMode is
+  // on (would blow away in-progress checkbox/name edits out from under
+  // the user, same class of problem the scrollTop fix addressed) -- only
+  // an explicit action inside edit mode itself (adding a TG) asks for a
+  // fresh render.
+  async poll(forceRenderInEdit) {
     try {
       const res = await fetch(this.apiUrl, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      this.render({ data: await res.json() });
+      const data = await res.json();
+      this.lastData = data;
+      if (!this.editMode) {
+        this.render({ data });
+      } else if (forceRenderInEdit) {
+        this.renderEdit(data);
+      }
     } catch (e) {
-      this.render({ error: true });
+      if (!this.editMode) this.render({ error: true });
     }
   }
 
@@ -98,7 +122,10 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
     this.innerHTML =
       '<div class="panel">' +
         '<div class="panel-head"><div class="panel-title">Monitored Talkgroups</div>' +
-          '<span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">' + monitored.length + ' monitored, ' + directory.length + ' more</span>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">' + monitored.length + ' monitored, ' + directory.length + ' more</span>' +
+            '<button type="button" class="btn" id="mtg-edit-toggle" title="Edit monitor list / names">&#9998;</button>' +
+          '</div>' +
         '</div>' +
         '<div class="activity-list">' + rows + '</div>' +
         '<div class="panel-foot">Click a talkgroup to switch to it &middot; MONITOR_TGS + TG Names in svxlink.conf &middot; activity parsed from /var/log/svxlink</div>' +
@@ -106,6 +133,189 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
 
     if (scrollTop) {
       this.querySelector('.activity-list').scrollTop = scrollTop;
+    }
+
+    this.querySelector('#mtg-edit-toggle').addEventListener('click', () => this.enterEdit());
+  }
+
+  enterEdit() {
+    this.editMode = true;
+    this.renderEdit(this.lastData || { talkgroups: [], selected_tg: null });
+  }
+
+  exitEdit() {
+    this.editMode = false;
+    this.render({ data: this.lastData });
+  }
+
+  renderEdit(data) {
+    const rows = data.talkgroups.map((t) => this.tgEditRow(t)).join('');
+
+    const prevList = this.querySelector('.activity-list');
+    const scrollTop = prevList ? prevList.scrollTop : 0;
+
+    this.innerHTML =
+      '<div class="panel">' +
+        '<div class="panel-head"><div class="panel-title">Monitored Talkgroups &mdash; editing</div>' +
+          '<button type="button" class="btn active" id="mtg-edit-done">Done</button>' +
+        '</div>' +
+        '<div class="activity-list">' + rows + '</div>' +
+        '<div class="panel-body" style="display:flex; gap:8px; align-items:center; padding-top:12px; border-top:1px solid var(--border-soft);">' +
+          '<input type="text" id="mtg-add-tg" placeholder="TG #" style="width:64px;">' +
+          '<input type="text" id="mtg-add-name" placeholder="Name" style="flex:1; min-width:0;">' +
+          '<button type="button" class="btn" id="mtg-add-btn">Add TG</button>' +
+        '</div>' +
+        '<div class="panel-foot" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
+          '<span id="mtg-save-msg" style="font-family:var(--mono); font-size:11px; color:var(--text-faint); flex:1;"></span>' +
+          '<button type="button" class="btn" id="mtg-save-btn">Save monitor list &amp; restart SvxLink</button>' +
+        '</div>' +
+      '</div>';
+
+    // Name values are set via property assignment, not baked into the
+    // HTML string above -- this.esc() only escapes for text content
+    // (<, >, &), not for sitting inside a value="..." attribute, so a
+    // name containing a literal " would otherwise break the markup.
+    data.talkgroups.forEach((t) => {
+      const row = this.querySelector('.activity-row[data-tg="' + CSS.escape(t.tg) + '"]');
+      const input = row && row.querySelector('.mtg-name-input');
+      if (input) input.value = t.name || '';
+    });
+
+    if (scrollTop) {
+      this.querySelector('.activity-list').scrollTop = scrollTop;
+    }
+
+    this.querySelector('#mtg-edit-done').addEventListener('click', () => this.exitEdit());
+    this.querySelector('#mtg-save-btn').addEventListener('click', () => this.saveMonitorList());
+    this.querySelector('#mtg-add-btn').addEventListener('click', () => this.addTg());
+    const addTgInput = this.querySelector('#mtg-add-tg');
+    const addNameInput = this.querySelector('#mtg-add-name');
+    [addTgInput, addNameInput].forEach((el) => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.addTg();
+        }
+      });
+    });
+    this.querySelectorAll('.mtg-name-input').forEach((el) => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          el.blur();
+        }
+      });
+      el.addEventListener('blur', () => this.saveName(el));
+    });
+  }
+
+  tgEditRow(t) {
+    const prio = t.priority || 0;
+    const prioOptions = [0, 1, 2, 3]
+      .map((p) => '<option value="' + p + '"' + (p === prio ? ' selected' : '') + '>' + (p === 0 ? 'none' : '+'.repeat(p)) + '</option>')
+      .join('');
+    return (
+      '<div class="activity-row" data-tg="' + this.esc(t.tg) + '" style="gap:10px;">' +
+        '<input type="checkbox" class="mtg-monitor-cb"' + (t.monitored ? ' checked' : '') + '>' +
+        '<span class="tg-num" style="min-width:60px;">TG ' + this.esc(t.tg) + '</span>' +
+        '<input type="text" class="mtg-name-input" style="flex:1; min-width:0;">' +
+        '<select class="mtg-prio-select field">' + prioOptions + '</select>' +
+        '<span class="mtg-name-status" style="width:14px; text-align:center; font-size:12px;"></span>' +
+      '</div>'
+    );
+  }
+
+  async saveName(el) {
+    const row = el.closest('.activity-row');
+    const tg = row.getAttribute('data-tg');
+    const name = el.value.trim();
+    const statusEl = row.querySelector('.mtg-name-status');
+    if (!name) {
+      return;
+    }
+    try {
+      const res = await fetch(this.apiUrl + '?action=rename', {
+        method: 'POST',
+        body: new URLSearchParams({ tg, name }),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (statusEl) {
+        statusEl.textContent = '✓';
+        statusEl.style.color = 'var(--ok)';
+      }
+      if (this.lastData) {
+        const t = this.lastData.talkgroups.find((x) => x.tg === tg);
+        if (t) t.name = name;
+      }
+    } catch (e) {
+      if (statusEl) {
+        statusEl.textContent = '!';
+        statusEl.style.color = 'var(--crit)';
+      }
+    }
+  }
+
+  async addTg() {
+    const tgInput = this.querySelector('#mtg-add-tg');
+    const nameInput = this.querySelector('#mtg-add-name');
+    const msg = this.querySelector('#mtg-save-msg');
+    const tg = tgInput.value.trim();
+    const name = nameInput.value.trim();
+    if (!/^\d+$/.test(tg) || !name) {
+      msg.textContent = 'TG must be a number and name must not be empty';
+      msg.style.color = 'var(--crit)';
+      return;
+    }
+    try {
+      const res = await fetch(this.apiUrl + '?action=rename', {
+        method: 'POST',
+        body: new URLSearchParams({ tg, name }),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      msg.textContent = '';
+      await this.poll(true);
+    } catch (e) {
+      msg.textContent = 'Failed to add TG';
+      msg.style.color = 'var(--crit)';
+    }
+  }
+
+  async saveMonitorList() {
+    const msg = this.querySelector('#mtg-save-msg');
+    const saveBtn = this.querySelector('#mtg-save-btn');
+    const tgs = {};
+    this.querySelectorAll('.activity-row[data-tg]').forEach((row) => {
+      const cb = row.querySelector('.mtg-monitor-cb');
+      if (cb && cb.checked) {
+        const tg = row.getAttribute('data-tg');
+        const sel = row.querySelector('.mtg-prio-select');
+        tgs[tg] = sel ? parseInt(sel.value, 10) || 0 : 0;
+      }
+    });
+
+    msg.textContent = 'Saving…';
+    msg.style.color = 'var(--text-faint)';
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch(this.apiUrl + '?action=save_monitor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tgs }),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      msg.textContent = 'Saved — restarting SvxLink, this takes a few seconds';
+      msg.style.color = 'var(--ok)';
+      this.editMode = false;
+      // Give svxlink a moment to actually restart before polling again --
+      // an immediate poll would just read the pre-restart config/log.
+      setTimeout(() => this.poll(), 4000);
+    } catch (e) {
+      msg.textContent = 'Failed to save';
+      msg.style.color = 'var(--crit)';
+      saveBtn.disabled = false;
     }
   }
 
