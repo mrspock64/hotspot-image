@@ -1,27 +1,34 @@
 <?php
-// Monitored Talkgroups module -- this node's own TG "plan" (MONITOR_TGS
-// in svxlink.conf's [ReflectorLogic], with priority markers, and their
-// friendly names), each cross-referenced with its own most recent
-// activity from /var/log/svxlink. Distinct from the reflector-wide
-// Reflector Activity module: this answers "how are the talkgroups I
-// actually care about doing", not "what's happening on the reflector at
-// large".
+// Talkgroup directory + switcher. Two tiers in one list: this node's own
+// "plan" (MONITOR_TGS in svxlink.conf's [ReflectorLogic], with priority
+// markers), each cross-referenced with its own most recent activity from
+// /var/log/svxlink -- same as before; plus every other *named* TG from
+// the TG Names database (dashboard/include/tgdb_store.php's loadTgDb(),
+// the same list the production TG Names page manages) that isn't on the
+// monitor list, e.g. "0 Idle" or "91 World Wide". Those don't get
+// activity tracking (the log scan below only bothers for monitored TGs,
+// same as before) but are still real, nameable, switchable destinations
+// -- confirmed live 2026-09-14 this was a real gap: the production TG
+// page lists every named TG, but this module only ever showed the
+// monitored subset, so there was no way to reach Idle/World Wide from
+// here at all. Distinct from Reflector Activity (whole reflector, not
+// this node's own plan).
 //
 // Reuses dashboard/include/tgdb_store.php's loadTgDb()/
 // loadMonitoredTgNumbers()/loadMonitoredTgPriorities() directly (a real
 // require(), not duplicated logic) -- unlike Setup's readCurrent(), this
 // lives in a proper dashboard/include/*.php file already, so there's
-// nothing to duplicate.
+// nothing to duplicate. Adding a new named TG, or changing which ones are
+// monitored, still only happens on the production TG Names/TG pages --
+// out of scope here, this endpoint only reads that data.
 //
 // ?action=select&tg=<n>: switches the node's active talkgroup, reusing
 // production's own sendTgSelectDtmf() (dashboard/include/tg_select.php,
 // extracted from buttons.php specifically so this endpoint could require
 // it without pulling in that file's page template) -- same "91<tg>#" DTMF
 // command and double-send workaround the production TG page's own "A"
-// (cell_tower) button sends. Only accepts TG numbers already on this
-// node's own MONITOR_TGS list, not an arbitrary string -- this endpoint
-// has no separate "add a new favorite TG" concern, that stays on the
-// production TG Names page.
+// (cell_tower) button sends. Accepts any TG number that has a name in
+// the TG Names database (monitored or not), not an arbitrary string.
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../dashboard/include/tgdb_store.php';
@@ -30,10 +37,10 @@ $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 if ($action === 'select') {
     require_once __DIR__ . '/../../dashboard/include/tg_select.php';
     $tg = $_GET['tg'] ?? ($_POST['tg'] ?? '');
-    $monitored = loadMonitoredTgNumbers();
-    if (!ctype_digit((string)$tg) || !in_array((string)$tg, $monitored, true)) {
+    $names = loadTgDb();
+    if (!ctype_digit((string)$tg) || !array_key_exists((string)$tg, $names)) {
         http_response_code(400);
-        echo json_encode(['error' => 'tg must be a number on the monitored list']);
+        echo json_encode(['error' => 'tg must be a number in the TG Names database']);
         exit;
     }
     sendTgSelectDtmf('91' . $tg . '#');
@@ -101,6 +108,7 @@ foreach ($monitoredTgs as $tg) {
         'tg' => $tg,
         'name' => $names[$tg] ?? null,
         'priority' => $priorities[$tg] ?? 0,
+        'monitored' => true,
         'activity' => $activity ? [
             'callsign' => $activity['callsign'],
             'active' => $activity['type'] === 'start',
@@ -118,4 +126,19 @@ usort($result, function ($a, $b) {
     return $aAt <=> $bAt;
 });
 
-echo json_encode(['talkgroups' => $result, 'selected_tg' => $selectedTg]);
+// Everything else named in the TG Names database but not on the monitor
+// list -- no activity tracking (the log scan above never looked for
+// these), just a name and a switch target. Sorted numerically by TG#,
+// same convention the production TG page's own table uses.
+$monitoredSet = array_flip($monitoredTgs);
+$directory = [];
+foreach ($names as $tg => $name) {
+    $tg = (string)$tg;
+    if (isset($monitoredSet[$tg])) {
+        continue;
+    }
+    $directory[] = ['tg' => $tg, 'name' => $name, 'priority' => 0, 'monitored' => false, 'activity' => null];
+}
+usort($directory, fn($a, $b) => (int)$a['tg'] <=> (int)$b['tg']);
+
+echo json_encode(['talkgroups' => array_merge($result, $directory), 'selected_tg' => $selectedTg]);
