@@ -224,12 +224,19 @@ a{ color: inherit; }
   padding: 5px 13px 5px 10px; border-radius: 999px;
   background: var(--surface-2); border: 1px solid var(--border);
   font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .6px;
-  color: var(--text-faint);
+  color: var(--text-dim);
   transition: color .2s ease, border-color .2s ease, background .2s ease;
 }
 .rxtx .bars{ display: flex; align-items: flex-end; gap: 2px; height: 11px; }
 .rxtx .bars span{ width: 2.5px; background: currentColor; border-radius: 1px; opacity: .35; height: 3px; transition: height .12s ease, opacity .12s ease; }
-.rxtx.idle .bars span{ height: 3px; opacity: .3; }
+/* Resting heights vary (not a flat line) so the pill still reads as an
+   instrument at a glance, even with nothing on the air -- opacity/color
+   stay low-key so it doesn't compete with rx/tx. */
+.rxtx.idle .bars span{ opacity: .55; }
+.rxtx.idle .bars span:nth-child(1){ height: 4px; }
+.rxtx.idle .bars span:nth-child(2){ height: 7px; }
+.rxtx.idle .bars span:nth-child(3){ height: 5px; }
+.rxtx.idle .bars span:nth-child(4){ height: 6px; }
 .rxtx.rx{ color: var(--cyan); border-color: var(--cyan-dim); background: rgba(77,216,224,0.07); }
 .rxtx.rx .bars span{ opacity: .9; animation: rxtx-bounce 900ms ease-in-out infinite; }
 .rxtx.rx .bars span:nth-child(1){ animation-delay: 0ms; }
