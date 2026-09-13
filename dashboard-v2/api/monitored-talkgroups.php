@@ -32,9 +32,62 @@
 // file's header comment for why the "must already be named" restriction
 // this endpoint used to enforce was dropped once a second module needed
 // to select TGs the name database doesn't know about.
+//
+// ?action=rename: renames a TG (or adds a brand-new one -- same
+// operation, loadTgDb()/saveTgDb() don't distinguish) via the edit-mode
+// panel's inline name fields and "add TG" form. No restart needed, this
+// is a plain JSON file write.
+//
+// ?action=save_monitor: writes the full monitor/priority set via
+// tgdb_store.php's saveMonitoredTgs() (extracted from the production TG
+// page's own "Save monitoring & restart SvxLink" button) -- the one
+// action here that actually restarts svxlink, since MONITOR_TGS is only
+// read at startup. Deliberately a single explicit batch save, not an
+// auto-save per checkbox flip, so toggling five TGs doesn't restart the
+// radio five times.
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../dashboard/include/tgdb_store.php';
+
+$action = $_GET['action'] ?? ($_POST['action'] ?? '');
+
+if ($action === 'rename') {
+    $tg = $_POST['tg'] ?? ($_GET['tg'] ?? '');
+    $name = trim((string)($_POST['name'] ?? ($_GET['name'] ?? '')));
+    if (!ctype_digit((string)$tg) || $name === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'tg must be a number and name must be non-empty']);
+        exit;
+    }
+    $db = loadTgDb();
+    $db[(string)$tg] = $name;
+    try {
+        saveTgDb($db);
+        echo json_encode(['tg' => (string)$tg, 'name' => $name]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'save_monitor') {
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    $tgs = is_array($body) ? ($body['tgs'] ?? null) : null;
+    if (!is_array($tgs)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'body must be {"tgs": {"<tg>": <priority 0-3>, ...}}']);
+        exit;
+    }
+    try {
+        saveMonitoredTgs($tgs);
+        echo json_encode(['saved' => true]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
 
 require_once __DIR__ . '/../../dashboard/include/svxlink_log_state.php';
 
