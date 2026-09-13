@@ -111,6 +111,11 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
       // this feature existed.
       mxRxMonitorRequest('start');
     }
+    // Header RX level meter (site_header.php) -- shows/starts polling
+    // right along with playback rather than waiting for a page reload to
+    // notice $mxShowRxMeter changed, since "monitor-only" mode never
+    // touches the config value that check reads.
+    if (window.mxRxMeterSetVisible) window.mxRxMeterSetVisible(startingUp);
     playAudioToggle(8080, btn);
     // playAudioToggle() toggles synchronously (isPlaying() flips inside
     // the same call), so the state right after the call is the new state.
@@ -132,6 +137,7 @@ echo mxNavLink('/help/', 'Help', $mxCurrent);
       var btn = document.getElementById('mx-rxmon-btn');
       if (btn) {
         mxRxMonitorRequest('start');
+        if (window.mxRxMeterSetVisible) window.mxRxMeterSetVisible(true);
         playAudioToggle(8080, btn);
       } else {
         localStorage.removeItem(RXMON_KEY);
