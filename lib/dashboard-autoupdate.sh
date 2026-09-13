@@ -40,6 +40,19 @@ if [ ! -d "$REPO_DIR/.git" ]; then
     exit 0
 fi
 
+# Confirmed live (2026-09-13): this checkout got switched to a feature
+# branch (dashboard-v2) for local testing, and this timer -- not knowing
+# or caring what's checked out -- fetched and reset --hard against
+# origin/main anyway, silently discarding the branch switch and mixing
+# two production commits into what should've been a clean feature-branch
+# history. update.dashboard.sh has the same guard for the same reason;
+# this one's checked first so a branch switch skips the whole update
+# (and its lock/logging) rather than reaching that script at all.
+current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ "$current_branch" != "main" ]; then
+    exit 0
+fi
+
 exec 9>"$LOCK_FILE"
 if ! flock -n 9; then
     # A manual check/update (or a previous timer run that's still going)

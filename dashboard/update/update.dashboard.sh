@@ -8,6 +8,26 @@ if [ ! -d "$REPO_DIR/.git" ]; then
   exit 1
 fi
 
+# Confirmed live (2026-09-13): this checkout got switched to a feature
+# branch (dashboard-v2) for local testing, and a run of this exact script
+# (via the hourly auto-updater, which doesn't know or care what's checked
+# out either) fetched and reset --hard against origin/main anyway,
+# silently discarding the branch switch and mixing production commits
+# into what should've been a clean feature-branch history. Refuse instead
+# of guessing what a non-main checkout means -- someone put it there on
+# purpose, whether for this exact reason or to investigate something else
+# entirely; either way, resetting it out from under them isn't this
+# script's call to make. (A feature branch that wants its own auto-update
+# should use its own git worktree, not switch this shared checkout --
+# see lib/install-dashboard-v2-preview.sh for that pattern.)
+current_branch=$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ "$current_branch" != "main" ]; then
+  echo "$REPO_DIR is checked out to '$current_branch', not main -- refusing to touch it."
+  echo "(Switch it back to main first if you want it to auto-update again.)"
+  echo "###-FINISH-####"
+  exit 1
+fi
+
 echo "--- Pulling latest hotspot-image ---"
 cd "$REPO_DIR"
 old_rev=$(git rev-parse HEAD 2>/dev/null)
