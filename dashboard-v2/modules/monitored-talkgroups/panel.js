@@ -207,6 +207,9 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
       });
       el.addEventListener('blur', () => this.saveName(el));
     });
+    this.querySelectorAll('.mtg-delete-btn').forEach((el) => {
+      el.addEventListener('click', () => this.deleteTg(el));
+    });
   }
 
   tgEditRow(t) {
@@ -221,6 +224,7 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
         '<input type="text" class="mtg-name-input" style="flex:1; min-width:0;">' +
         '<select class="mtg-prio-select field">' + prioOptions + '</select>' +
         '<span class="mtg-name-status" style="width:14px; text-align:center; font-size:12px;"></span>' +
+        '<button type="button" class="btn mtg-delete-btn" title="Delete this TG&#39;s name" style="padding:4px 9px;">&times;</button>' +
       '</div>'
     );
   }
@@ -252,6 +256,38 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
       if (statusEl) {
         statusEl.textContent = '!';
         statusEl.style.color = 'var(--crit)';
+      }
+    }
+  }
+
+  async deleteTg(btn) {
+    const row = btn.closest('.activity-row');
+    const tg = row.getAttribute('data-tg');
+    const name = row.querySelector('.mtg-name-input').value || tg;
+    const stillMonitored = row.querySelector('.mtg-monitor-cb').checked;
+    const warning = stillMonitored
+      ? 'Delete the name for TG ' + tg + ' (' + name + ')? It stays on the monitor list until you also uncheck it and save.'
+      : 'Delete the name for TG ' + tg + ' (' + name + ')?';
+    if (!window.confirm(warning)) {
+      return;
+    }
+    try {
+      const res = await fetch(this.apiUrl + '?action=delete', {
+        method: 'POST',
+        body: new URLSearchParams({ tg }),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      // Re-fetch rather than just removing the row locally -- a still-
+      // monitored TG doesn't disappear (it keeps showing, just unnamed
+      // now), only a pure directory entry actually vanishes, and asking
+      // the server is simpler than replicating that logic client-side.
+      await this.poll(true);
+    } catch (e) {
+      const msg = this.querySelector('#mtg-save-msg');
+      if (msg) {
+        msg.textContent = 'Failed to delete TG ' + tg;
+        msg.style.color = 'var(--crit)';
       }
     }
   }

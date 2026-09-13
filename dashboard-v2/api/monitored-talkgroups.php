@@ -71,6 +71,31 @@ if ($action === 'rename') {
     exit;
 }
 
+if ($action === 'delete') {
+    // Removes the name only (tgdb_store.php's JSON file) -- deliberately
+    // does NOT touch MONITOR_TGS. A still-monitored TG whose name gets
+    // deleted just keeps showing as a bare "TG <n>" with no name until
+    // someone also unchecks it and hits Save; that's the same
+    // no-surprise-writes-to-svxlink.conf-outside-the-explicit-Save-button
+    // rule save_monitor's own comment already follows, applied here too.
+    $tg = $_GET['tg'] ?? ($_POST['tg'] ?? '');
+    if (!ctype_digit((string)$tg)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'tg must be a number']);
+        exit;
+    }
+    $db = loadTgDb();
+    unset($db[(string)$tg]);
+    try {
+        saveTgDb($db);
+        echo json_encode(['deleted' => (string)$tg]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($action === 'save_monitor') {
     $body = json_decode((string)file_get_contents('php://input'), true);
     $tgs = is_array($body) ? ($body['tgs'] ?? null) : null;
