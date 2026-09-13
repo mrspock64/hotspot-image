@@ -1,0 +1,8 @@
+{
+  "id": "buttons",
+  "title": "Quick Buttons",
+  "element": "buttons-panel",
+  "script": "/modules/buttons/panel.js",
+  "api": "/api/buttons.php",
+  "refresh_ms": 15000
+}

@@ -272,6 +272,25 @@ a{ color: inherit; }
 .switch input:checked + .track::after{ transform: translateX(17px); background: var(--copper); }
 @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
+/* ---------- quick button pill (Buttons module) ---------- */
+.qbtn{
+  font-family: var(--mono); font-size:12px; font-weight:600; letter-spacing:.3px;
+  padding: 8px 16px; border-radius:999px; cursor:pointer; border:1px solid var(--border);
+  background: var(--surface-2); color: var(--text-dim);
+  transition: transform .08s ease, filter .12s ease;
+}
+.qbtn:hover{ filter:brightness(1.15); }
+.qbtn:active, .qbtn.pressed{ transform: scale(0.96); }
+.qbtn:disabled{ opacity:.5; cursor:default; }
+/* Colors stored in production's own vocabulary (green/blue/red/orange/
+   purple, see api/buttons.php's header comment) remapped to this
+   theme's real palette -- display only, never written back. */
+.qbtn-green{ border-color: var(--ok); color: var(--ok); background: rgba(94,214,140,0.08); }
+.qbtn-blue{ border-color: var(--cyan-dim); color: var(--cyan); background: rgba(77,216,224,0.08); }
+.qbtn-red{ border-color: var(--crit); color: var(--crit); background: rgba(242,102,78,0.08); }
+.qbtn-orange{ border-color: var(--warn); color: var(--warn); background: rgba(242,193,78,0.08); }
+.qbtn-purple{ border-color: var(--copper-dim); color: var(--copper); background: rgba(255,157,77,0.08); }
+
 /* ---------- generic form controls (module edit modes, e.g. Monitored Talkgroups) ---------- */
 input[type="text"], input[type="number"], select.field{
   font-family: var(--mono); font-size:12.5px; background:var(--surface-2); color:var(--text);
