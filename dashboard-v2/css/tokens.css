@@ -216,6 +216,11 @@ a{ color: inherit; }
 .dot.crit{ background: var(--crit); box-shadow: 0 0 8px 1px rgba(242,102,78,0.6); }
 @media (prefers-reduced-motion: no-preference){
   .dot.ok{ animation: pulse 2.4s ease-in-out infinite; }
+  /* Scoped to the topbar QSO Log indicator only, not every .dot.crit
+     elsewhere (that's used for plain error/critical states too, which
+     shouldn't all start pulsing) -- this one specifically means "a
+     recording is actively happening right now". */
+  #qsolog-indicator .dot.crit{ animation: pulse 1.1s ease-in-out infinite; }
 }
 
 /* ---------- small action button (module controls, e.g. RX Monitor's Listen) ---------- */

@@ -75,6 +75,26 @@ if ($action === 'save_load_monitor') {
     exit;
 }
 
+if ($action === 'toggle') {
+    // For the topbar indicator's click-to-toggle -- reads the current
+    // settings itself and flips only 'active', saving every other field
+    // straight back unchanged. Deliberately does NOT take a caller-
+    // supplied disk limit/QSO gap/max recordings/TG filter: a topbar
+    // chip has no business needing to know those to flip one switch, and
+    // sending them back verbatim here means it never risks clobbering
+    // them with stale values the chip happened to be caching.
+    $current = getQsoRecorderSettings();
+    $newActive = !$current['active'];
+    try {
+        saveQsoRecorderSettings($newActive, $current['max_dirsize'], $current['qso_timeout'], $current['max_recordings'], $current['record_only_tgs']);
+        echo json_encode(['active' => $newActive]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 $settings = getQsoRecorderSettings();
 $names = loadTgDb();
 ksort($names, SORT_NUMERIC);
