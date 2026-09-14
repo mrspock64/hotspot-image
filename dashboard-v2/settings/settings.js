@@ -17,6 +17,7 @@ const PAGE_META = {
   rxmonitor: { href: '/rxmonitor/' },
   dtmf: { href: '/dtmf/' },
   setup: { href: '/setup/' },
+  power: { href: '/power/' },
   help: { href: '/help/' },
 };
 

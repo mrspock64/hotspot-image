@@ -1,0 +1,8 @@
+{
+  "id": "power-status",
+  "title": "Power",
+  "element": "power-status-panel",
+  "script": "/modules/power-status/panel.js",
+  "api": "/api/power.php",
+  "refresh_ms": 10000
+}

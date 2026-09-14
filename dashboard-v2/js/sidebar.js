@@ -16,6 +16,7 @@ const DASHBOARD_V2_PAGES = [
   { href: '/rxmonitor/', id: 'rxmonitor', icon: '◉' },
   { href: '/dtmf/', id: 'dtmf', icon: '⌨' },
   { href: '/setup/', id: 'setup', icon: '⚙' },
+  { href: '/power/', id: 'power', icon: '⏻' },
   // No modules yet on purpose -- placeholder page (pages/help/layout.json
   // is deliberately empty) until there's real help content to put on it.
   { href: '/help/', id: 'help', icon: '?' },

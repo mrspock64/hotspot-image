@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power -- Hotspot Console (dashboard-v2 preview)</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="stylesheet" href="/css/tokens.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-mark">HS</div>
+      <span class="sidebar-brand-text">Hotspot Console</span>
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse menu">&lsaquo;</button>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <a href="/settings/?page=power" title="Layout settings"><span class="sidebar-icon">&#9881;</span><span class="sidebar-label">Settings</span></a>
+    </div>
+  </aside>
+  <div class="shell">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span class="title">Power</span>
+        <span class="sub">dashboard-v2 preview &middot; branch: dashboard-v2, not production</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="clock-block">
+        <div class="clock"><span class="zone" id="clock-primary-zone">LOCAL</span><span id="clock-primary-time">--:--:--</span></div>
+        <div class="clock-local"><span id="clock-secondary-zone">utc</span> <span id="clock-secondary-time">--:--:--</span></div>
+      </div>
+    </div>
+    <div class="grid" id="module-grid" data-page="power"></div>
+    <div class="footer-note">Module-based preview -- see <b>docs/dashboard-v2-brief.md</b>. Production dashboard is untouched, still served on :80.</div>
+  </div>
+</div>
+<script src="/js/tg-select.js"></script>
+<script src="/js/resizable-list.js"></script>
+<script src="/js/clock.js"></script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/rxtx-indicator.js"></script>
+<script src="/js/qsolog-indicator.js"></script>
+<script src="/js/shell.js"></script>
+</body>
+</html>

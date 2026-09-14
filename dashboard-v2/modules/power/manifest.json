@@ -1,0 +1,7 @@
+{
+  "id": "power",
+  "title": "Power Controls",
+  "element": "power-panel",
+  "script": "/modules/power/panel.js",
+  "api": "/api/power.php"
+}
