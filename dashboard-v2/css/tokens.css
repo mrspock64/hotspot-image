@@ -96,6 +96,15 @@ a{ color: inherit; }
 }
 .sidebar-footer a:hover{ background:var(--surface-2); color:var(--copper); }
 .sidebar.collapsed .sidebar-footer a{ justify-content:center; }
+.sidebar-footer button.sidebar-fullscreen-btn{
+  display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; margin-bottom:4px; border-radius:7px;
+  background:none; border:none; color:var(--text-dim); font-family:var(--sans); font-size:13px;
+  text-align:left; white-space:nowrap; overflow:hidden; cursor:pointer;
+}
+.sidebar-footer button.sidebar-fullscreen-btn:hover{ background:var(--surface-2); color:var(--copper); }
+.sidebar-footer button.sidebar-fullscreen-btn.active{ background:rgba(94,214,140,0.12); color:var(--ok); }
+.sidebar-footer button.sidebar-fullscreen-btn.active:hover{ background:rgba(94,214,140,0.2); }
+.sidebar.collapsed .sidebar-footer button.sidebar-fullscreen-btn{ justify-content:center; }
 
 /* ---------- mini DTMF keypad (sidebar.js, always present, not part of the module grid) ---------- */
 .sidebar-dtmf{ padding:10px 8px; border-top:1px solid var(--border-soft); }

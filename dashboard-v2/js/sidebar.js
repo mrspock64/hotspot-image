@@ -16,6 +16,9 @@ const DASHBOARD_V2_PAGES = [
   { href: '/rxmonitor/', id: 'rxmonitor', icon: '◉' },
   { href: '/dtmf/', id: 'dtmf', icon: '⌨' },
   { href: '/setup/', id: 'setup', icon: '⚙' },
+  // No modules yet on purpose -- placeholder page (pages/help/layout.json
+  // is deliberately empty) until there's real help content to put on it.
+  { href: '/help/', id: 'help', icon: '?' },
 ];
 
 (async function () {
@@ -94,6 +97,42 @@ const DASHBOARD_V2_PAGES = [
     window.addEventListener('storage', (e) => {
       if (e.key === DTMF_STORAGE_KEY) applyDtmfVisibility();
     });
+  }
+
+  // Fullscreen toggle -- injected above the Settings link (DOM-inserted,
+  // not per-page markup, same reasoning as the DTMF keypad above), using
+  // the real browser Fullscreen API rather than restyling the page to
+  // viewport size, so it actually hides the OS chrome/browser tab bar,
+  // not just this app's own sidebar. No per-viewer memory needed here --
+  // the browser itself already remembers nothing across reloads (leaving
+  // fullscreen on navigate/reload is standard behavior everywhere), so
+  // this only ever tracks the *current* live state via fullscreenchange.
+  if (footer) {
+    const fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.className = 'sidebar-fullscreen-btn';
+    fsBtn.innerHTML = '<span class="sidebar-icon">&#x26F6;</span><span class="sidebar-label">Fullscreen</span>';
+    footer.insertBefore(fsBtn, footer.firstChild);
+
+    function applyFullscreenState() {
+      const isFull = !!document.fullscreenElement;
+      fsBtn.classList.toggle('active', isFull);
+      fsBtn.querySelector('.sidebar-label').textContent = isFull ? 'Exit Full' : 'Fullscreen';
+    }
+
+    fsBtn.addEventListener('click', () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        // Fails silently (e.g. iframe without allowfullscreen, or the
+        // user dismissing a permission prompt) -- fullscreenchange just
+        // never fires and the button stays in its current state, no
+        // separate error handling needed.
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    });
+    document.addEventListener('fullscreenchange', applyFullscreenState);
+    applyFullscreenState();
   }
 
   // Collapse/expand -- a plain width toggle, not a hide/show overlay: this

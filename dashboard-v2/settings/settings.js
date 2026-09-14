@@ -17,6 +17,7 @@ const PAGE_META = {
   rxmonitor: { href: '/rxmonitor/' },
   dtmf: { href: '/dtmf/' },
   setup: { href: '/setup/' },
+  help: { href: '/help/' },
 };
 
 const page = new URLSearchParams(window.location.search).get('page') || 'dashboard';
