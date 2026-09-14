@@ -1,3 +1,4 @@
 [
-  { "id": "qsolog", "col": 1, "enabled": true }
+  { "id": "qsolog", "col": 1, "enabled": true },
+  { "id": "qsolog-settings", "col": 2, "enabled": true }
 ]

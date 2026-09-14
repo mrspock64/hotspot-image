@@ -1,0 +1,7 @@
+{
+  "id": "qsolog-settings",
+  "title": "QSO Log Settings",
+  "element": "qsolog-settings-panel",
+  "script": "/modules/qsolog-settings/panel.js",
+  "api": "/api/qsolog-settings.php"
+}
