@@ -38,6 +38,39 @@ const DASHBOARD_V2_PAGES = [
     }).join('');
   }
 
+  // Mini DTMF keypad -- reachable from every page, not just /dtmf/'s own
+  // full module. Deliberately pared down from that module's 16 keys to
+  // the classic 12-key phone layout (1-9, *, 0, #): A-D are rare enough
+  // that "go to the full DTMF page" is a fine answer for them, and 12
+  // keys actually fits the sidebar's 220px width as something worth
+  // calling "mini". No free-text send box here either -- same reasoning,
+  // that's what the full page is for. Hits the same api/dtmf.php
+  // ?action=key endpoint the module itself uses, not a separate code
+  // path. Built here (not as its own module) because the sidebar isn't
+  // part of the module-grid system modules render into.
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer) {
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+    const dtmf = document.createElement('div');
+    dtmf.className = 'sidebar-dtmf';
+    dtmf.id = 'sidebar-dtmf';
+    dtmf.innerHTML =
+      '<div class="sidebar-dtmf-label">DTMF</div>' +
+      '<div class="sidebar-dtmf-keypad">' +
+      keys.map((k) => '<button type="button" class="dtmf-key" data-digit="' + k + '">' + k + '</button>').join('') +
+      '</div>';
+    footer.parentNode.insertBefore(dtmf, footer);
+
+    dtmf.querySelectorAll('.dtmf-key').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const digit = btn.getAttribute('data-digit');
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 200);
+        fetch('/api/dtmf.php?action=key&digit=' + encodeURIComponent(digit), { cache: 'no-store' }).catch(() => {});
+      });
+    });
+  }
+
   // Collapse/expand -- a plain width toggle, not a hide/show overlay: this
   // is meant to sit open most of the time on a screen left running, not
   // be opened-closed like a mobile drawer. State persists per browser/

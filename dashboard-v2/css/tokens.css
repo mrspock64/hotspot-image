@@ -97,6 +97,16 @@ a{ color: inherit; }
 .sidebar-footer a:hover{ background:var(--surface-2); color:var(--copper); }
 .sidebar.collapsed .sidebar-footer a{ justify-content:center; }
 
+/* ---------- mini DTMF keypad (sidebar.js, always present, not part of the module grid) ---------- */
+.sidebar-dtmf{ padding:10px 8px; border-top:1px solid var(--border-soft); }
+.sidebar-dtmf-label{
+  font-family: var(--disp); font-weight:600; font-size:9.5px; text-transform:uppercase;
+  letter-spacing:1.2px; color:var(--text-faint); padding:0 2px 6px;
+}
+.sidebar-dtmf-keypad{ display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; }
+.sidebar-dtmf-keypad .dtmf-key{ aspect-ratio:auto; height:30px; font-size:11px; }
+.sidebar.collapsed .sidebar-dtmf{ display:none; }
+
 /* ---------- shell (main content area) ---------- */
 .shell{
   flex:1; min-width:0;
