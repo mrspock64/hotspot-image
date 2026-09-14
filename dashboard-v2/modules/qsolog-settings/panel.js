@@ -59,6 +59,7 @@ class QsologSettingsPanel extends HTMLElement {
       '<div class="panel">' +
         '<div class="panel-head"><div class="panel-title">QSO Log Settings</div></div>' +
         '<div class="panel-body" style="display:flex; flex-direction:column; gap:14px;">' +
+          '<div style="font-family:var(--disp); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint);">Recording</div>' +
           '<label style="display:flex; align-items:center; gap:8px; font-size:13px;">' +
             '<input type="checkbox" id="qls-active"' + (data.active ? ' checked' : '') + '>' +
             'Record every transmission' +
@@ -80,17 +81,26 @@ class QsologSettingsPanel extends HTMLElement {
             '</div>' +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:12px;">' +
-            '<button type="button" class="btn" id="qls-save-btn">Save</button>' +
+            // Two "Save" buttons in one compact form is exactly what caused
+            // a real reported bug: clicking this section's Save while
+            // aiming for it is easy to mix up with the auto-pause section's
+            // own Save just below -- that one genuinely succeeds (it saves
+            // its own field), but silently never sends *this* section's
+            // changes, so a checked box here looks saved and then reverts
+            // on reload. Explicit, distinct labels instead of two bare
+            // "Save" buttons close together.
+            '<button type="button" class="btn" id="qls-save-btn">Save recording settings</button>' +
             '<span id="qls-save-msg" style="font-family:var(--mono); font-size:11px; color:var(--text-faint);"></span>' +
           '</div>' +
           '<div style="border-top:1px solid var(--border-soft); padding-top:14px;">' +
+            '<div style="font-family:var(--disp); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); margin-bottom:8px;">Auto-pause under load</div>' +
             '<label style="display:flex; align-items:center; gap:8px; font-size:13px;">' +
               '<input type="checkbox" id="qls-load-pause"' + (data.load_monitor_auto_pause ? ' checked' : '') + '>' +
               'Automatically pause recording under sustained high load' +
             '</label>' +
             '<p style="font-family:var(--mono); font-size:11px; color:var(--text-faint); margin:6px 0 10px;">Only ever turns recording off, never back on -- and only if it was already on.</p>' +
             '<div style="display:flex; align-items:center; gap:12px;">' +
-              '<button type="button" class="btn" id="qls-load-save-btn">Save</button>' +
+              '<button type="button" class="btn" id="qls-load-save-btn">Save auto-pause setting</button>' +
               '<span id="qls-load-save-msg" style="font-family:var(--mono); font-size:11px; color:var(--text-faint);"></span>' +
             '</div>' +
           '</div>' +
