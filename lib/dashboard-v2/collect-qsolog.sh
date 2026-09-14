@@ -107,6 +107,11 @@ recent_names = set()
 for rec in listing["recent"]:
     path = rec.pop("path")
     name = os.path.basename(path)
+    # Kept in the output (not just used locally for ffprobe) -- the
+    # dashboard-v2 QSO Log module needs the bare filename to build
+    # play/delete requests against, confirmed live: without this the API
+    # response had no way to reference a specific recording at all.
+    rec["file"] = name
     recent_names.add(name)
     if name in cache:
         rec["duration_sec"] = cache[name]

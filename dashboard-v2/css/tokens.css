@@ -368,9 +368,10 @@ svg.spark{ width:100%; height:64px; display:block; }
 .bar-fill.crit{ background: linear-gradient(90deg, #a83a2c, var(--crit)); }
 
 /* ---------- QSO log ---------- */
-.qso-list{ display:flex; flex-direction:column; }
+/* .qso-list's own display/scroll/resize rules live with .activity-list's,
+   see the shared block below -- one definition, not two. */
 .qso-row{
-  display:grid; grid-template-columns: 52px 1fr auto; gap:10px; align-items:center;
+  display:grid; grid-template-columns: 52px 1fr auto auto; gap:10px; align-items:center;
   padding: 10px 16px; border-bottom:1px solid var(--border-soft);
 }
 .qso-row:last-child{ border-bottom:none; }
@@ -389,15 +390,19 @@ svg.spark{ width:100%; height:64px; display:block; }
 }
 
 /* ---------- reflector activity list (Reflector Activity module) ---------- */
-.activity-list{
+/* Shared by every scrollable panel list -- .activity-list (Reflector
+   Activity, Monitored Talkgroups, Quick Buttons edit mode) and .qso-list
+   (QSO Log) both get the same slim dark scrollbar + drag-to-resize
+   handle, one rule instead of duplicating it per module. */
+.activity-list, .qso-list{
   display:flex; flex-direction:column; height:420px; min-height:140px; max-height:900px; overflow-y:auto;
   resize:vertical;
   scrollbar-width:thin; scrollbar-color: var(--border) transparent;
 }
-.activity-list::-webkit-scrollbar{ width:7px; }
-.activity-list::-webkit-scrollbar-track{ background:transparent; }
-.activity-list::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
-.activity-list::-webkit-scrollbar-thumb:hover{ background:var(--copper-dim); }
+.activity-list::-webkit-scrollbar, .qso-list::-webkit-scrollbar{ width:7px; }
+.activity-list::-webkit-scrollbar-track, .qso-list::-webkit-scrollbar-track{ background:transparent; }
+.activity-list::-webkit-scrollbar-thumb, .qso-list::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+.activity-list::-webkit-scrollbar-thumb:hover, .qso-list::-webkit-scrollbar-thumb:hover{ background:var(--copper-dim); }
 .activity-row{
   display:flex; align-items:center; gap:10px;
   padding: 9px 16px; border-bottom:1px solid var(--border-soft);
