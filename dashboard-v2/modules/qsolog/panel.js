@@ -161,7 +161,7 @@ class QsologPanel extends HTMLElement {
     if (scrollTop) {
       this.querySelector('.qso-list').scrollTop = scrollTop;
     }
-    window.dv2PersistResizableList(this, 'dv2ListHeight-qsolog');
+    window.dv2PersistResizableList(this, 'dv2ListHeight-qsolog', '.qso-list');
     if (this.playingFile) this.setPlaying(this.playingFile);
   }
 
