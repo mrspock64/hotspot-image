@@ -1,0 +1,7 @@
+{
+  "id": "dtmf",
+  "title": "DTMF Dialer",
+  "element": "dtmf-panel",
+  "script": "/modules/dtmf/panel.js",
+  "api": "/api/dtmf.php"
+}

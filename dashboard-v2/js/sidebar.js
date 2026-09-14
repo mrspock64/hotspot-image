@@ -14,6 +14,7 @@ const DASHBOARD_V2_PAGES = [
   { href: '/', id: 'dashboard', icon: '▦' },
   { href: '/qsolog/', id: 'qsolog', icon: '≡' },
   { href: '/rxmonitor/', id: 'rxmonitor', icon: '◉' },
+  { href: '/dtmf/', id: 'dtmf', icon: '⌨' },
   { href: '/setup/', id: 'setup', icon: '⚙' },
 ];
 

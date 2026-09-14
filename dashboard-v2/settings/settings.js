@@ -15,6 +15,7 @@ const PAGE_META = {
   dashboard: { href: '/' },
   qsolog: { href: '/qsolog/' },
   rxmonitor: { href: '/rxmonitor/' },
+  dtmf: { href: '/dtmf/' },
   setup: { href: '/setup/' },
 };
 

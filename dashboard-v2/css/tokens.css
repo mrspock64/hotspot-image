@@ -272,6 +272,17 @@ a{ color: inherit; }
 .switch input:checked + .track::after{ transform: translateX(17px); background: var(--copper); }
 @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
+/* ---------- compact DTMF keypad (DTMF Dialer module) ---------- */
+.dtmf-keypad{ display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; max-width:200px; margin:0 auto; width:100%; }
+.dtmf-key{
+  font-family: var(--mono); font-weight:600; font-size:14px;
+  aspect-ratio: 1 / 1; border-radius:7px; border:1px solid var(--border);
+  background: var(--surface-2); color: var(--text); cursor:pointer;
+  transition: transform .08s ease, filter .12s ease, border-color .12s ease;
+}
+.dtmf-key:hover{ filter:brightness(1.15); border-color: var(--copper-dim); }
+.dtmf-key:active, .dtmf-key.pressed{ transform: scale(0.9); background: rgba(255,157,77,0.12); border-color: var(--copper); }
+
 /* ---------- quick button pill (Buttons module) ---------- */
 .qbtn{
   font-family: var(--mono); font-size:12px; font-weight:600; letter-spacing:.3px;
