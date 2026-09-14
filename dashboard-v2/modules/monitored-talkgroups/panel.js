@@ -134,6 +134,7 @@ class MonitoredTalkgroupsPanel extends HTMLElement {
     if (scrollTop) {
       this.querySelector('.activity-list').scrollTop = scrollTop;
     }
+    window.dv2PersistResizableList(this, 'dv2ListHeight-monitored-talkgroups');
 
     this.querySelector('#mtg-edit-toggle').addEventListener('click', () => this.enterEdit());
   }

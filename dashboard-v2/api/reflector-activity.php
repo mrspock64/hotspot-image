@@ -11,7 +11,14 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../dashboard/include/svxlink_log_state.php';
 
-const EVENT_LIMIT = 25;
+// Deliberately more than the panel shows without scrolling/resizing --
+// the card's default height only fits a handful of rows, but the
+// .activity-list is now resizable (drag handle, see tokens.css +
+// js/resizable-list.js) and a viewer who drags it taller should find
+// real history there, not just whitespace. 50 costs nothing extra to
+// compute (same array_filter/array_slice either way), it just changes
+// how far back a stretched-out card can actually see.
+const EVENT_LIMIT = 50;
 
 $s = getSvxlinkLogState();
 

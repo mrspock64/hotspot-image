@@ -87,6 +87,7 @@ class ReflectorActivityPanel extends HTMLElement {
     if (scrollTop) {
       this.querySelector('.activity-list').scrollTop = scrollTop;
     }
+    window.dv2PersistResizableList(this, 'dv2ListHeight-reflector-activity');
   }
 
   eventRow(e) {
