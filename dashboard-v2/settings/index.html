@@ -153,6 +153,16 @@
           <button type="button" class="btn" id="clock-pref-utc">UTC</button>
         </div>
       </div>
+      <div class="settings-row" style="display:flex; align-items:center; justify-content:space-between; padding:15px 0; border-top:1px solid var(--border-soft);">
+        <div>
+          <div style="font-size:13.5px; color:var(--text);">Sidebar DTMF keypad</div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:3px;">Mini 12-key dialer above Settings, on every page</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="sidebar-dtmf-toggle">
+          <span class="track"></span>
+        </label>
+      </div>
     </div>
   </div>
   <p class="footer-note">Turning a module off or moving it here never touches its own files -- see <b>docs/dashboard-v2-brief.md</b>. Saved to /var/cache/hotspot-image, not to the git checkout.</p>
@@ -198,6 +208,19 @@
   localBtn.addEventListener('click', () => set('local'));
   utcBtn.addEventListener('click', () => set('utc'));
   apply();
+})();
+
+// Same per-browser localStorage pattern as the RX/TX indicator toggle
+// above, key js/sidebar.js reads on every page.
+(function () {
+  const STORAGE_KEY = 'dv2SidebarDtmf';
+  const toggle = document.getElementById('sidebar-dtmf-toggle');
+  let stored;
+  try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) { stored = null; }
+  toggle.checked = stored !== '0';
+  toggle.addEventListener('change', () => {
+    try { localStorage.setItem(STORAGE_KEY, toggle.checked ? '1' : '0'); } catch (e) {}
+  });
 })();
 </script>
 <script src="/settings/settings.js"></script>

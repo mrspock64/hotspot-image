@@ -48,8 +48,18 @@ const DASHBOARD_V2_PAGES = [
   // ?action=key endpoint the module itself uses, not a separate code
   // path. Built here (not as its own module) because the sidebar isn't
   // part of the module-grid system modules render into.
+  //
+  // On/off switch: a plain localStorage flag (dv2SidebarDtmf, default
+  // on), same per-browser pattern as the topbar RX/TX indicator's own
+  // switch -- Settings page toggle, picked up live across tabs via the
+  // storage event. The element is always built (so the toggle can act on
+  // it without a page reload) but hidden via style.display when off --
+  // same "author display rule beats the UA [hidden] stylesheet"
+  // reasoning js/rxtx-indicator.js's own comment already documents, so
+  // this uses the same style.display approach rather than the attribute.
   const footer = document.querySelector('.sidebar-footer');
   if (footer) {
+    const DTMF_STORAGE_KEY = 'dv2SidebarDtmf';
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
     const dtmf = document.createElement('div');
     dtmf.className = 'sidebar-dtmf';
@@ -68,6 +78,21 @@ const DASHBOARD_V2_PAGES = [
         setTimeout(() => btn.classList.remove('pressed'), 200);
         fetch('/api/dtmf.php?action=key&digit=' + encodeURIComponent(digit), { cache: 'no-store' }).catch(() => {});
       });
+    });
+
+    function dtmfEnabled() {
+      try {
+        return localStorage.getItem(DTMF_STORAGE_KEY) !== '0';
+      } catch (e) {
+        return true;
+      }
+    }
+    function applyDtmfVisibility() {
+      dtmf.style.display = dtmfEnabled() ? '' : 'none';
+    }
+    applyDtmfVisibility();
+    window.addEventListener('storage', (e) => {
+      if (e.key === DTMF_STORAGE_KEY) applyDtmfVisibility();
     });
   }
 
