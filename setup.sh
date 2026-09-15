@@ -23,7 +23,23 @@
 #
 # Run as root, on top of an already-provisioned RF.Guru node.
 #
+# --with-dashboard-v2: also installs the dashboard-v2 module-based
+# preview on :8081 (docs/dashboard-v2-brief.md), plus the :80 switch
+# (dashboard-switch/, /switch/) for trying it as the default interface.
+# Opt-in only -- dashboard-v2 is still under active development, so a
+# plain `setup.sh` stays exactly what it always was: just the stable
+# production dashboard. Can also be installed later, on its own, with
+# lib/install-dashboard-v2-preview.sh directly.
+#
 set -euo pipefail
+
+WITH_DASHBOARD_V2=0
+for arg in "$@"; do
+  case "$arg" in
+    --with-dashboard-v2) WITH_DASHBOARD_V2=1 ;;
+    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
+  esac
+done
 
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root (sudo bash setup.sh)"
@@ -123,6 +139,11 @@ else
   bash "$SCRIPT_DIR/lib/install-bluetooth.sh"
 fi
 
+if [ "$WITH_DASHBOARD_V2" -eq 1 ]; then
+  echo "=== Optional (--with-dashboard-v2): dashboard-v2 preview ==="
+  bash "$SCRIPT_DIR/lib/install-dashboard-v2-preview.sh"
+fi
+
 echo
 echo "=== Done ==="
 echo "1. Join this device's WiFi (or connect via ethernet) and open http://$(hostname).local/"
@@ -130,3 +151,12 @@ echo "2. Use the WiFi page to join your real network, if not already on it."
 echo "3. Use the new Setup page to configure callsign, reflector, radio, and location."
 echo "4. Restart svxlink from the Power page once configured."
 echo "5. See the dashboard's Help page (/help/) for what everything does."
+if [ "$WITH_DASHBOARD_V2" -eq 1 ]; then
+  echo "6. dashboard-v2 preview is running on http://$(hostname).local:8081/ --"
+  echo "   switch which one :80 itself serves any time from http://$(hostname).local/switch/."
+else
+  echo "6. Want to try the new modular dashboard-v2 preview too? Re-run this script"
+  echo "   with --with-dashboard-v2, or run lib/install-dashboard-v2-preview.sh"
+  echo "   directly -- it's a separate, non-destructive add-on (its own :8081, its"
+  echo "   own git worktree), safe to add or remove any time."
+fi

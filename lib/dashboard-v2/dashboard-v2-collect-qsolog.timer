@@ -1,0 +1,10 @@
+[Unit]
+Description=dashboard-v2 QSO Log module - run the collector every 30s
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=30s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
