@@ -109,6 +109,20 @@ Alias /switch $REPO_DIR/dashboard-switch
     Require all granted
 </Directory>
 EOF
+# Any URL on :80 can now serve completely different content depending on
+# which side of the switch is active, so nothing on :80 may be browser-
+# cached -- found live: switching v2 -> v1 and then clicking "Setup"
+# still showed v2's page. The static HTML dashboard-v2 pages carry
+# Last-Modified/ETag but no Cache-Control, so the browser's own disk
+# cache heuristically kept serving the cached v2 response and never
+# asked the server again after the switch. mod_headers is what lets
+# Apache force Cache-Control on every response, including static files.
+a2enmod headers >/dev/null
+cat > /etc/apache2/conf-available/no-cache.conf <<'EOF'
+Header always set Cache-Control "no-store"
+EOF
+a2enconf no-cache >/dev/null
+
 a2enconf dashboard-switch >/dev/null
 
 echo "--- Granting www-data passwordless sudo ---"
