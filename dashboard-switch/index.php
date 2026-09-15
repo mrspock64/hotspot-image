@@ -55,6 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!isset(TARGETS[$target])) {
         $message = 'Unknown target.';
         $messageOk = false;
+    } elseif (!is_dir(TARGETS[$target]['path'])) {
+        // dashboard-v2 preview isn't part of the main install -- it's a
+        // separate, deliberately-manual step (lib/install-dashboard-v2-preview.sh,
+        // branch-only, never called from setup.sh). Without this check, a
+        // fresh node with only v1 installed would let someone flip
+        // DocumentRoot to a path that doesn't exist, taking :80 down with
+        // a dangling symlink until fixed over SSH -- found live while
+        // planning a second test node (svxlinkmobile).
+        $message = TARGETS[$target]['label'] . ' isn\'t installed on this node ('
+            . TARGETS[$target]['path'] . ' doesn\'t exist) -- nothing was changed.';
+        $messageOk = false;
     } else {
         $path = TARGETS[$target]['path'];
         exec('sudo ln -sfn ' . escapeshellarg($path) . ' ' . escapeshellarg(ACTIVE_LINK) . ' 2>&1', $lnOut, $lnRc);
@@ -168,6 +179,8 @@ $activeKey = currentActiveKey();
       </div>
       <?php if ($key === $activeKey): ?>
         <span class="badge">Active on :80</span>
+      <?php elseif (!is_dir($info['path'])): ?>
+        <span class="badge" style="color:var(--text-dim); border-color:var(--border);" title="<?= htmlspecialchars($info['path']) ?> doesn't exist on this node">Not installed</span>
       <?php else: ?>
         <form method="post" class="switch-form" data-label="<?= htmlspecialchars($info['label']) ?>">
           <input type="hidden" name="action" value="switch">
