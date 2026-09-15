@@ -175,7 +175,7 @@
           <div style="font-size:13.5px; color:var(--text);">Which dashboard is on :80</div>
           <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:3px;">This preview always stays reachable on :8081 regardless</div>
         </div>
-        <a class="btn" href="/switch/">Open switch</a>
+        <a class="btn" id="switch-link" href="/switch/">Open switch</a>
       </div>
     </div>
   </div>
@@ -235,6 +235,19 @@
   toggle.addEventListener('change', () => {
     try { localStorage.setItem(STORAGE_KEY, toggle.checked ? '1' : '0'); } catch (e) {}
   });
+})();
+
+// /switch/ only exists on :80 (its own Apache Alias -- see
+// dashboard-switch/index.php on the main branch); the :8081 preview
+// server has no such route and would otherwise silently just re-serve
+// this same page for a relative "/switch/" link (php -S here falls back
+// to index.html for any unmatched path, found live -- no 404, no clue
+// anything was wrong). Force the port off entirely so the link always
+// reaches the real switcher on :80, no matter which port this settings
+// page itself was loaded from.
+(function () {
+  const link = document.getElementById('switch-link');
+  link.href = '//' + window.location.hostname + '/switch/';
 })();
 </script>
 <script src="/settings/settings.js"></script>
