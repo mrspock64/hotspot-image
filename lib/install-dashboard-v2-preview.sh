@@ -1,8 +1,7 @@
 #!/bin/bash
 #
-# Installs the dashboard-v2 module-based preview (docs/dashboard-v2-brief.md)
-# on svxlinkuhf, the project's dedicated test node for this work. Runs
-# ENTIRELY separately from the production dashboard:
+# Installs the dashboard-v2 module-based preview (docs/dashboard-v2-brief.md).
+# Runs ENTIRELY separately from the production dashboard:
 #  - Serves dashboard-v2/ straight out of its OWN git worktree
 #    (WORKTREE_DIR below), not out of /opt/hotspot-image itself -- no
 #    /var/www/html sync, no Apache vhost, nothing shared with
@@ -26,10 +25,17 @@
 # worktree stays on dashboard-v2 until *this* script (or a manual `git
 # pull` in WORKTREE_DIR) is run again.
 #
-# Deliberately NOT called from setup.sh and NOT merged to main -- this is
-# branch-only, per the brief ("main är produktionskoden och rörs inte").
-# Run this by hand on svxlinkuhf while iterating on the dashboard-v2
-# branch.
+# Opt-in only -- as of 2026-09-15 this script (and its systemd units) also
+# lives on main, called from setup.sh only when run with
+# --with-dashboard-v2, never by default. dashboard-v2 is still under
+# active development (real bugs found and fixed most days -- see
+# docs/dashboard-v2-brief.md), so a plain `setup.sh` on a fresh node
+# stays exactly what it always was: just the stable production
+# dashboard. This script itself can still be run by hand any time, on
+# any node, independent of setup.sh -- and is how this branch's own
+# changes reach a test node (re-run this, or `git -C
+# /opt/hotspot-image-dashboard-v2 pull` + `systemctl restart
+# dashboard-v2-preview` directly).
 #
 # Idempotent: safe to re-run.
 #
