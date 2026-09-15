@@ -217,6 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="mx-card">
   <h1>Node Setup</h1>
   <p class="mx-sub">Full node configuration — callsign, reflector, radio, and portal display fields.</p>
+  <p class="mx-hint">Trying the new dashboard? <a href="/switch/">Switch which dashboard :80 serves</a> (the preview stays reachable on :8081 either way).</p>
 
 <?php if ($saved): ?>
   <div class="mx-msg mx-msg-ok">

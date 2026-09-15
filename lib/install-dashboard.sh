@@ -83,6 +83,34 @@ rm -rf /var/www/html
 cp -r "$REPO_DIR/dashboard" /var/www/html
 chown -R www-data:www-data /var/www/html
 
+echo "--- Setting up the :80 dashboard switch ---"
+# Apache's DocumentRoot becomes a symlink so :80 can later be flipped
+# between the production dashboard and a dashboard-v2 preview without
+# copying any files -- see dashboard-switch/index.php's own header
+# comment for the full design. Defaults to v1 (today's plain
+# /var/www/html target), so a fresh install behaves exactly as before
+# until someone deliberately switches it.
+ln -sfn /var/www/html /var/www/dashboard-active
+
+DEFAULT_VHOST=/etc/apache2/sites-available/000-default.conf
+if [ -f "$DEFAULT_VHOST" ] && grep -q '^\s*DocumentRoot /var/www/html\s*$' "$DEFAULT_VHOST"; then
+  sed -i 's#^\(\s*\)DocumentRoot /var/www/html\s*$#\1DocumentRoot /var/www/dashboard-active#' "$DEFAULT_VHOST"
+fi
+
+# The switcher itself lives outside both docroots (its own Alias, not
+# inside either DocumentRoot) -- otherwise switching away from it would
+# make it unreachable without SSH. Require_all_granted since it carries
+# no auth of its own, same trust model as the rest of this dashboard.
+cat > /etc/apache2/conf-available/dashboard-switch.conf <<EOF
+Alias /switch $REPO_DIR/dashboard-switch
+<Directory $REPO_DIR/dashboard-switch>
+    Options -Indexes
+    AllowOverride None
+    Require all granted
+</Directory>
+EOF
+a2enconf dashboard-switch >/dev/null
+
 echo "--- Granting www-data passwordless sudo ---"
 # Matches RF.Guru's own install-svxlink-dashboard.sh design: the dashboard's
 # power/update/wifi/network pages all need to run privileged commands
